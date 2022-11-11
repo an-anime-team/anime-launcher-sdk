@@ -1,12 +1,12 @@
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::Write;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::config_file;
+use crate::consts::config_file;
 
 pub mod launcher;
 pub mod game;
@@ -146,5 +146,62 @@ impl From<&JsonValue> for Config {
                 None => default.patch
             }
         }
+    }
+}
+
+#[cfg(feature = "components")]
+use crate::components::wine::{self, Version as WineVersion};
+
+#[cfg(feature = "components")]
+use crate::components::dxvk::{self, Version as DxvkVersion};
+
+#[cfg(feature = "components")]
+impl Config {
+    pub fn try_get_selected_wine_info(&self) -> Option<WineVersion> {
+        match &self.game.wine.selected {
+            Some(selected) => {
+                wine::get_groups()
+                    .iter()
+                    .flat_map(|group| group.versions.clone())
+                    .find(|version| version.name.eq(selected))
+            },
+            None => None
+        }
+    }
+
+    /// Try to get a path to the wine64 executable based on `game.wine.builds` and `game.wine.selected`
+    /// 
+    /// Returns `Some("wine64")` if:
+    /// 1) `game.wine.selected = None`
+    /// 2) wine64 installed and available in system
+    pub fn try_get_wine_executable(&self) -> Option<PathBuf> {
+        match self.try_get_selected_wine_info() {
+            Some(selected) => Some(self.game.wine.builds.join(selected.name).join(selected.files.wine64)),
+            None => {
+                if crate::is_available("wine64") {
+                    Some(PathBuf::from("wine64"))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// Try to get DXVK version applied to wine prefix
+    /// 
+    /// Returns:
+    /// 1) `Ok(Some(..))` if version was found
+    /// 2) `Ok(None)` if version wasn't found, so too old or dxvk is not applied
+    /// 3) `Err(..)` if failed to get applied dxvk version, likely because wrong prefix path specified
+    pub fn try_get_selected_dxvk_info(&self) -> std::io::Result<Option<DxvkVersion>> {
+        Ok(match wincompatlib::dxvk::Dxvk::get_version(&self.game.wine.prefix)? {
+            Some(version) => {
+                dxvk::get_groups()
+                    .iter()
+                    .flat_map(|group| group.versions.clone())
+                    .find(move |dxvk| dxvk.version == version)
+            },
+            None => None
+        })
     }
 }

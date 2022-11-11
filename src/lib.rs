@@ -1,18 +1,29 @@
-use std::path::PathBuf;
+use std::process::{Command, Stdio};
+
+pub mod consts;
 
 #[cfg(feature = "config")]
 pub mod config;
 
-/// Get default launcher dir path
-/// 
-/// `$HOME/.local/share/anime-game-launcher`
-pub fn launcher_dir() -> Option<PathBuf> {
-    dirs::data_dir().map(|dir| dir.join("anime-game-launcher"))
-}
+#[cfg(feature = "states")]
+pub mod states;
 
-/// Get default config file path
+#[cfg(feature = "components")]
+pub mod components;
+
+/// Check if specified binary is available
 /// 
-/// `$HOME/.local/share/anime-game-launcher/config.json`
-pub fn config_file() -> Option<PathBuf> {
-    launcher_dir().map(|dir| dir.join("config.json"))
+/// ```
+/// assert!(anime_launcher_sdk::is_available("bash"));
+/// ```
+#[allow(unused_must_use)]
+pub fn is_available(binary: &str) -> bool {
+    match Command::new(binary).stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
+        Ok(mut child) => {
+            child.kill();
+
+            true
+        },
+        Err(_) => false
+    }
 }

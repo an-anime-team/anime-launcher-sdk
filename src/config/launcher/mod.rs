@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use anime_game_core::genshin::consts::GameEdition as CoreGameEdition;
 
-use crate::launcher_dir;
+use crate::consts::launcher_dir;
 
 pub mod repairer;
 

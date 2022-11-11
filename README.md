@@ -6,14 +6,14 @@
 * Remove excess code from gtk launcher and prepare it for relm4 rewrite;
 * Prepare codebase for tauri rewrite;
 
-## Current progress (12.5%)
+## Current progress (50%)
 
 | Status | Feature | Description |
 | :-: | - | - |
-| ❌ | states | Getting current launcher's state (update available, etc.) |
+| ✅ | states | Getting current launcher's state (update available, etc.) |
 | ✅ | config | Work with config file |
-| ❌ | components | Work with components needed to run the game |
-| ❌ | | List Wine and DXVK versions |
+| ✅ | components | Work with components needed to run the game |
+| ✅ | | List Wine and DXVK versions |
 | ❌ | | Download, delete and select wine |
 | ❌ | | Download, delete, select and apply DXVK |
 | ❌ | runner | Run the game |

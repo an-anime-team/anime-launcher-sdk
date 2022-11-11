@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::launcher_dir;
+use crate::consts::launcher_dir;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Dxvk {
