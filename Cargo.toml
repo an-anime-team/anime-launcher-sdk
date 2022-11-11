@@ -1,0 +1,26 @@
+[package]
+name = "anime-launcher-sdk"
+version = "0.1.0"
+authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+edition = "2021"
+
+[dependencies]
+anime-game-core = { path = "anime-game-core", features = ["genshin", "all", "static"] }
+
+anyhow = "1.0"
+dirs = "4.0.0"
+
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+
+[features]
+states = []
+config = ["dep:serde", "dep:serde_json"]
+components = []
+runner = []
+fps-unlocker = []
+
+default = ["all"]
+all = ["states", "config", "components", "runner", "fps-unlocker"]

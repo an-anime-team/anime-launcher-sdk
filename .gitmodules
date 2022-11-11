@@ -1,0 +1,3 @@
+[submodule "anime-game-core"]
+	path = anime-game-core
+	url = https://github.com/an-anime-team/anime-game-core
