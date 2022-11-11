@@ -6,7 +6,7 @@
 * Remove excess code from gtk launcher and prepare it for relm4 rewrite;
 * Prepare codebase for tauri rewrite;
 
-## Current progress (50%)
+## Current progress (75%)
 
 | Status | Feature | Description |
 | :-: | - | - |
@@ -16,5 +16,5 @@
 | ✅ | | List Wine and DXVK versions |
 | ❌ | | Download, delete and select wine |
 | ❌ | | Download, delete, select and apply DXVK |
-| ❌ | runner | Run the game |
-| ❌ | fps-unlocker | Support of FPS unlocker. Manage its config, download, use in game runner |
+| ✅ | game | Run the game |
+| ✅ | fps-unlocker | Support of FPS unlocker. Manage its config, download, use in game runner |

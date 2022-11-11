@@ -40,14 +40,17 @@ pub struct Version {
 }
 
 impl Version {
+    /// Get latest recommended wine version
     pub fn latest() -> Self {
         get_groups()[0].versions[0].clone()
     }
 
+    /// Check is current wine downloaded in specified folder
     pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
+    /// Convert current wine struct to one from `wincompatlib`
     pub fn to_wine(&self) -> Wine {
         Wine::new(
             &self.files.wine64,
@@ -69,10 +72,12 @@ pub struct Files {
     pub winecfg: String
 }
 
+/// Get wine groups
 pub fn get_groups() -> Vec<Group> {
     GROUPS.clone()
 }
 
+/// List downloaded wine versions in some specific folder
 pub fn get_downloaded<T: Into<PathBuf>>(folder: T) -> std::io::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 

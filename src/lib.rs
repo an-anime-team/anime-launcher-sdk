@@ -11,6 +11,12 @@ pub mod states;
 #[cfg(feature = "components")]
 pub mod components;
 
+#[cfg(feature = "game")]
+pub mod game;
+
+#[cfg(feature = "fps-unlocker")]
+pub mod fps_unlocker;
+
 /// Check if specified binary is available
 /// 
 /// ```

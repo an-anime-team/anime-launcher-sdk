@@ -34,14 +34,17 @@ pub struct Version {
 }
 
 impl Version {
+    /// Get latest recommended dxvk version
     pub fn latest() -> Self {
         get_groups()[0].versions[0].clone()
     }
 
+    /// Check is current dxvk downloaded in specified folder
     pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
+    /// Apply current dxvk to specified wine prefix
     pub fn apply<T: Into<PathBuf>>(&self, dxvks_folder: T, prefix_path: T) -> anyhow::Result<Output> {
         let apply_path = dxvks_folder.into().join(&self.name).join("setup_dxvk.sh");
         let config = config::get()?;
@@ -75,11 +78,12 @@ impl Version {
     }
 }
 
+/// Get dxvk groups
 pub fn get_groups() -> Vec<Group> {
     GROUPS.clone()
 }
 
-/// List downloaded DXVK versions in some specific folder
+/// List downloaded dxvk versions in some specific folder
 pub fn get_downloaded<T: Into<PathBuf>>(folder: T) -> std::io::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 
