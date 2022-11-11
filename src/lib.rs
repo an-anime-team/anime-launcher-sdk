@@ -1,5 +1,8 @@
 use std::process::{Command, Stdio};
 
+pub use anime_game_core;
+pub use wincompatlib;
+
 pub mod consts;
 
 #[cfg(feature = "config")]
