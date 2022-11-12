@@ -4,6 +4,8 @@ use anime_game_core::genshin::telemetry;
 
 use super::consts;
 use super::config;
+
+#[cfg(feature = "fps-unlocker")]
 use super::fps_unlocker::FpsUnlocker;
 
 /// Try to run the game

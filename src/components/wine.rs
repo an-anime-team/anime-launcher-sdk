@@ -51,13 +51,17 @@ impl Version {
     }
 
     /// Convert current wine struct to one from `wincompatlib`
-    pub fn to_wine(&self) -> Wine {
+    /// 
+    /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
+    pub fn to_wine<T: Into<PathBuf>>(&self, wine_folder: Option<T>) -> Wine {
+        let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
+
         Wine::new(
-            &self.files.wine64,
+            wine_folder.join(&self.files.wine64),
             None,
             Some(WineArch::Win64),
-            Some(&self.files.wineboot),
-            Some(&self.files.wineserver),
+            Some(wine_folder.join(&self.files.wineboot)),
+            Some(wine_folder.join(&self.files.wineserver)),
             WineLoader::Current
         )
     }

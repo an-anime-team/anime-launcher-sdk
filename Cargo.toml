@@ -22,7 +22,7 @@ md5 = { version = "0.7.0", optional = true }
 states = []
 config = ["dep:serde", "dep:serde_json"]
 components = ["dep:wincompatlib", "dep:lazy_static"]
-game = ["components"]
+game = ["components", "config"]
 fps-unlocker = ["dep:md5"]
 
 default = ["all"]

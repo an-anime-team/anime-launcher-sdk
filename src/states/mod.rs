@@ -1,10 +1,11 @@
+use std::path::PathBuf;
+
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
 use crate::consts;
-use crate::config;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {
@@ -56,44 +57,39 @@ pub enum StateUpdating {
 }
 
 impl LauncherState {
-    pub fn get<T: Fn(StateUpdating)>(status: T) -> anyhow::Result<Self> {
-        let config = config::get()?;
-
-        // Check wine existence
-        #[cfg(feature = "components")]
-        {
-            if config.try_get_wine_executable().is_none() {
-                return Ok(Self::WineNotInstalled);
-            }
-        }
+    pub fn get<T, F, S>(wine_prefix: T, game_path: T, voices: Vec<VoiceLocale>, patch_servers: Vec<S>, status: F) -> anyhow::Result<Self>
+    where
+        T: Into<PathBuf>,
+        F: Fn(StateUpdating),
+        S: ToString
+    {
+        let wine_prefix = wine_prefix.into();
+        let game_path = game_path.into();
 
         // Check prefix existence
-        if !config.game.wine.prefix.join("drive_c").exists() {
+        if !wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
         }
 
         // Check game installation status
         status(StateUpdating::Game);
 
-        let game = Game::new(&config.game.path);
+        let game = Game::new(&game_path);
         let diff = game.try_get_diff()?;
 
         Ok(match diff {
             VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
                 let mut predownload_voice = Vec::new();
 
-                for voice_package in &config.game.voices {
-                    let mut voice_package = VoicePackage::with_locale(match VoiceLocale::from_str(voice_package) {
-                        Some(locale) => locale,
-                        None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice_package))
-                    })?;
+                for locale in voices {
+                    let mut voice_package = VoicePackage::with_locale(locale)?;
 
                     status(StateUpdating::Voice(voice_package.locale()));
 
                     // Replace voice package struct with the one constructed in the game's folder
                     // so it'll properly calculate its difference instead of saying "not installed"
-                    if voice_package.is_installed_in(&config.game.path) {
-                        voice_package = match VoicePackage::new(get_voice_package_path(&config.game.path, voice_package.locale())) {
+                    if voice_package.is_installed_in(&game_path) {
+                        voice_package = match VoicePackage::new(get_voice_package_path(&game_path, voice_package.locale())) {
                             Some(locale) => locale,
                             None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
                         };
@@ -113,9 +109,9 @@ impl LauncherState {
 
                 status(StateUpdating::Patch);
 
-                let patch = Patch::try_fetch(config.patch.servers.clone(), consts::PATCH_FETCHING_TIMEOUT)?;
+                let patch = Patch::try_fetch(patch_servers, consts::PATCH_FETCHING_TIMEOUT)?;
 
-                if patch.is_applied(&config.game.path)? {
+                if patch.is_applied(&game_path)? {
                     if let VersionDiff::Predownload { .. } = diff {
                         Self::PredownloadAvailable {
                             game: diff,
@@ -137,5 +133,29 @@ impl LauncherState {
             VersionDiff::Outdated { .. } => Self::GameOutdated(diff),
             VersionDiff::NotInstalled { .. } => Self::GameNotInstalled(diff)
         })
+    }
+
+    #[cfg(feature = "config")]
+    pub fn get_from_config<T: Fn(StateUpdating)>(status: T) -> anyhow::Result<Self> {
+        let config = crate::config::get()?;
+
+        // Check wine existence
+        #[cfg(feature = "components")]
+        {
+            if config.try_get_wine_executable().is_none() {
+                return Ok(Self::WineNotInstalled);
+            }
+        }
+
+        let mut voices = Vec::with_capacity(config.game.voices.len());
+
+        for voice in config.game.voices {
+            voices.push(match VoiceLocale::from_str(&voice) {
+                Some(locale) => locale,
+                None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice))
+            });
+        }
+
+        Self::get(config.game.wine.prefix, config.game.path, voices, config.patch.servers, status)
     }
 }

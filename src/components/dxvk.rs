@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use wincompatlib::prelude::*;
 
-use crate::config;
-
 lazy_static::lazy_static! {
     static ref GROUPS: Vec<Group> = vec![
         Group {
@@ -45,20 +43,13 @@ impl Version {
     }
 
     /// Apply current dxvk to specified wine prefix
-    pub fn apply<T: Into<PathBuf>>(&self, dxvks_folder: T, prefix_path: T) -> anyhow::Result<Output> {
+    /// 
+    /// If `wine_info` is `None`, then default system binaries will tried to be used
+    pub fn apply<T: Into<PathBuf>>(&self, dxvks_folder: T, prefix_path: T, wine: Option<Wine>) -> anyhow::Result<Output> {
         let apply_path = dxvks_folder.into().join(&self.name).join("setup_dxvk.sh");
-        let config = config::get()?;
 
-        let (wine_path, wineserver_path, wineboot_path) = match config.try_get_selected_wine_info() {
-            Some(wine) => {
-                let wine_folder = config.game.wine.builds.join(wine.name);
-
-                let wine_path = wine_folder.join(wine.files.wine64);
-                let wineserver_path = wine_folder.join(wine.files.wineserver);
-                let wineboot_path = wine_folder.join(wine.files.wineboot);
-
-                (wine_path, wineserver_path, wineboot_path)
-            },
+        let (wine_path, wineserver_path, wineboot_path) = match wine {
+            Some(wine) => (wine.binary(), wine.wineserver(), wine.wineboot()),
             None => (PathBuf::from("wine64"), PathBuf::from("wineserver"), PathBuf::from("wineboot"))
         };
 
