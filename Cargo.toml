@@ -7,7 +7,7 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies]
-anime-game-core = { path = "anime-game-core", features = ["genshin", "all", "static"] }
+anime-game-core = { git = "https://github.com/an-anime-team/anime-game-core", features = ["genshin", "all", "static"] }
 
 anyhow = "1.0"
 dirs = "4.0.0"
