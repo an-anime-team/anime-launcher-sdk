@@ -2,17 +2,21 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
 pub mod fps;
+pub mod window_mode;
 
 pub mod prelude {
     pub use super::fps::Fps;
+    pub use super::window_mode::WindowMode;
 }
+
+use prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub fps: u64,
     pub power_saving: bool,
     pub monitor: u64,
-    pub window_mode: u64,
+    pub window_mode: WindowMode,
     pub priority: u64
 }
 
@@ -22,7 +26,7 @@ impl Default for Config {
             fps: 120,
             power_saving: false,
             monitor: 1,
-            window_mode: 0,
+            window_mode: WindowMode::default(),
             priority: 3
         }
     }
@@ -49,7 +53,7 @@ impl From<&JsonValue> for Config {
             },
 
             window_mode: match value.get("window_mode") {
-                Some(value) => value.as_u64().unwrap_or(default.window_mode),
+                Some(value) => WindowMode::from(value),
                 None => default.window_mode
             },
 
