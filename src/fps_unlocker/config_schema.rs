@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use crate::config::prelude::*;
 use super::FpsUnlockerConfig;
 
 #[derive(Debug, Clone, Serialize)]
@@ -53,8 +54,8 @@ impl ConfigSchema {
         Self {
             FPSTarget: config.fps,
             UsePowerSave: config.power_saving,
-            PopupWindow: config.window_mode == 1,
-            Fullscreen: config.window_mode == 2,
+            PopupWindow: config.window_mode == WindowMode::Popup,
+            Fullscreen: config.window_mode == WindowMode::Fullscreen,
             MonitorNum: config.monitor,
             Priority: config.priority,
 
