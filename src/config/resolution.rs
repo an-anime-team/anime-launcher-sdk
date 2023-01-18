@@ -1,5 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Resolution {
+    Custom(u64, u64),
+
     // qHD; 960x540
     MiniHD,
 
@@ -13,14 +15,13 @@ pub enum Resolution {
     QuadHD,
 
     // 3840x2160
-    UltraHD,
-
-    Custom(u64, u64)
+    UltraHD
 }
 
 impl Resolution {
     pub fn list() -> Vec<Self> {
         vec![
+            Self::Custom(0, 0),
             Self::MiniHD,
             Self::HD,
             Self::FullHD,
@@ -50,6 +51,38 @@ impl Resolution {
             Self::UltraHD => (3840, 2160),
 
             Self::Custom(w, h) => (*w, *h)
+        }
+    }
+}
+
+impl TryFrom<u32> for Resolution {
+    type Error = String;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Custom(0, 0)),
+            1 => Ok(Self::MiniHD),
+            2 => Ok(Self::HD),
+            3 => Ok(Self::FullHD),
+            4 => Ok(Self::QuadHD),
+            5 => Ok(Self::UltraHD),
+
+            _ => Err(String::from("Failed to convert number to Resolution enum"))
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<u32> for Resolution {
+    fn into(self) -> u32 {
+        match self {
+            Self::MiniHD  => 1,
+            Self::HD      => 2,
+            Self::FullHD  => 3,
+            Self::QuadHD  => 4,
+            Self::UltraHD => 5,
+
+            _ => 0 // Custom resolution
         }
     }
 }

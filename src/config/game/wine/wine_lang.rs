@@ -30,6 +30,28 @@ impl From<&JsonValue> for WineLang {
     }
 }
 
+impl TryFrom<u32> for WineLang {
+    type Error = String;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0  => Ok(Self::System),
+            1  => Ok(Self::English),
+            2  => Ok(Self::Russian),
+            3  => Ok(Self::German),
+            4  => Ok(Self::Portuguese),
+            5  => Ok(Self::Polish),
+            6  => Ok(Self::French),
+            7  => Ok(Self::Spanish),
+            8  => Ok(Self::Chinese),
+            9  => Ok(Self::Japanese),
+            10 => Ok(Self::Korean),
+
+            _ => Err(String::from("Failed to convert number to WineLang enum"))
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<u32> for WineLang {
     fn into(self) -> u32 {
