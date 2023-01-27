@@ -1,4 +1,3 @@
-use std::process::Output;
 use std::path::PathBuf;
 
 use serde::{Serialize, Deserialize};
@@ -42,30 +41,21 @@ impl Version {
         folder.into().join(&self.name).exists()
     }
 
-    /// Apply current dxvk to specified wine prefix
-    /// 
-    /// If `wine_info` is `None`, then default system binaries will tried to be used
-    pub fn apply<T: Into<PathBuf>>(&self, dxvks_folder: T, prefix_path: T, wine: Option<Wine>) -> anyhow::Result<Output> {
-        let apply_path = dxvks_folder.into().join(&self.name).join("setup_dxvk.sh");
+    /// Install current dxvk
+    pub fn install<T: Into<PathBuf>>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+        Dxvk::install(
+            wine,
+            dxvks_folder.into().join(&self.name),
+            params
+        )
+    }
 
-        let (wine_path, wineserver_path, wineboot_path) = match wine {
-            Some(wine) => (wine.binary(), wine.wineserver(), wine.wineboot()),
-            None => (PathBuf::from("wine64"), PathBuf::from("wineserver"), PathBuf::from("wineboot"))
-        };
-
-        let result = Dxvk::install(
-            apply_path,
-            prefix_path.into(),
-            wine_path.clone(),
-            wine_path,
-            wineboot_path,
-            wineserver_path
-        );
-
-        match result {
-            Ok(output) => Ok(output),
-            Err(err) => Err(err.into())
-        }
+    /// Uninstall current dxvk
+    pub fn uninstall<T: Into<PathBuf>>(&self, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+        Dxvk::uninstall(
+            wine,
+            params
+        )
     }
 }
 
