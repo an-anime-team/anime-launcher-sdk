@@ -1,11 +1,13 @@
-use std::collections::HashMap;
-
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+use enum_ordinalize::Ordinalize;
+
+use std::collections::HashMap;
+
 use crate::config::Config;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Ordinalize, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum HUD {
     None,
     DXVK,
@@ -21,30 +23,6 @@ impl Default for HUD {
 impl From<&JsonValue> for HUD {
     fn from(value: &JsonValue) -> Self {
         serde_json::from_value(value.clone()).unwrap_or_default()
-    }
-}
-
-impl TryFrom<u32> for HUD {
-    type Error = String;
-
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::None),
-            1 => Ok(Self::DXVK),
-            2 => Ok(Self::MangoHUD),
-            _ => Err(String::from("Failed to convert number to HUD enum"))
-        }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<u32> for HUD {
-    fn into(self) -> u32 {
-        match self {
-            Self::None     => 0,
-            Self::DXVK     => 1,
-            Self::MangoHUD => 2
-        }
     }
 }
 

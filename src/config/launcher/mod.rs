@@ -24,16 +24,12 @@ pub enum GameEdition {
 
 impl Default for GameEdition {
     fn default() -> Self {
-        let locale = match std::env::var("LC_ALL") {
-            Ok(locale) => locale,
-            Err(_) => match std::env::var("LC_MESSAGES") {
-                Ok(locale) => locale,
-                Err(_) => match std::env::var("LANG") {
-                    Ok(locale) => locale,
-                    Err(_) => return Self::Global
-                }
-            }
-        };
+        #[allow(clippy::or_fun_call)]
+        let locale = std::env::var("LC_ALL").unwrap_or_else(|_| {
+            std::env::var("LC_MESSAGES").unwrap_or_else(|_| {
+                std::env::var("LANG").unwrap_or(String::from("en_us"))
+            })
+        });
 
         if locale.len() > 4 && &locale[..5].to_lowercase() == "zh_cn" {
             Self::China

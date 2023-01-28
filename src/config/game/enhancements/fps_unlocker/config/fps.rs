@@ -46,6 +46,7 @@ impl Fps {
             180 => Self::HundredEighty,
             200 => Self::TwoHundred,
             240 => Self::TwoHundredFourty,
+
             num => Self::Custom(num)
         }
     }
@@ -59,7 +60,8 @@ impl Fps {
             Self::HundredEighty     => 180,
             Self::TwoHundred        => 200,
             Self::TwoHundredFourty  => 240,
-            Self::Custom(num)  => *num
+
+            Self::Custom(num) => *num
         }
     }
 }

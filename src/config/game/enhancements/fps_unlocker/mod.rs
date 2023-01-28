@@ -8,9 +8,9 @@ use crate::consts::launcher_dir;
 pub mod config;
 
 pub mod prelude {
-    pub use super::config::Config;
-
     pub use super::config::prelude::*;
+
+    pub use super::config::Config;
 }
 
 use prelude::*;

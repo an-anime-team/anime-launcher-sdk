@@ -1,7 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Resolution {
-    Custom(u64, u64),
-
     // qHD; 960x540
     MiniHD,
 
@@ -15,13 +13,14 @@ pub enum Resolution {
     QuadHD,
 
     // 3840x2160
-    UltraHD
+    UltraHD,
+
+    Custom(u64, u64)
 }
 
 impl Resolution {
     pub fn list() -> Vec<Self> {
         vec![
-            Self::Custom(0, 0),
             Self::MiniHD,
             Self::HD,
             Self::FullHD,
@@ -60,12 +59,13 @@ impl TryFrom<u32> for Resolution {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::Custom(0, 0)),
-            1 => Ok(Self::MiniHD),
-            2 => Ok(Self::HD),
-            3 => Ok(Self::FullHD),
-            4 => Ok(Self::QuadHD),
-            5 => Ok(Self::UltraHD),
+            0 => Ok(Self::MiniHD),
+            1 => Ok(Self::HD),
+            2 => Ok(Self::FullHD),
+            3 => Ok(Self::QuadHD),
+            4 => Ok(Self::UltraHD),
+
+            5 => Ok(Self::Custom(0, 0)),
 
             _ => Err(String::from("Failed to convert number to Resolution enum"))
         }
@@ -76,13 +76,13 @@ impl TryFrom<u32> for Resolution {
 impl Into<u32> for Resolution {
     fn into(self) -> u32 {
         match self {
-            Self::MiniHD  => 1,
-            Self::HD      => 2,
-            Self::FullHD  => 3,
-            Self::QuadHD  => 4,
-            Self::UltraHD => 5,
+            Self::MiniHD  => 0,
+            Self::HD      => 1,
+            Self::FullHD  => 2,
+            Self::QuadHD  => 3,
+            Self::UltraHD => 4,
 
-            _ => 0 // Custom resolution
+            _ => 5 // Custom resolution
         }
     }
 }
