@@ -57,13 +57,26 @@ impl From<CoreGameEdition> for GameEdition {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LauncherStyle {
+    Modern,
+    Classic
+}
+
+impl Default for LauncherStyle {
+    fn default() -> Self {
+        Self::Modern
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
     pub temp: Option<PathBuf>,
     pub speed_limit: u64,
     pub repairer: Repairer,
-    pub edition: GameEdition
+    pub edition: GameEdition,
+    pub style: LauncherStyle
 }
 
 impl Default for Launcher {
@@ -73,7 +86,8 @@ impl Default for Launcher {
             temp: launcher_dir(),
             speed_limit: 0,
             repairer: Repairer::default(),
-            edition: GameEdition::default()
+            edition: GameEdition::default(),
+            style: LauncherStyle::default()
         }
     }
 }
@@ -115,6 +129,11 @@ impl From<&JsonValue> for Launcher {
             edition: match value.get("edition") {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.edition),
                 None => default.edition
+            },
+
+            style: match value.get("style") {
+                Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.style),
+                None => default.style
             }
         }
     }
