@@ -11,6 +11,7 @@ use super::fps_unlocker::FpsUnlocker;
 /// Try to run the game
 /// 
 /// If `debug = true`, then the game will be run in the new terminal window
+#[tracing::instrument(level = "info")]
 pub fn run() -> anyhow::Result<()> {
     let config = config::get()?;
 

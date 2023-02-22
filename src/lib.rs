@@ -26,6 +26,7 @@ pub mod fps_unlocker;
 /// assert!(anime_launcher_sdk::is_available("bash"));
 /// ```
 #[allow(unused_must_use)]
+#[tracing::instrument(level = "trace")]
 pub fn is_available(binary: &str) -> bool {
     match Command::new(binary).stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
         Ok(mut child) => {

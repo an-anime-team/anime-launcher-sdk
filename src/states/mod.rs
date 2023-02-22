@@ -57,11 +57,12 @@ pub enum StateUpdating {
 }
 
 impl LauncherState {
+    #[tracing::instrument(level = "debug", skip(status))]
     pub fn get<T, F, S>(wine_prefix: T, game_path: T, voices: Vec<VoiceLocale>, patch_servers: Vec<S>, status: F) -> anyhow::Result<Self>
     where
-        T: Into<PathBuf>,
+        T: Into<PathBuf> + std::fmt::Debug,
         F: Fn(StateUpdating),
-        S: ToString
+        S: ToString + std::fmt::Debug
     {
         let wine_prefix = wine_prefix.into();
         let game_path = game_path.into();
@@ -136,6 +137,7 @@ impl LauncherState {
     }
 
     #[cfg(feature = "config")]
+    #[tracing::instrument(level = "debug", skip(status))]
     pub fn get_from_config<T: Fn(StateUpdating)>(status: T) -> anyhow::Result<Self> {
         let config = crate::config::get()?;
 

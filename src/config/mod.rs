@@ -30,6 +30,7 @@ static mut CONFIG: Option<Config> = None;
 /// This method will load config from file once and store it into the memory.
 /// If you know that the config file was updated - you should run `get_raw` method
 /// that always loads config directly from the file. This will also update in-memory config
+#[tracing::instrument(level = "trace")]
 pub fn get() -> anyhow::Result<Config> {
     unsafe {
         match &CONFIG {
@@ -42,6 +43,7 @@ pub fn get() -> anyhow::Result<Config> {
 /// Get config data
 /// 
 /// This method will always load data directly from the file and update in-memory config
+#[tracing::instrument(level = "debug")]
 pub fn get_raw() -> anyhow::Result<Config> {
     match config_file() {
         Some(path) => {
@@ -80,6 +82,7 @@ pub fn get_raw() -> anyhow::Result<Config> {
 /// Update in-memory config data
 /// 
 /// Use `update_raw` if you want to update config file itself
+#[tracing::instrument(level = "trace")]
 pub fn update(config: Config) {
     unsafe {
         CONFIG = Some(config);
@@ -89,6 +92,7 @@ pub fn update(config: Config) {
 /// Update config file
 /// 
 /// This method will also update in-memory config data
+#[tracing::instrument(level = "debug")]
 pub fn update_raw(config: Config) -> anyhow::Result<()> {
     update(config.clone());
 
@@ -110,6 +114,7 @@ pub fn update_raw(config: Config) -> anyhow::Result<()> {
 }
 
 /// Update config file from the in-memory saved config
+#[tracing::instrument(level = "debug")]
 pub fn flush() -> anyhow::Result<()> {
     unsafe {
         match &CONFIG {
@@ -157,6 +162,7 @@ use crate::components::dxvk::{self, Version as DxvkVersion};
 
 #[cfg(feature = "components")]
 impl Config {
+    #[tracing::instrument(level = "debug")]
     pub fn try_get_selected_wine_info(&self) -> Option<WineVersion> {
         match &self.game.wine.selected {
             Some(selected) => {
@@ -174,6 +180,7 @@ impl Config {
     /// Returns `Some("wine64")` if:
     /// 1) `game.wine.selected = None`
     /// 2) wine64 installed and available in system
+    #[tracing::instrument(level = "debug")]
     pub fn try_get_wine_executable(&self) -> Option<PathBuf> {
         match self.try_get_selected_wine_info() {
             Some(selected) => Some(self.game.wine.builds.join(selected.name).join(selected.files.wine64)),
@@ -193,6 +200,7 @@ impl Config {
     /// 1) `Ok(Some(..))` if version was found
     /// 2) `Ok(None)` if version wasn't found, so too old or dxvk is not applied
     /// 3) `Err(..)` if failed to get applied dxvk version, likely because wrong prefix path specified
+    #[tracing::instrument(level = "debug")]
     pub fn try_get_selected_dxvk_info(&self) -> std::io::Result<Option<DxvkVersion>> {
         Ok(match wincompatlib::dxvk::Dxvk::get_version(&self.game.wine.prefix)? {
             Some(version) => {

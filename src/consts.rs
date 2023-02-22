@@ -10,6 +10,7 @@ pub const PATCH_FETCHING_TIMEOUT: Option<Duration> = Some(Duration::from_secs(5)
 /// Get default launcher dir path
 /// 
 /// `$HOME/.local/share/anime-game-launcher`
+#[tracing::instrument(level = "trace")]
 pub fn launcher_dir() -> Option<PathBuf> {
     dirs::data_dir().map(|dir| dir.join("anime-game-launcher"))
 }
@@ -17,6 +18,7 @@ pub fn launcher_dir() -> Option<PathBuf> {
 /// Get default config file path
 /// 
 /// `$HOME/.local/share/anime-game-launcher/config.json`
+#[tracing::instrument(level = "trace")]
 pub fn config_file() -> Option<PathBuf> {
     launcher_dir().map(|dir| dir.join("config.json"))
 }
