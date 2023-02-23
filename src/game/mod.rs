@@ -11,8 +11,10 @@ use super::fps_unlocker::FpsUnlocker;
 /// Try to run the game
 /// 
 /// If `debug = true`, then the game will be run in the new terminal window
-#[tracing::instrument(level = "info")]
+#[tracing::instrument(level = "info", ret)]
 pub fn run() -> anyhow::Result<()> {
+    tracing::info!("Preparing to run the game");
+
     let config = config::get()?;
 
     if !config.game.path.exists() {
@@ -26,6 +28,8 @@ pub fn run() -> anyhow::Result<()> {
 
     // Check telemetry servers
 
+    tracing::info!("Checking telemetry");
+
     if let Some(server) = telemetry::is_disabled(consts::TELEMETRY_CHECK_TIMEOUT) {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
     }
@@ -37,6 +41,8 @@ pub fn run() -> anyhow::Result<()> {
 
     #[cfg(feature = "fps-unlocker")]
     if config.game.enhancements.fps_unlocker.enabled {
+        tracing::info!("Preparing FPS unlocker");
+
         let unlocker = match FpsUnlocker::from_dir(&config.game.enhancements.fps_unlocker.path) {
             Ok(Some(unlocker)) => unlocker,
 
@@ -46,6 +52,8 @@ pub fn run() -> anyhow::Result<()> {
                 if let Ok(None) = other {
                     std::fs::remove_file(FpsUnlocker::get_binary_in(&config.game.enhancements.fps_unlocker.path))?;
                 }
+
+                tracing::info!("Unlocker is not downloaded. Downloading");
 
                 match FpsUnlocker::download(&config.game.enhancements.fps_unlocker.path) {
                     Ok(unlocker) => unlocker,
@@ -133,7 +141,12 @@ pub fn run() -> anyhow::Result<()> {
 
     // Run command
 
-    println!("Running command: bash -c \"{}\"", bash_chain);
+    let variables = command
+        .get_envs()
+        .map(|(key, value)| format!("{:?}=\"{:?}\"", key, value.unwrap_or_default()))
+        .fold(String::new(), |acc, env| acc + " " + &env);
+
+    tracing::info!("Running the game with command: {variables} bash -c \"{bash_chain}\"");
 
     command.current_dir(config.game.path).spawn()?;
 

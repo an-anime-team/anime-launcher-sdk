@@ -32,19 +32,23 @@ pub struct Version {
 
 impl Version {
     /// Get latest recommended dxvk version
+    #[inline]
     pub fn latest() -> Self {
         get_groups()[0].versions[0].clone()
     }
 
     /// Check is current dxvk downloaded in specified folder
-    #[tracing::instrument(level = "trace")]
+    #[inline]
     pub fn is_downloaded_in<T: Into<PathBuf> + std::fmt::Debug>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
     /// Install current dxvk
     #[tracing::instrument(level = "debug")]
+    #[inline]
     pub fn install<T: Into<PathBuf> + std::fmt::Debug>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+        tracing::debug!("Installing DXVK");
+
         Dxvk::install(
             wine,
             dxvks_folder.into().join(&self.name),
@@ -54,7 +58,10 @@ impl Version {
 
     /// Uninstall current dxvk
     #[tracing::instrument(level = "debug")]
+    #[inline]
     pub fn uninstall(&self, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+        tracing::debug!("Uninstalling DXVK");
+
         Dxvk::uninstall(
             wine,
             params
@@ -63,13 +70,13 @@ impl Version {
 }
 
 /// Get dxvk groups
+#[inline]
 pub fn get_groups() -> Vec<Group> {
     GROUPS.clone()
 }
 
 /// List downloaded dxvk versions in some specific folder
-#[tracing::instrument(level = "trace")]
-pub fn get_downloaded<T: Into<PathBuf> + std::fmt::Debug>(folder: T) -> std::io::Result<Vec<Version>> {
+pub fn get_downloaded<T: Into<PathBuf>>(folder: T) -> std::io::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 
     let list = get_groups()

@@ -41,12 +41,13 @@ pub struct Version {
 
 impl Version {
     /// Get latest recommended wine version
+    #[inline]
     pub fn latest() -> Self {
         get_groups()[0].versions[0].clone()
     }
 
     /// Check is current wine downloaded in specified folder
-    #[tracing::instrument(level = "trace")]
+    #[inline]
     pub fn is_downloaded_in<T: Into<PathBuf> + std::fmt::Debug>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
@@ -54,6 +55,7 @@ impl Version {
     /// Convert current wine struct to one from `wincompatlib`
     /// 
     /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
+    #[inline]
     pub fn to_wine<T: Into<PathBuf>>(&self, wine_folder: Option<T>) -> Wine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
@@ -78,12 +80,12 @@ pub struct Files {
 }
 
 /// Get wine groups
+#[inline]
 pub fn get_groups() -> Vec<Group> {
     GROUPS.clone()
 }
 
 /// List downloaded wine versions in some specific folder
-#[tracing::instrument(level = "trace")]
 pub fn get_downloaded<T: Into<PathBuf> + std::fmt::Debug>(folder: T) -> std::io::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 

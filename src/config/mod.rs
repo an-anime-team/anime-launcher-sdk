@@ -43,8 +43,10 @@ pub fn get() -> anyhow::Result<Config> {
 /// Get config data
 /// 
 /// This method will always load data directly from the file and update in-memory config
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", ret)]
 pub fn get_raw() -> anyhow::Result<Config> {
+    tracing::debug!("Reading config data from file");
+
     match config_file() {
         Some(path) => {
             // Try to read config if the file exists
@@ -64,7 +66,11 @@ pub fn get_raw() -> anyhow::Result<Config> {
 
                         Ok(config)
                     },
-                    Err(err) => Err(anyhow::anyhow!("Failed to decode data from json format: {}", err.to_string()))
+                    Err(err) => {
+                        tracing::error!("Failed to decode config data from json format: {}", err.to_string());
+
+                        Err(anyhow::anyhow!("Failed to decode config data from json format: {}", err.to_string()))
+                    }
                 }
             }
 
@@ -75,7 +81,11 @@ pub fn get_raw() -> anyhow::Result<Config> {
                 Ok(Config::default())
             }
         },
-        None => Err(anyhow::anyhow!("Failed to get config file path"))
+        None => {
+            tracing::error!("Failed to get config file path");
+
+            Err(anyhow::anyhow!("Failed to get config file path"))
+        }
     }
 }
 
@@ -84,6 +94,8 @@ pub fn get_raw() -> anyhow::Result<Config> {
 /// Use `update_raw` if you want to update config file itself
 #[tracing::instrument(level = "trace")]
 pub fn update(config: Config) {
+    tracing::trace!("Updating hot config record");
+
     unsafe {
         CONFIG = Some(config);
     }
@@ -92,8 +104,10 @@ pub fn update(config: Config) {
 /// Update config file
 /// 
 /// This method will also update in-memory config data
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", ret)]
 pub fn update_raw(config: Config) -> anyhow::Result<()> {
+    tracing::debug!("Updating config data");
+
     update(config.clone());
 
     match config_file() {
@@ -106,20 +120,34 @@ pub fn update_raw(config: Config) -> anyhow::Result<()> {
 
                     Ok(())
                 },
-                Err(err) => Err(anyhow::anyhow!("Failed to encode data into json format: {}", err.to_string()))
+                Err(err) => {
+                    tracing::error!("Failed to encode config data into json format: {}", err.to_string());
+
+                    Err(anyhow::anyhow!("Failed to encode config data into json format: {}", err.to_string()))
+                }
             }
         },
-        None => Err(anyhow::anyhow!("Failed to get config file path"))
+        None => {
+            tracing::error!("Failed to get config file path");
+
+            Err(anyhow::anyhow!("Failed to get config file path"))
+        }
     }
 }
 
 /// Update config file from the in-memory saved config
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", ret)]
 pub fn flush() -> anyhow::Result<()> {
+    tracing::debug!("Flushing config data");
+
     unsafe {
         match &CONFIG {
             Some(config) => update_raw(config.clone()),
-            None => Err(anyhow::anyhow!("Config wasn't loaded into the memory"))
+            None => {
+                tracing::error!("Config wasn't loaded into the memory");
+
+                Err(anyhow::anyhow!("Config wasn't loaded into the memory"))
+            }
         }
     }
 }
@@ -162,7 +190,6 @@ use crate::components::dxvk::{self, Version as DxvkVersion};
 
 #[cfg(feature = "components")]
 impl Config {
-    #[tracing::instrument(level = "debug")]
     pub fn try_get_selected_wine_info(&self) -> Option<WineVersion> {
         match &self.game.wine.selected {
             Some(selected) => {
@@ -180,7 +207,6 @@ impl Config {
     /// Returns `Some("wine64")` if:
     /// 1) `game.wine.selected = None`
     /// 2) wine64 installed and available in system
-    #[tracing::instrument(level = "debug")]
     pub fn try_get_wine_executable(&self) -> Option<PathBuf> {
         match self.try_get_selected_wine_info() {
             Some(selected) => Some(self.game.wine.builds.join(selected.name).join(selected.files.wine64)),
@@ -200,7 +226,6 @@ impl Config {
     /// 1) `Ok(Some(..))` if version was found
     /// 2) `Ok(None)` if version wasn't found, so too old or dxvk is not applied
     /// 3) `Err(..)` if failed to get applied dxvk version, likely because wrong prefix path specified
-    #[tracing::instrument(level = "debug")]
     pub fn try_get_selected_dxvk_info(&self) -> std::io::Result<Option<DxvkVersion>> {
         Ok(match wincompatlib::dxvk::Dxvk::get_version(&self.game.wine.prefix)? {
             Some(version) => {
@@ -213,3 +238,4 @@ impl Config {
         })
     }
 }
+

@@ -23,7 +23,6 @@ impl FpsUnlocker {
     /// - `Err(..)` if failed to read `unlocker.exe` file
     /// - `Ok(None)` if version is not latest
     /// - `Ok(..)` if version is latest
-    #[tracing::instrument(level = "trace")]
     pub fn from_dir<T: Into<PathBuf> + std::fmt::Debug>(dir: T) -> anyhow::Result<Option<Self>> {
         let dir = dir.into();
 
@@ -39,6 +38,8 @@ impl FpsUnlocker {
     /// Download FPS unlocker to specified directory
     #[tracing::instrument(level = "debug")]
     pub fn download<T: Into<PathBuf> + std::fmt::Debug>(dir: T) -> anyhow::Result<Self> {
+        tracing::debug!("Downloading FPS unlocker");
+
         let mut downloader = Downloader::new(LATEST_INFO.1)?;
 
         let dir = dir.into();
@@ -54,6 +55,8 @@ impl FpsUnlocker {
             }),
             Err(err) => {
                 let err: std::io::Error = err.into();
+
+                tracing::error!("Downloading failed: {}", err.to_string());
 
                 Err(err.into())
             }
@@ -73,8 +76,10 @@ impl FpsUnlocker {
     }
 
     /// Generate and save FPS unlocker config file to the game's directory
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", ret)]
     pub fn update_config(&self, config: FpsUnlockerConfig) -> anyhow::Result<()> {
+        tracing::debug!("Updating FPS unlocker config");
+
         let config = config_schema::ConfigSchema::from_config(config);
 
         Ok(std::fs::write(
@@ -83,3 +88,4 @@ impl FpsUnlocker {
         )?)
     }
 }
+
