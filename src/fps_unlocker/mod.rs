@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use anime_game_core::installer::downloader::Downloader;
 
+use md5::{Md5, Digest};
+
 use crate::config::game::enhancements::fps_unlocker::config::Config as FpsUnlockerConfig;
 
 pub mod config_schema;
@@ -26,7 +28,7 @@ impl FpsUnlocker {
     pub fn from_dir<T: Into<PathBuf> + std::fmt::Debug>(dir: T) -> anyhow::Result<Option<Self>> {
         let dir = dir.into();
 
-        let hash = format!("{:x}", md5::compute(std::fs::read(dir.join("unlocker.exe"))?));
+        let hash = format!("{:x}", Md5::digest(std::fs::read(dir.join("unlocker.exe"))?));
 
         Ok(if hash == LATEST_INFO.0 {
             Some(Self { dir })
