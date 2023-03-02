@@ -3,16 +3,22 @@ use serde_json::Value as JsonValue;
 
 pub mod fsr;
 pub mod hud;
-pub mod fps_unlocker;
 pub mod gamescope;
+
+#[cfg(feature = "fps-unlocker")]
+pub mod fps_unlocker;
 
 pub mod prelude {
     pub use super::gamescope::prelude::*;
+
+    #[cfg(feature = "fps-unlocker")]
     pub use super::fps_unlocker::prelude::*;
 
     pub use super::Enhancements;
     pub use super::fsr::Fsr;
     pub use super::hud::HUD;
+
+    #[cfg(feature = "fps-unlocker")]
     pub use super::fps_unlocker::FpsUnlocker;
 }
 
@@ -23,7 +29,10 @@ pub struct Enhancements {
     pub fsr: Fsr,
     pub gamemode: bool,
     pub hud: HUD,
+
+    #[cfg(feature = "fps-unlocker")]
     pub fps_unlocker: FpsUnlocker,
+
     pub gamescope: Gamescope
 }
 
@@ -47,6 +56,7 @@ impl From<&JsonValue> for Enhancements {
                 None => default.hud
             },
 
+            #[cfg(feature = "fps-unlocker")]
             fps_unlocker: match value.get("fps_unlocker") {
                 Some(value) => FpsUnlocker::from(value),
                 None => default.fps_unlocker

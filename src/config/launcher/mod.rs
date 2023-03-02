@@ -11,9 +11,15 @@ use crate::consts::launcher_dir;
 
 pub mod repairer;
 
+#[cfg(feature = "discord-rpc")]
+pub mod discord_rpc;
+
 pub mod prelude {
     pub use super::Launcher;
     pub use super::repairer::Repairer;
+
+    #[cfg(feature = "discord-rpc")]
+    pub use super::discord_rpc::DiscordRpc;
 }
 
 use prelude::*;
@@ -33,7 +39,7 @@ impl Default for GameEdition {
             })
         });
 
-        if locale.len() > 4 && &locale[..5].to_lowercase() == "zh_cn" {
+        if locale.len() > 4 && &locale[..5].to_ascii_lowercase() == "zh_cn" {
             Self::China
         } else {
             Self::Global
@@ -80,7 +86,10 @@ pub struct Launcher {
     pub speed_limit: u64,
     pub repairer: Repairer,
     pub edition: GameEdition,
-    pub style: LauncherStyle
+    pub style: LauncherStyle,
+
+    #[cfg(feature = "discord-rpc")]
+    pub discord_rpc: DiscordRpc
 }
 
 impl Default for Launcher {
@@ -91,7 +100,10 @@ impl Default for Launcher {
             speed_limit: 0,
             repairer: Repairer::default(),
             edition: GameEdition::default(),
-            style: LauncherStyle::default()
+            style: LauncherStyle::default(),
+
+            #[cfg(feature = "discord-rpc")]
+            discord_rpc: DiscordRpc::default()
         }
     }
 }
@@ -138,6 +150,12 @@ impl From<&JsonValue> for Launcher {
             style: match value.get("style") {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.style),
                 None => default.style
+            },
+
+            #[cfg(feature = "discord-rpc")]
+            discord_rpc: match value.get("discord_rpc") {
+                Some(value) => DiscordRpc::from(value),
+                None => default.discord_rpc
             }
         }
     }

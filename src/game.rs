@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use anime_game_core::genshin::telemetry;
 
@@ -7,6 +7,9 @@ use super::config;
 
 #[cfg(feature = "fps-unlocker")]
 use super::fps_unlocker::FpsUnlocker;
+
+#[cfg(feature = "discord-rpc")]
+use super::discord_rpc::*;
 
 /// Try to run the game
 /// 
@@ -63,7 +66,7 @@ pub fn run() -> anyhow::Result<()> {
         };
 
         // Generate FPS unlocker config file
-        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config.clone()) {
+        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config) {
             return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
         }
 
@@ -149,6 +152,26 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_chain}\"");
 
     command.current_dir(config.game.path).spawn()?;
+
+    #[cfg(feature = "discord-rpc")]
+    if config.launcher.discord_rpc.enabled {
+        let rpc = DiscordRpc::new(config.launcher.discord_rpc);
+
+        rpc.update(RpcUpdates::Connect)?;
+
+        #[allow(unused_must_use)]
+        std::thread::spawn(move || {
+            while let Ok(output) = Command::new("ps").arg("-A").stdout(Stdio::piped()).output() {
+                let output = String::from_utf8_lossy(&output.stdout);
+
+                if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
+                    break;
+                }
+            }
+
+            rpc.update(RpcUpdates::Disconnect);
+        });
+    }
 
     Ok(())
 }

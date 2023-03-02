@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -20,6 +20,7 @@ enum-ordinalize = { version = "3.1", optional = true }
 wincompatlib = { version = "0.2", optional = true }
 lazy_static = { version = "1.4", optional = true }
 md-5 = { version = "0.10", features = ["asm"], optional = true }
+discord-rich-presence = { version = "0.2.3", optional = true }
 
 [features]
 states = []
@@ -27,6 +28,7 @@ config = ["dep:serde", "dep:serde_json", "dep:enum-ordinalize"]
 components = ["dep:wincompatlib", "dep:lazy_static"]
 game = ["components", "config"]
 fps-unlocker = ["dep:md-5"]
+discord-rpc = ["dep:discord-rich-presence"]
 
 default = ["all"]
-all = ["states", "config", "components", "game", "fps-unlocker"]
+all = ["states", "config", "components", "game", "fps-unlocker", "discord-rpc"]
