@@ -161,12 +161,16 @@ pub fn run() -> anyhow::Result<()> {
 
         #[allow(unused_must_use)]
         std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(3));
+
             while let Ok(output) = Command::new("ps").arg("-A").stdout(Stdio::piped()).output() {
                 let output = String::from_utf8_lossy(&output.stdout);
 
                 if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
                     break;
                 }
+
+                std::thread::sleep(std::time::Duration::from_secs(3));
             }
 
             rpc.update(RpcUpdates::Disconnect);
