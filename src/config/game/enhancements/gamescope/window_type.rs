@@ -1,7 +1,9 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+use enum_ordinalize::Ordinalize;
+
+#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WindowType {
     Borderless,
     Fullscreen

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::config::Config;
 
-#[derive(Ordinalize, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HUD {
     None,
     DXVK,

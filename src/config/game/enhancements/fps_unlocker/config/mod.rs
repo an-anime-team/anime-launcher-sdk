@@ -11,7 +11,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
     pub fps: u64,
     pub power_saving: bool,

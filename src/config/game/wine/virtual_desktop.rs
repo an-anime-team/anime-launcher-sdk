@@ -3,7 +3,7 @@ use serde_json::Value as JsonValue;
 
 use crate::config::prelude::*;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VirtualDesktop {
     pub enabled: bool,
     pub width: u64,

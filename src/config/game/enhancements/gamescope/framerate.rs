@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Framerate {
     pub focused: u64,
     pub unfocused: u64

@@ -152,7 +152,7 @@ pub fn flush() -> anyhow::Result<()> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Config {
     pub launcher: Launcher,
     pub game: Game,

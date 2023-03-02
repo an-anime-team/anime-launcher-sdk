@@ -14,7 +14,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Gamescope {
     pub enabled: bool,
     pub game: Size,

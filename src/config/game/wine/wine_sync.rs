@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use enum_ordinalize::Ordinalize;
 
-#[derive(Ordinalize, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WineSync {
     None,
     ESync,

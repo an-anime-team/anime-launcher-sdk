@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::config::prelude::*;
 use super::FpsUnlockerConfig;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub struct ConfigSchema {
     pub DllList: Vec<String>,

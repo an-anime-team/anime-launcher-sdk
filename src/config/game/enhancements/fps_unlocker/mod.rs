@@ -15,7 +15,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FpsUnlocker {
     pub path: PathBuf,
     pub enabled: bool,

@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+use enum_ordinalize::Ordinalize;
+
 use anime_game_core::genshin::consts::GameEdition as CoreGameEdition;
 
 use crate::consts::launcher_dir;
@@ -16,7 +18,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GameEdition {
     Global,
     China
@@ -57,7 +59,9 @@ impl From<CoreGameEdition> for GameEdition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+// TODO: I can e.g. use `.classic` file to mark launcher style
+
+#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LauncherStyle {
     Modern,
     Classic
@@ -69,7 +73,7 @@ impl Default for LauncherStyle {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
     pub temp: Option<PathBuf>,

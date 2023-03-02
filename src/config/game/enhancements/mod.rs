@@ -18,7 +18,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Enhancements {
     pub fsr: Fsr,
     pub gamemode: bool,

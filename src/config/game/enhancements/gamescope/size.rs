@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Size {
     pub width: u64,
     pub height: u64

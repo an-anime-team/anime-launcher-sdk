@@ -20,6 +20,8 @@ pub mod game;
 #[cfg(feature = "fps-unlocker")]
 pub mod fps_unlocker;
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Check if specified binary is available
 /// 
 /// ```

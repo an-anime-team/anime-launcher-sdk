@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use crate::consts::launcher_dir;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Dxvk {
     pub builds: PathBuf
 }

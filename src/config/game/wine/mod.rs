@@ -18,7 +18,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Wine {
     pub prefix: PathBuf,
     pub builds: PathBuf,

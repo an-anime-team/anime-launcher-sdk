@@ -20,7 +20,7 @@ pub mod prelude {
 
 use prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Game {
     pub path: PathBuf,
     pub voices: Vec<String>,
