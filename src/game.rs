@@ -146,7 +146,7 @@ pub fn run() -> anyhow::Result<()> {
 
     let variables = command
         .get_envs()
-        .map(|(key, value)| format!("{:?}=\"{:?}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
+        .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
         .fold(String::new(), |acc, env| acc + " " + &env);
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_chain}\"");
