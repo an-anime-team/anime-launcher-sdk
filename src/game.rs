@@ -13,7 +13,7 @@ use super::discord_rpc::*;
 
 /// Try to run the game
 /// 
-/// If `debug = true`, then the game will be run in the new terminal window
+/// This function will freeze thread it was called from while the game is running
 #[tracing::instrument(level = "info", ret)]
 pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
@@ -146,35 +146,39 @@ pub fn run() -> anyhow::Result<()> {
 
     let variables = command
         .get_envs()
-        .map(|(key, value)| format!("{:?}=\"{:?}\"", key, value.unwrap_or_default()))
+        .map(|(key, value)| format!("{:?}=\"{:?}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
         .fold(String::new(), |acc, env| acc + " " + &env);
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_chain}\"");
 
-    command.current_dir(config.game.path).spawn()?;
+    command.current_dir(config.game.path).spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
-    if config.launcher.discord_rpc.enabled {
-        let rpc = DiscordRpc::new(config.launcher.discord_rpc);
+    let rpc = if config.launcher.discord_rpc.enabled {
+        Some(DiscordRpc::new(config.launcher.discord_rpc))
+    } else {
+        None
+    };
 
+    #[cfg(feature = "discord-rpc")]
+    if let Some(rpc) = &rpc {
         rpc.update(RpcUpdates::Connect)?;
+    }
 
-        #[allow(unused_must_use)]
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_secs(3));
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(3));
 
-            while let Ok(output) = Command::new("ps").arg("-A").stdout(Stdio::piped()).output() {
-                let output = String::from_utf8_lossy(&output.stdout);
+        let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
+        let output = String::from_utf8_lossy(&output.stdout);
 
-                if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
-                    break;
-                }
+        if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
+            break;
+        }
+    }
 
-                std::thread::sleep(std::time::Duration::from_secs(3));
-            }
-
-            rpc.update(RpcUpdates::Disconnect);
-        });
+    #[cfg(feature = "discord-rpc")]
+    if let Some(rpc) = &rpc {
+        rpc.update(RpcUpdates::Disconnect)?;
     }
 
     Ok(())
