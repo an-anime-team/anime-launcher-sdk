@@ -10,6 +10,7 @@ use crate::consts::config_file;
 
 pub mod launcher;
 pub mod game;
+pub mod components;
 pub mod patch;
 pub mod resolution;
 
@@ -17,6 +18,7 @@ pub mod prelude {
     pub use super::launcher::prelude::*;
     pub use super::game::prelude::*;
 
+    pub use super::components::Components;
     pub use super::patch::Patch;
     pub use super::resolution::Resolution;
 }
@@ -156,6 +158,7 @@ pub fn flush() -> anyhow::Result<()> {
 pub struct Config {
     pub launcher: Launcher,
     pub game: Game,
+    pub components: Components,
     pub patch: Patch
 }
 
@@ -172,6 +175,11 @@ impl From<&JsonValue> for Config {
             game: match value.get("game") {
                 Some(value) => Game::from(value),
                 None => default.game
+            },
+
+            components: match value.get("components") {
+                Some(value) => Components::from(value),
+                None => default.components
             },
 
             patch: match value.get("patch") {

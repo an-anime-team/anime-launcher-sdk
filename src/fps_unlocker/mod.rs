@@ -52,13 +52,9 @@ impl FpsUnlocker {
         }
 
         match downloader.download_to(dir.join("unlocker.exe"), |_, _| {}) {
-            Ok(_) => Ok(Self {
-                dir
-            }),
+            Ok(_) => Ok(Self { dir }),
             Err(err) => {
-                let err: std::io::Error = err.into();
-
-                tracing::error!("Downloading failed: {}", err.to_string());
+                tracing::error!("Downloading failed: {err}");
 
                 Err(err.into())
             }
