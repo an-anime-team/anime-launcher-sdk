@@ -24,9 +24,8 @@ pub fn run() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
-    let wine_executable = match config.try_get_wine_executable() {
-        Some(path) => path,
-        None => return Err(anyhow::anyhow!("Couldn't find wine executable"))
+    let Some(wine) = config.try_get_selected_wine_info()? else {
+        anyhow::bail!("Couldn't find wine executable");
     };
 
     // Check telemetry servers
@@ -87,7 +86,7 @@ pub fn run() -> anyhow::Result<()> {
         bash_chain += "gamemoderun ";
     }
 
-    bash_chain += &format!("'{}' ", wine_executable.to_string_lossy());
+    bash_chain += &format!("'{}' ", wine.files.wine64);
 
     if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command() {
         bash_chain += &format!("{virtual_desktop} ");

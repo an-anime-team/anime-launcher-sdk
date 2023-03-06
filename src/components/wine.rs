@@ -3,30 +3,12 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use wincompatlib::prelude::*;
 
-lazy_static::lazy_static! {
-    static ref GROUPS: Vec<Group> = vec![
-        Group {
-            name: String::from("Wine-GE-Proton"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/wine/wine-ge-proton.json")).unwrap().into_iter().take(12).collect()
-        },
-        Group {
-            name: String::from("GE-Proton"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/wine/ge-proton.json")).unwrap().into_iter().take(12).collect()
-        },
-        Group {
-            name: String::from("Soda"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/wine/soda.json")).unwrap().into_iter().take(12).collect()
-        },
-        Group {
-            name: String::from("Lutris"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/wine/lutris.json")).unwrap().into_iter().take(12).collect()
-        }
-    ];
-}
+use super::loader::ComponentsLoader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Group {
     pub name: String,
+    pub title: String,
     pub versions: Vec<Version>
 }
 
@@ -35,20 +17,27 @@ pub struct Version {
     pub name: String,
     pub title: String,
     pub uri: String,
-    pub files: Files,
-    pub recommended: bool
+    pub files: Files
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Files {
+    pub wine: String,
+    pub wine64: String,
+    pub wineserver: String,
+    pub wineboot: String,
+    pub winecfg: String
 }
 
 impl Version {
     /// Get latest recommended wine version
-    #[inline]
-    pub fn latest() -> Self {
-        get_groups()[0].versions[0].clone()
+    pub fn latest<T: Into<PathBuf>>(components: T) -> anyhow::Result<Self> {
+        Ok(get_groups(components)?[0].versions[0].clone())
     }
 
     /// Check is current wine downloaded in specified folder
     #[inline]
-    pub fn is_downloaded_in<T: Into<PathBuf> + std::fmt::Debug>(&self, folder: T) -> bool {
+    pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
@@ -70,26 +59,15 @@ impl Version {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Files {
-    pub wine: String,
-    pub wine64: String,
-    pub wineserver: String,
-    pub wineboot: String,
-    pub winecfg: String
-}
-
-/// Get wine groups
-#[inline]
-pub fn get_groups() -> Vec<Group> {
-    GROUPS.clone()
+pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {
+    ComponentsLoader::new(components).get_wine_versions()
 }
 
 /// List downloaded wine versions in some specific folder
-pub fn get_downloaded<T: Into<PathBuf> + std::fmt::Debug>(folder: T) -> std::io::Result<Vec<Version>> {
+pub fn get_downloaded<T: Into<PathBuf>>(components: T, folder: T) -> anyhow::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 
-    let list = get_groups()
+    let list = get_groups(components)?
         .into_iter()
         .flat_map(|group| group.versions)
         .collect::<Vec<Version>>();

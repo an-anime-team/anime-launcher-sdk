@@ -3,22 +3,12 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use wincompatlib::prelude::*;
 
-lazy_static::lazy_static! {
-    static ref GROUPS: Vec<Group> = vec![
-        Group {
-            name: String::from("Vanilla"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/dxvk/vanilla.json")).unwrap().into_iter().take(12).collect()
-        },
-        Group {
-            name: String::from("Async"),
-            versions: serde_json::from_str::<Vec<Version>>(include_str!("../../components/dxvk/async.json")).unwrap().into_iter().take(12).collect()
-        }
-    ];
-}
+use super::loader::ComponentsLoader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Group {
     pub name: String,
+    pub title: String,
     pub versions: Vec<Version>
 }
 
@@ -26,25 +16,23 @@ pub struct Group {
 pub struct Version {
     pub name: String,
     pub version: String,
-    pub uri: String,
-    pub recommended: bool
+    pub uri: String
 }
 
 impl Version {
     /// Get latest recommended dxvk version
-    #[inline]
-    pub fn latest() -> Self {
-        get_groups()[0].versions[0].clone()
+    pub fn latest<T: Into<PathBuf>>(components: T) -> anyhow::Result<Self> {
+        Ok(get_groups(components)?[0].versions[0].clone())
     }
 
     /// Check is current dxvk downloaded in specified folder
     #[inline]
-    pub fn is_downloaded_in<T: Into<PathBuf> + std::fmt::Debug>(&self, folder: T) -> bool {
+    pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
     /// Install current dxvk
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", ret)]
     #[inline]
     pub fn install<T: Into<PathBuf> + std::fmt::Debug>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
         tracing::debug!("Installing DXVK");
@@ -57,7 +45,7 @@ impl Version {
     }
 
     /// Uninstall current dxvk
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", ret)]
     #[inline]
     pub fn uninstall(&self, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
         tracing::debug!("Uninstalling DXVK");
@@ -69,17 +57,15 @@ impl Version {
     }
 }
 
-/// Get dxvk groups
-#[inline]
-pub fn get_groups() -> Vec<Group> {
-    GROUPS.clone()
+pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {
+    ComponentsLoader::new(components).get_dxvk_versions()
 }
 
 /// List downloaded dxvk versions in some specific folder
-pub fn get_downloaded<T: Into<PathBuf>>(folder: T) -> std::io::Result<Vec<Version>> {
+pub fn get_downloaded<T: Into<PathBuf>>(components: T, folder: T) -> anyhow::Result<Vec<Version>> {
     let mut downloaded = Vec::new();
 
-    let list = get_groups()
+    let list = get_groups(components)?
         .into_iter()
         .flat_map(|group| group.versions)
         .collect::<Vec<Version>>();
