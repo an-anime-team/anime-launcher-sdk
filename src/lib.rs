@@ -24,7 +24,6 @@ pub mod fps_unlocker;
 pub mod discord_rpc;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const COMMIT_HASH: &str = env!("GIT_COMMIT_HASH");
 
 /// Check if specified binary is available
 /// 
