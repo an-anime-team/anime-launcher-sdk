@@ -23,10 +23,10 @@ pub struct Version {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Files {
     pub wine: String,
-    pub wine64: String,
-    pub wineserver: String,
-    pub wineboot: String,
-    pub winecfg: String
+    pub wine64: Option<String>,
+    pub wineserver: Option<String>,
+    pub wineboot: Option<String>,
+    pub winecfg: Option<String>
 }
 
 impl Version {
@@ -48,12 +48,20 @@ impl Version {
     pub fn to_wine<T: Into<PathBuf>>(&self, wine_folder: Option<T>) -> Wine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
+        let (wine, arch) = match self.files.wine64.as_ref() {
+            Some(wine) => (wine, WineArch::Win64),
+            None => (&self.files.wine, WineArch::Win32)
+        };
+
+        let wineboot = self.files.wineboot.as_ref().map(|wineboot| wine_folder.join(wineboot));
+        let wineserver = self.files.wineserver.as_ref().map(|wineserver| wine_folder.join(wineserver));
+
         Wine::new(
-            wine_folder.join(&self.files.wine64),
+            wine_folder.join(wine),
             None,
-            Some(WineArch::Win64),
-            Some(wine_folder.join(&self.files.wineboot)),
-            Some(wine_folder.join(&self.files.wineserver)),
+            Some(arch),
+            wineboot,
+            wineserver,
             WineLoader::Current
         )
     }

@@ -86,7 +86,7 @@ pub fn run() -> anyhow::Result<()> {
         bash_chain += "gamemoderun ";
     }
 
-    bash_chain += &format!("'{}' ", config.game.wine.builds.join(wine.name).join(wine.files.wine64).to_string_lossy());
+    bash_chain += &format!("'{}' ", config.game.wine.builds.join(wine.name).join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy());
 
     if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command() {
         bash_chain += &format!("{virtual_desktop} ");
