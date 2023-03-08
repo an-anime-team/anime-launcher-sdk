@@ -34,6 +34,14 @@ impl Group {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
+    /// Standard environment variables that are applied when you launch the game
+    /// 
+    /// Available keywords:
+    /// - `%build%` - path to wine build
+    /// - `%prefix%` - path to wine prefix
+    /// - `%temp%` - path to temp folder specified in config file
+    /// - `%launcher%` - path to launcher folder
+    /// - `%game%` - path to the game
     pub env: HashMap<String, String>
 }
 
@@ -70,11 +78,12 @@ impl From<&JsonValue> for Features {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Version {
     pub name: String,
     pub version: String,
-    pub uri: String
+    pub uri: String,
+    pub features: Option<Features>
 }
 
 impl Version {

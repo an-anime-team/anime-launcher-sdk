@@ -34,7 +34,27 @@ impl Group {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
+    /// Whether this wine group needs DXVK
     pub need_dxvk: bool,
+
+    /// Command used to launch the game
+    /// 
+    /// Available keywords:
+    /// - `%build%` - path to wine build
+    /// - `%prefix%` - path to wine prefix
+    /// - `%temp%` - path to temp folder specified in config file
+    /// - `%launcher%` - path to launcher folder
+    /// - `%game%` - path to the game
+    pub command: Option<String>,
+
+    /// Standard environment variables that are applied when you launch the game
+    /// 
+    /// Available keywords:
+    /// - `%build%` - path to wine build
+    /// - `%prefix%` - path to wine prefix
+    /// - `%temp%` - path to temp folder specified in config file
+    /// - `%launcher%` - path to launcher folder
+    /// - `%game%` - path to the game
     pub env: HashMap<String, String>
 }
 
@@ -42,6 +62,7 @@ impl Default for Features {
     fn default() -> Self {
         Self {
             need_dxvk: true,
+            command: None,
             env: HashMap::new()
         }
     }
@@ -55,6 +76,11 @@ impl From<&JsonValue> for Features {
             need_dxvk: match value.get("need_dxvk") {
                 Some(value) => value.as_bool().unwrap_or(default.need_dxvk),
                 None => default.need_dxvk
+            },
+
+            command: match value.get("command") {
+                Some(value) => value.as_str().map(|value| value.to_string()),
+                None => default.command
             },
 
             env: match value.get("env") {
@@ -77,21 +103,13 @@ impl From<&JsonValue> for Features {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Version {
     pub name: String,
     pub title: String,
     pub uri: String,
-    pub files: Files
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Files {
-    pub wine: String,
-    pub wine64: Option<String>,
-    pub wineserver: Option<String>,
-    pub wineboot: Option<String>,
-    pub winecfg: Option<String>
+    pub files: Files,
+    pub features: Option<Features>
 }
 
 impl Version {
@@ -156,6 +174,15 @@ impl Version {
             WineLoader::Current
         )
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Files {
+    pub wine: String,
+    pub wine64: Option<String>,
+    pub wineserver: Option<String>,
+    pub wineboot: Option<String>,
+    pub winecfg: Option<String>
 }
 
 pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {

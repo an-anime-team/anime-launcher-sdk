@@ -36,6 +36,11 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
                         None => anyhow::bail!("Wrong components index structure: wine group's title not found")
                     };
 
+                    let features = match group.get("features") {
+                        Some(features) => features.into(),
+                        None => wine::Features::default()
+                    };
+
                     let versions = serde_json::from_str::<serde_json::Value>(&std::fs::read_to_string(index.join("wine").join(format!("{name}.json")))?)?;
 
                     let mut wine_versions = Vec::new();
@@ -43,17 +48,18 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
                     match versions.as_array() {
                         Some(versions) => {
                             for version in versions {
-                                wine_versions.push(serde_json::from_value::<wine::Version>(version.to_owned())?);
+                                wine_versions.push(wine::Version {
+                                    name: version["name"].as_str().unwrap().to_string(),
+                                    title: version["title"].as_str().unwrap().to_string(),
+                                    uri: version["uri"].as_str().unwrap().to_string(),
+                                    files: serde_json::from_value::<wine::Files>(version["files"].to_owned())?,
+                                    features: version.get("features").map(|v| v.into())
+                                });
                             }
                         }
 
                         None => anyhow::bail!("Wrong components index structure: wine versions must be a list")
                     }
-
-                    let features = match group.get("features") {
-                        Some(features) => features.into(),
-                        None => wine::Features::default()
-                    };
 
                     wine_groups.push(wine::Group {
                         name,
@@ -112,7 +118,12 @@ pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
                     match versions.as_array() {
                         Some(versions) => {
                             for version in versions {
-                                dxvk_versions.push(serde_json::from_value::<dxvk::Version>(version.to_owned())?);
+                                dxvk_versions.push(dxvk::Version {
+                                    name: version["name"].as_str().unwrap().to_string(),
+                                    version: version["version"].as_str().unwrap().to_string(),
+                                    uri: version["uri"].as_str().unwrap().to_string(),
+                                    features: version.get("features").map(|v| v.into())
+                                });
                             }
                         }
 

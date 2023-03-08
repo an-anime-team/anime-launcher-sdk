@@ -1,4 +1,5 @@
 use std::process::{Command, Stdio};
+use std::path::PathBuf;
 
 use anime_game_core::genshin::telemetry;
 
@@ -10,6 +11,17 @@ use super::fps_unlocker::FpsUnlocker;
 
 #[cfg(feature = "discord-rpc")]
 use super::discord_rpc::*;
+
+fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String {
+    let wine_build = config.game.wine.builds.join(config.game.wine.selected.as_ref().unwrap());
+
+    command.to_string()
+        .replace("%build%", &wine_build.to_string_lossy())
+        .replace("%prefix%", &config.game.wine.prefix.to_string_lossy())
+        .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&PathBuf::from("/tmp")).to_string_lossy())
+        .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
+        .replace("%game%", &config.game.path.to_string_lossy())
+}
 
 /// Try to run the game
 /// 
@@ -26,6 +38,14 @@ pub fn run() -> anyhow::Result<()> {
 
     let Some(wine) = config.get_selected_wine()? else {
         anyhow::bail!("Couldn't find wine executable");
+    };
+
+    let features = match wine.features {
+        Some(features) => features,
+        None => match wine.find_group(&config.components.path)? {
+            Some(group) => group.features,
+            None => anyhow::bail!("Couldn't find wine group")
+        }
     };
 
     // Check telemetry servers
@@ -86,7 +106,14 @@ pub fn run() -> anyhow::Result<()> {
         bash_chain += "gamemoderun ";
     }
 
-    bash_chain += &format!("'{}' ", config.game.wine.builds.join(wine.name).join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy());
+    let wine_build = config.game.wine.builds.join(&wine.name);
+
+    let run_command = features.command
+        .map(|command| replace_keywords(command, &config))
+        .unwrap_or(format!("'{}'", wine_build.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
+
+    bash_chain += &run_command;
+    bash_chain += " ";
 
     if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command() {
         bash_chain += &format!("{virtual_desktop} ");
@@ -113,7 +140,7 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     let bash_chain = match &config.game.command {
-        Some(command) => command.replace("%command%", &bash_chain),
+        Some(command) => replace_keywords(command, &config).replace("%command%", &bash_chain),
         None => bash_chain
     };
 
@@ -128,16 +155,22 @@ pub fn run() -> anyhow::Result<()> {
     command.env("WINEPREFIX", &config.game.wine.prefix);
 
     // Add environment flags for selected wine
-    if let Ok(Some(wine )) = config.get_selected_wine() {
-        if let Ok(Some(group)) = wine.find_group(&config.components.path) {
-            command.envs(group.features.env);
-        }
+    for (key, value) in features.env.into_iter() {
+        command.env(key, replace_keywords(value, &config));
     }
 
     // Add environment flags for selected dxvk
     if let Ok(Some(dxvk )) = config.get_selected_dxvk() {
-        if let Ok(Some(group)) = dxvk.find_group(&config.components.path) {
-            command.envs(group.features.env);
+        if let Some(features) = &dxvk.features {
+            for (key, value) in features.env.iter() {
+                command.env(key, replace_keywords(value, &config));
+            }
+        }
+
+        else if let Ok(Some(group)) = dxvk.find_group(&config.components.path) {
+            for (key, value) in group.features.env.into_iter() {
+                command.env(key, replace_keywords(value, &config));
+            }
         }
     }
 
