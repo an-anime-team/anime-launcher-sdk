@@ -190,22 +190,22 @@ impl From<&JsonValue> for Config {
 }
 
 #[cfg(feature = "components")]
-use crate::components::wine::{self, Version as WineVersion};
+use crate::components::wine;
 
 #[cfg(feature = "components")]
-use crate::components::dxvk::{self, Version as DxvkVersion};
+use crate::components::dxvk;
 
 #[cfg(feature = "components")]
 impl Config {
-    pub fn try_get_selected_wine_info(&self) -> anyhow::Result<Option<WineVersion>> {
+    /// Try to get selected wine version
+    /// 
+    /// Returns:
+    /// 1) `Ok(Some(..))` if version selected and found
+    /// 2) `Ok(None)` if version wasn't found, so likely too old or just incorrect
+    /// 3) `Err(..)` if failed to get selected wine version
+    pub fn get_selected_wine(&self) -> anyhow::Result<Option<wine::Version>> {
         match &self.game.wine.selected {
-            Some(selected) => {
-                Ok(wine::get_groups(&self.components.path)?
-                    .iter()
-                    .flat_map(|group| group.versions.clone())
-                    .find(|version| version.name.eq(selected)))
-            }
-
+            Some(selected) => wine::Version::find_in(&self.components.path, selected),
             None => Ok(None)
         }
     }
@@ -216,15 +216,9 @@ impl Config {
     /// 1) `Ok(Some(..))` if version was found
     /// 2) `Ok(None)` if version wasn't found, so too old or dxvk is not applied
     /// 3) `Err(..)` if failed to get applied dxvk version, likely because wrong prefix path specified
-    pub fn try_get_selected_dxvk_info(&self) -> anyhow::Result<Option<DxvkVersion>> {
+    pub fn get_selected_dxvk(&self) -> anyhow::Result<Option<dxvk::Version>> {
         match wincompatlib::dxvk::Dxvk::get_version(&self.game.wine.prefix)? {
-            Some(version) => {
-                Ok(dxvk::get_groups(&self.components.path)?
-                    .iter()
-                    .flat_map(|group| group.versions.clone())
-                    .find(move |dxvk| dxvk.version == version))
-            }
-
+            Some(version) => dxvk::Version::find_in(&self.components.path, version),
             None => Ok(None)
         }
     }

@@ -148,7 +148,7 @@ impl LauncherState {
         // Check wine existence
         #[cfg(feature = "components")]
         {
-            if config.try_get_selected_wine_info()?.is_none() {
+            if config.get_selected_wine()?.is_none() {
                 return Ok(Self::WineNotInstalled);
             }
         }

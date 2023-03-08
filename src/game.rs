@@ -24,7 +24,7 @@ pub fn run() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
-    let Some(wine) = config.try_get_selected_wine_info()? else {
+    let Some(wine) = config.get_selected_wine()? else {
         anyhow::bail!("Couldn't find wine executable");
     };
 
@@ -127,10 +127,17 @@ pub fn run() -> anyhow::Result<()> {
     command.env("WINEARCH", "win64");
     command.env("WINEPREFIX", &config.game.wine.prefix);
 
-    // Add DXVK_ASYNC=1 for dxvk-async builds automatically
-    if let Ok(Some(dxvk)) = &config.try_get_selected_dxvk_info() {
-        if dxvk.version.contains("async") {
-            command.env("DXVK_ASYNC", "1");
+    // Add environment flags for selected wine
+    if let Ok(Some(wine )) = config.get_selected_wine() {
+        if let Ok(Some(group)) = wine.find_group(&config.components.path) {
+            command.envs(group.features.env);
+        }
+    }
+
+    // Add environment flags for selected dxvk
+    if let Ok(Some(dxvk )) = config.get_selected_dxvk() {
+        if let Ok(Some(group)) = dxvk.find_group(&config.components.path) {
+            command.envs(group.features.env);
         }
     }
 
