@@ -33,11 +33,10 @@ pub enum GameEdition {
 impl Default for GameEdition {
     fn default() -> Self {
         #[allow(clippy::or_fun_call)]
-        let locale = std::env::var("LC_ALL").unwrap_or_else(|_| {
-            std::env::var("LC_MESSAGES").unwrap_or_else(|_| {
-                std::env::var("LANG").unwrap_or(String::from("en_us"))
-            })
-        });
+        let locale = std::env::var("LC_ALL")
+            .unwrap_or_else(|_| std::env::var("LC_MESSAGES")
+            .unwrap_or_else(|_| std::env::var("LANG")
+            .unwrap_or(String::from("en_us"))));
 
         if locale.len() > 4 && &locale[..5].to_ascii_lowercase() == "zh_cn" {
             Self::China
