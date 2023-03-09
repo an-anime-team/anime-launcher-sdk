@@ -37,6 +37,11 @@ pub struct Features {
     /// Whether this wine group needs DXVK
     pub need_dxvk: bool,
 
+    /// Create temp bat file with `launcher.bat` call and its flags
+    /// 
+    /// Extremely helpful when your custom `command` feature can't handle multiline arguments (e.g. in GE-Proton)
+    pub compact_launch: bool,
+
     /// Command used to launch the game
     /// 
     /// Available keywords:
@@ -62,6 +67,7 @@ impl Default for Features {
     fn default() -> Self {
         Self {
             need_dxvk: true,
+            compact_launch: false,
             command: None,
             env: HashMap::new()
         }
@@ -76,6 +82,11 @@ impl From<&JsonValue> for Features {
             need_dxvk: match value.get("need_dxvk") {
                 Some(value) => value.as_bool().unwrap_or(default.need_dxvk),
                 None => default.need_dxvk
+            },
+
+            compact_launch: match value.get("compact_launch") {
+                Some(value) => value.as_bool().unwrap_or(default.compact_launch),
+                None => default.compact_launch
             },
 
             command: match value.get("command") {

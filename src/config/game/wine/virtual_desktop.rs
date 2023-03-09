@@ -48,6 +48,7 @@ impl VirtualDesktop {
         Resolution::from_pair(self.width, self.height)
     }
 
+    /// `explorer /desktop=animegame,[width]x[height]`
     pub fn get_command(&self) -> Option<String> {
         if self.enabled {
             Some(format!("explorer /desktop=animegame,{}x{}", self.width, self.height))

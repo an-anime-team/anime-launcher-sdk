@@ -89,7 +89,7 @@ pub fn run() -> anyhow::Result<()> {
             return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
         }
 
-        let bat_path = config.game.path.join("fpsunlocker.bat");
+        let bat_path = config.game.path.join("fps_unlocker.bat");
         let original_bat_path = config.game.path.join("launcher.bat");
 
         // Generate fpsunlocker.bat from launcher.bat
@@ -100,10 +100,11 @@ pub fn run() -> anyhow::Result<()> {
 
     // Prepare bash -c '<command>'
 
-    let mut bash_chain = String::new();
+    let mut bash_command = String::new();
+    let mut windows_command = String::new();
 
     if config.game.enhancements.gamemode {
-        bash_chain += "gamemoderun ";
+        bash_command += "gamemoderun ";
     }
 
     let wine_build = config.game.wine.builds.join(&wine.name);
@@ -112,42 +113,50 @@ pub fn run() -> anyhow::Result<()> {
         .map(|command| replace_keywords(command, &config))
         .unwrap_or(format!("'{}'", wine_build.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
 
-    bash_chain += &run_command;
-    bash_chain += " ";
+    bash_command += &run_command;
+    bash_command += " ";
 
     if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command() {
-        bash_chain += &format!("{virtual_desktop} ");
+        windows_command += &virtual_desktop;
+        windows_command += " ";
     }
 
-    bash_chain += if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
-        "fpsunlocker.bat "
+    windows_command += if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
+        "fps_unlocker.bat "
     } else {
         "launcher.bat "
     };
 
     if config.game.wine.borderless {
-        bash_chain += "-screen-fullscreen 0 -popupwindow ";
+        windows_command += "-screen-fullscreen 0 -popupwindow ";
     }
 
     // https://notabug.org/Krock/dawn/src/master/TWEAKS.md
     if config.game.enhancements.fsr.enabled {
-        bash_chain += "-window-mode exclusive ";
+        windows_command += "-window-mode exclusive ";
     }
 
     // gamescope <params> -- <command to run>
     if let Some(gamescope) = config.game.enhancements.gamescope.get_command() {
-        bash_chain = format!("{gamescope} -- {bash_chain}");
+        bash_command = format!("{gamescope} -- {bash_command}");
     }
 
-    let bash_chain = match &config.game.command {
-        Some(command) => replace_keywords(command, &config).replace("%command%", &bash_chain),
-        None => bash_chain
-    };
+    // Bundle all windows arguments used to run the game into a single file
+    if features.compact_launch {
+        std::fs::write(config.game.path.join("compact_launch.bat"), format!("start {}\nexit", windows_command))?;
+
+        windows_command = String::from("compact_launch.bat");
+    }
+
+    let bash_command = match &config.game.command {
+        Some(command) => replace_keywords(command, &config).replace("%command%", &bash_command),
+        None => bash_command
+    } + &windows_command;
 
     let mut command = Command::new("bash");
 
     command.arg("-c");
-    command.arg(&bash_chain);
+    command.arg(&bash_command);
 
     // Setup environment
 
@@ -188,7 +197,7 @@ pub fn run() -> anyhow::Result<()> {
         .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
         .fold(String::new(), |acc, env| acc + " " + &env);
 
-    tracing::info!("Running the game with command: {variables} bash -c \"{bash_chain}\"");
+    tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
     command.current_dir(config.game.path).spawn()?.wait_with_output()?;
 
