@@ -7,7 +7,7 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies]
-anime-game-core = { path = "anime-game-core", features = ["genshin", "all", "static"] }
+anime-game-core = { path = "anime-game-core", features = ["genshin", "all"] }
 
 anyhow = "1.0"
 dirs = "4.0.0"
@@ -31,5 +31,7 @@ game = ["components", "config"]
 fps-unlocker = ["dep:md-5"]
 discord-rpc = ["dep:discord-rich-presence"]
 
-default = ["all"]
 all = ["states", "config", "components", "game", "fps-unlocker", "discord-rpc"]
+static = ["anime-game-core/static"]
+
+default = ["all", "static"]
