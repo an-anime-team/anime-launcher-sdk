@@ -42,6 +42,12 @@ pub struct Features {
     /// Extremely helpful when your custom `command` feature can't handle multiline arguments (e.g. in GE-Proton)
     pub compact_launch: bool,
 
+    /// Specify subdirectory location for prefix.
+    ///
+    /// In the case of Proton runners, the true prefix path for existence checks is in %prefix%/pfx.
+    /// This lets us define a sub-location in such cases.
+    pub prefix_subdir: Option<String>,
+
     /// Command used to launch the game
     /// 
     /// Available keywords:
@@ -68,6 +74,7 @@ impl Default for Features {
         Self {
             need_dxvk: true,
             compact_launch: false,
+            prefix_subdir: None,
             command: None,
             env: HashMap::new()
         }
@@ -87,6 +94,11 @@ impl From<&JsonValue> for Features {
             compact_launch: match value.get("compact_launch") {
                 Some(value) => value.as_bool().unwrap_or(default.compact_launch),
                 None => default.compact_launch
+            },
+
+            prefix_subdir: match value.get("prefix_subdir") {
+                Some(value) => value.as_str().map(|value| value.to_string()),
+                None => default.prefix_subdir
             },
 
             command: match value.get("command") {
@@ -153,6 +165,22 @@ impl Version {
         }
 
         Ok(None)
+    }
+
+    /// True Prefix, in case the prefix needs decoration
+    pub fn prefix_path<T: Into<PathBuf>>(&self, components: T, pfxpath: PathBuf) -> PathBuf {
+        tracing::debug!("DBG. Name: {0}", self.name.as_str());
+        match Version::find_group(self, components).unwrap() {
+            Some(group) => {
+                if group.features.prefix_subdir != None {
+                    let subdir_string = group.features.prefix_subdir.unwrap_or_default();
+                    tracing::debug!("Decorating WINE prefix for version {0} with expected subdir {1}", self.name.as_str(), subdir_string);
+                    return pfxpath.join(subdir_string);
+                }
+            },
+            None => return pfxpath.to_path_buf()
+        }
+        return pfxpath.to_path_buf(); // default
     }
 
     /// Check is current wine downloaded in specified folder
