@@ -3,9 +3,12 @@ use std::path::PathBuf;
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::prelude::*;
 
+use wincompatlib::prelude::*;
+
 use serde::{Serialize, Deserialize};
 
 use crate::consts;
+use super::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {
@@ -145,10 +148,28 @@ impl LauncherState {
 
         let config = crate::config::get()?;
 
+        let mut wine_prefix = config.game.wine.prefix.clone();
+
         // Check wine existence
         #[cfg(feature = "components")]
         {
-            if config.get_selected_wine()?.is_none() {
+            if let Some(wine) = config.get_selected_wine()? {
+                let wine = wine
+                    .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
+                    .with_prefix(&config.game.wine.prefix);
+
+                match wine {
+                    WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
+                        wine_prefix = prefix;
+                    }
+
+                    WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
+                        wine_prefix = prefix;
+                    }
+                }
+            }
+
+            else {
                 return Ok(Self::WineNotInstalled);
             }
         }
@@ -162,6 +183,6 @@ impl LauncherState {
             });
         }
 
-        Self::get(config.game.wine.prefix, config.game.path, voices, config.patch.servers, status)
+        Self::get(wine_prefix, config.game.path, voices, config.patch.servers, status)
     }
 }

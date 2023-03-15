@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
+use std::process::Output;
+use std::io::Result;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
@@ -327,35 +329,35 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
-    fn update_prefix<T: Into<PathBuf>>(&self, path: T) -> std::io::Result<std::process::Output> {
+    fn update_prefix<T: Into<PathBuf>>(&self, path: Option<T>) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.update_prefix(path),
             Self::Proton(proton) => proton.update_prefix(path)
         }
     }
 
-    fn stop_processes(&self, force: bool) -> std::io::Result<std::process::Output> {
+    fn stop_processes(&self, force: bool) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.stop_processes(force),
             Self::Proton(proton) => proton.stop_processes(force)
         }
     }
 
-    fn restart(&self) -> std::io::Result<std::process::Output> {
+    fn restart(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.restart(),
             Self::Proton(proton) => proton.restart()
         }
     }
 
-    fn shutdown(&self) -> std::io::Result<std::process::Output> {
+    fn shutdown(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.shutdown(),
             Self::Proton(proton) => proton.shutdown()
         }
     }
 
-    fn end_session(&self) -> std::io::Result<std::process::Output> {
+    fn end_session(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.end_session(),
             Self::Proton(proton) => proton.end_session()
