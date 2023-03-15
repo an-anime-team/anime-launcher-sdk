@@ -36,11 +36,6 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
                         None => anyhow::bail!("Wrong components index structure: wine group's title not found")
                     };
 
-                    let features = match group.get("features") {
-                        Some(features) => features.into(),
-                        None => wine::Features::default()
-                    };
-
                     let versions = serde_json::from_str::<serde_json::Value>(&std::fs::read_to_string(index.join("wine").join(format!("{name}.json")))?)?;
 
                     let mut wine_versions = Vec::new();
@@ -64,7 +59,7 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
                     wine_groups.push(wine::Group {
                         name,
                         title,
-                        features,
+                        features: group.get("features").map(|v| v.into()),
                         versions: wine_versions
                     });
                 }

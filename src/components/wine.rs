@@ -11,7 +11,7 @@ use super::loader::ComponentsLoader;
 pub struct Group {
     pub name: String,
     pub title: String,
-    pub features: Features,
+    pub features: Option<Features>,
     pub versions: Vec<Version>
 }
 
@@ -34,6 +34,8 @@ impl Group {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
+    pub bundle: Option<Bundle>,
+
     /// Whether this wine group needs DXVK
     pub need_dxvk: bool,
 
@@ -66,6 +68,7 @@ pub struct Features {
 impl Default for Features {
     fn default() -> Self {
         Self {
+            bundle: None,
             need_dxvk: true,
             compact_launch: false,
             command: None,
@@ -74,11 +77,21 @@ impl Default for Features {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Bundle {
+    Proton
+}
+
 impl From<&JsonValue> for Features {
     fn from(value: &JsonValue) -> Self {
         let mut default = Self::default();
 
         Self {
+            bundle: match value.get("bundle") {
+                Some(value) => serde_json::from_value(value.to_owned()).unwrap_or(default.bundle),
+                None => default.bundle
+            },
+
             need_dxvk: match value.get("need_dxvk") {
                 Some(value) => value.as_bool().unwrap_or(default.need_dxvk),
                 None => default.need_dxvk
@@ -107,7 +120,8 @@ impl From<&JsonValue> for Features {
                     }
 
                     default.env
-                },
+                }
+
                 None => default.env
             }
         }
@@ -161,11 +175,48 @@ impl Version {
         folder.into().join(&self.name).exists()
     }
 
+    /// Return this version's features
+    #[inline]
+    pub fn version_features(&self) -> Option<Features> {
+        self.features.clone()
+    }
+
+    /// Return this version's features if they persist, or
+    /// return group's features otherwise
+    pub fn features_in(&self, group: &Group) -> Option<Features> {
+        if self.features.is_some() {
+            self.features.clone()
+        }
+
+        else if let Some(features) = &group.features {
+            Some(features.to_owned())
+        }
+
+        else {
+            None
+        }
+    }
+
+    /// Return this version's features if they persist, or
+    /// try to return group's features otherwise
+    pub fn features<T: Into<PathBuf>>(&self, components: T) -> anyhow::Result<Option<Features>> {
+        if self.features.is_some() {
+            Ok(self.features.clone())
+        }
+
+        else {
+            match self.find_group(components)? {
+                Some(group) => Ok(group.features),
+                None => Ok(None)
+            }
+        }
+    }
+
     /// Convert current wine struct to one from `wincompatlib`
     /// 
     /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
     #[inline]
-    pub fn to_wine<T: Into<PathBuf>>(&self, wine_folder: Option<T>) -> Wine {
+    pub fn to_wine<T: Into<PathBuf>>(&self, components: T, wine_folder: Option<T>) -> WincompatlibWine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
         let (wine, arch) = match self.files.wine64.as_ref() {
@@ -173,17 +224,34 @@ impl Version {
             None => (&self.files.wine, WineArch::Win32)
         };
 
-        let wineboot = self.files.wineboot.as_ref().map(|wineboot| wine_folder.join(wineboot));
+        let wineboot = self.files.wineboot.as_ref().map(|wineboot| {
+            let wineboot = PathBuf::from(wineboot);
+
+            if let Some(ext) = wineboot.extension() {
+                if ext == "exe" {
+                    return WineBoot::Windows(wine_folder.join(wineboot));
+                }
+            }
+
+            WineBoot::Unix(wine_folder.join(wineboot))
+        });
+
         let wineserver = self.files.wineserver.as_ref().map(|wineserver| wine_folder.join(wineserver));
 
-        Wine::new(
+        if let Ok(Some(features)) = self.features(components) {
+            if let Some(Bundle::Proton) = features.bundle {
+                return WincompatlibWine::Proton(Proton::new(wine_folder, None));
+            }
+        }
+
+        WincompatlibWine::Default(Wine::new(
             wine_folder.join(wine),
             None,
             Some(arch),
             wineboot,
             wineserver,
             WineLoader::Current
-        )
+        ))
     }
 }
 
@@ -194,6 +262,105 @@ pub struct Files {
     pub wineserver: Option<String>,
     pub wineboot: Option<String>,
     pub winecfg: Option<String>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WincompatlibWine {
+    Default(Wine),
+    Proton(Proton)
+}
+
+impl From<Wine> for WincompatlibWine {
+    fn from(wine: Wine) -> Self {
+        Self::Default(wine)
+    }
+}
+
+impl From<Proton> for WincompatlibWine {
+    fn from(proton: Proton) -> Self {
+        Self::Proton(proton)
+    }
+}
+
+impl WineWithExt for WincompatlibWine {
+    fn with_prefix<T: Into<PathBuf>>(self, prefix: T) -> Self {
+        match self {
+            Self::Default(wine) => Self::Default(wine.with_prefix(prefix)),
+            Self::Proton(proton) => Self::Proton(proton.with_prefix(prefix))
+        }
+    }
+
+    fn with_arch(self, arch: WineArch) -> Self {
+        match self {
+            Self::Default(wine) => Self::Default(wine.with_arch(arch)),
+            Self::Proton(proton) => Self::Proton(proton.with_arch(arch))
+        }
+    }
+
+    fn with_boot(self, boot: WineBoot) -> Self {
+        match self {
+            Self::Default(wine) => Self::Default(wine.with_boot(boot)),
+            Self::Proton(proton) => Self::Proton(proton.with_boot(boot))
+        }
+    }
+
+    fn with_server<T: Into<PathBuf>>(self, server: T) -> Self {
+        match self {
+            Self::Default(wine) => Self::Default(wine.with_server(server)),
+            Self::Proton(proton) => Self::Proton(proton.with_server(server))
+        }
+    }
+
+    fn with_loader(self, loader: WineLoader) -> Self {
+        match self {
+            Self::Default(wine) => Self::Default(wine.with_loader(loader)),
+            Self::Proton(proton) => Self::Proton(proton.with_loader(loader))
+        }
+    }
+}
+
+impl WineBootExt for WincompatlibWine {
+    fn wineboot_command(&self) -> std::process::Command {
+        match self {
+            Self::Default(wine) => wine.wineboot_command(),
+            Self::Proton(proton) => proton.wineboot_command()
+        }
+    }
+
+    fn update_prefix<T: Into<PathBuf>>(&self, path: T) -> std::io::Result<std::process::Output> {
+        match self {
+            Self::Default(wine) => wine.update_prefix(path),
+            Self::Proton(proton) => proton.update_prefix(path)
+        }
+    }
+
+    fn stop_processes(&self, force: bool) -> std::io::Result<std::process::Output> {
+        match self {
+            Self::Default(wine) => wine.stop_processes(force),
+            Self::Proton(proton) => proton.stop_processes(force)
+        }
+    }
+
+    fn restart(&self) -> std::io::Result<std::process::Output> {
+        match self {
+            Self::Default(wine) => wine.restart(),
+            Self::Proton(proton) => proton.restart()
+        }
+    }
+
+    fn shutdown(&self) -> std::io::Result<std::process::Output> {
+        match self {
+            Self::Default(wine) => wine.shutdown(),
+            Self::Proton(proton) => proton.shutdown()
+        }
+    }
+
+    fn end_session(&self) -> std::io::Result<std::process::Output> {
+        match self {
+            Self::Default(wine) => wine.end_session(),
+            Self::Proton(proton) => proton.end_session()
+        }
+    }
 }
 
 pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {

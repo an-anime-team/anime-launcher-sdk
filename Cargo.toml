@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -18,7 +18,7 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 serde_json = { version = "1.0", optional = true }
 enum-ordinalize = { version = "3.1", optional = true }
 
-wincompatlib = { version = "0.2", optional = true }
+wincompatlib = { version = "0.3", features = ["all"], optional = true }
 lazy_static = { version = "1.4", optional = true }
 md-5 = { version = "0.10", features = ["asm"], optional = true }
 discord-rich-presence = { version = "0.2.3", optional = true }

@@ -40,13 +40,7 @@ pub fn run() -> anyhow::Result<()> {
         anyhow::bail!("Couldn't find wine executable");
     };
 
-    let features = match wine.features {
-        Some(features) => features,
-        None => match wine.find_group(&config.components.path)? {
-            Some(group) => group.features,
-            None => anyhow::bail!("Couldn't find wine group")
-        }
-    };
+    let features = wine.features(&config.components.path)?.unwrap_or_default();
 
     // Check telemetry servers
 
