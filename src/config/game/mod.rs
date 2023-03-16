@@ -36,7 +36,7 @@ impl Default for Game {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join("game/drive_c/Program Files/Genshin Impact"),
+            path: launcher_dir.join("Genshin Impact"), // TODO: change it based on GameEdition
             voices: vec![
                 String::from("en-us")
             ],

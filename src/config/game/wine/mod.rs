@@ -34,7 +34,7 @@ impl Default for Wine {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            prefix: launcher_dir.join("game"),
+            prefix: launcher_dir.join("prefix"),
             builds: launcher_dir.join("runners"),
             selected: None,
             sync: WineSync::default(),
