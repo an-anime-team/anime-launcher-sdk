@@ -19,7 +19,8 @@ pub enum LauncherState {
         voices: Vec<VersionDiff>
     },
 
-    MainPatchAvailable(UnityPlayerPatch),
+    UnityPlayerPatchAvailable(UnityPlayerPatch),
+    XluaPatchAvailable(XluaPatch),
 
     #[cfg(feature = "components")]
     WineNotInstalled,
@@ -87,7 +88,7 @@ impl LauncherState {
         let game = Game::new(&params.game_path);
         let diff = game.try_get_diff()?;
 
-        Ok(match diff {
+        match diff {
             VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
                 let mut predownload_voice = Vec::new();
 
@@ -132,32 +133,39 @@ impl LauncherState {
                 }
 
                 // Check UnityPlayer patch
-                let main_patch = patch.unity_player_patch()?;
+                let player_patch = patch.unity_player_patch()?;
 
-                if main_patch.is_applied(&params.game_path)? {
-                    // TODO: add Xlua patch check
+                if !player_patch.is_applied(&params.game_path)? {
+                    return Ok(Self::UnityPlayerPatchAvailable(player_patch));
+                }
 
-                    if let VersionDiff::Predownload { .. } = diff {
-                        Self::PredownloadAvailable {
-                            game: diff,
-                            voices: predownload_voice
-                        }
-                    }
+                // Check xlua patch
+                if params.use_xlua_patch {
+                    let xlua_patch = patch.xlua_patch()?;
 
-                    else {
-                        Self::Launch
+                    if !xlua_patch.is_applied(&params.game_path)? {
+                        return Ok(Self::XluaPatchAvailable(xlua_patch));
                     }
                 }
 
+                // Check if update predownload available
+                if let VersionDiff::Predownload { .. } = diff {
+                    Ok(Self::PredownloadAvailable {
+                        game: diff,
+                        voices: predownload_voice
+                    })
+                }
+
+                // Otherwise we can launch the game
                 else {
-                    Self::MainPatchAvailable(main_patch)
+                    Ok(Self::Launch)
                 }
             }
 
-            VersionDiff::Diff { .. } => Self::GameUpdateAvailable(diff),
-            VersionDiff::Outdated { .. } => Self::GameOutdated(diff),
-            VersionDiff::NotInstalled { .. } => Self::GameNotInstalled(diff)
-        })
+            VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::Outdated { .. } => Ok(Self::GameOutdated(diff)),
+            VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
+        }
     }
 
     #[cfg(feature = "config")]
@@ -214,7 +222,7 @@ impl LauncherState {
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
-            use_xlua_patch: false, // TODO
+            use_xlua_patch: config.patch.xlua_patch,
 
             status_updater
         })

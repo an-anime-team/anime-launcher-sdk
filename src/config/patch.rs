@@ -9,6 +9,7 @@ use crate::consts::launcher_dir;
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
+    pub apply_xlua: bool,
     pub root: bool
 }
 
@@ -18,10 +19,13 @@ impl Default for Patch {
 
         Self {
             path: launcher_dir.join("patch"),
+
             servers: vec![
-                "https://notabug.org/Krock/dawn".to_string(),
-                "https://codespace.gay/Maroxy/dawnin".to_string()
+                String::from("https://notabug.org/Krock/dawn"),
+                String::from("https://codespace.gay/Maroxy/dawnin")
             ],
+
+            apply_xlua: false,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !Path::new("/.flatpak-info").exists()
@@ -58,6 +62,11 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
+            },
+
+            apply_xlua: match value.get("apply_xlua") {
+                Some(value) => value.as_bool().unwrap_or(default.apply_xlua),
+                None => default.apply_xlua
             },
 
             root: match value.get("root") {
