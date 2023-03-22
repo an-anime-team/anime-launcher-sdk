@@ -7,7 +7,6 @@ use wincompatlib::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
-use crate::consts;
 use super::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,7 +19,7 @@ pub enum LauncherState {
         voices: Vec<VersionDiff>
     },
 
-    PatchAvailable(Patch),
+    MainPatchAvailable(UnityPlayerPatch),
 
     #[cfg(feature = "components")]
     WineNotInstalled,
@@ -59,43 +58,48 @@ pub enum StateUpdating {
     Patch
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LauncherStateParams<F: Fn(StateUpdating)> {
+    pub wine_prefix: PathBuf,
+    pub game_path: PathBuf,
+
+    pub selected_voices: Vec<VoiceLocale>,
+
+    pub patch_servers: Vec<String>,
+    pub patch_folder: PathBuf,
+    pub use_xlua_patch: bool,
+
+    pub status_updater: F
+}
+
 impl LauncherState {
-    #[tracing::instrument(level = "debug", skip(status), ret)]
-    pub fn get<T, F, S>(wine_prefix: T, game_path: T, voices: Vec<VoiceLocale>, patch_servers: Vec<S>, status: F) -> anyhow::Result<Self>
-    where
-        T: Into<PathBuf> + std::fmt::Debug,
-        F: Fn(StateUpdating),
-        S: ToString + std::fmt::Debug
-    {
+    pub fn get<F: Fn(StateUpdating)>(params: LauncherStateParams<F>) -> anyhow::Result<Self> {
         tracing::debug!("Trying to get launcher state");
 
-        let wine_prefix = wine_prefix.into();
-        let game_path = game_path.into();
-
         // Check prefix existence
-        if !wine_prefix.join("drive_c").exists() {
+        if !params.wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
         }
 
         // Check game installation status
-        status(StateUpdating::Game);
+        (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&game_path);
+        let game = Game::new(&params.game_path);
         let diff = game.try_get_diff()?;
 
         Ok(match diff {
             VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
                 let mut predownload_voice = Vec::new();
 
-                for locale in voices {
+                for locale in params.selected_voices {
                     let mut voice_package = VoicePackage::with_locale(locale)?;
 
-                    status(StateUpdating::Voice(voice_package.locale()));
+                    (params.status_updater)(StateUpdating::Voice(voice_package.locale()));
 
                     // Replace voice package struct with the one constructed in the game's folder
                     // so it'll properly calculate its difference instead of saying "not installed"
-                    if voice_package.is_installed_in(&game_path) {
-                        voice_package = match VoicePackage::new(get_voice_package_path(&game_path, voice_package.locale())) {
+                    if voice_package.is_installed_in(&params.game_path) {
+                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, voice_package.locale())) {
                             Some(locale) => locale,
                             None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
                         };
@@ -113,11 +117,26 @@ impl LauncherState {
                     }
                 }
 
-                status(StateUpdating::Patch);
+                // Check game patch status
+                (params.status_updater)(StateUpdating::Patch);
 
-                let patch = Patch::try_fetch(patch_servers, consts::PATCH_FETCHING_TIMEOUT)?;
+                let patch = Patch::new(&params.patch_folder);
 
-                if patch.is_applied(&game_path)? {
+                // Sync local patch folder with remote if needed
+                if patch.is_sync(&params.patch_servers)?.is_none() {
+                    for server in &params.patch_servers {
+                        if let Ok(true) = patch.sync(server) {
+                            break;
+                        }
+                    }
+                }
+
+                // Check UnityPlayer patch
+                let main_patch = patch.unity_player_patch()?;
+
+                if main_patch.is_applied(&params.game_path)? {
+                    // TODO: add Xlua patch check
+
                     if let VersionDiff::Predownload { .. } = diff {
                         Self::PredownloadAvailable {
                             game: diff,
@@ -131,7 +150,7 @@ impl LauncherState {
                 }
 
                 else {
-                    Self::PatchAvailable(patch)
+                    Self::MainPatchAvailable(main_patch)
                 }
             }
 
@@ -142,8 +161,8 @@ impl LauncherState {
     }
 
     #[cfg(feature = "config")]
-    #[tracing::instrument(level = "debug", skip(status), ret)]
-    pub fn get_from_config<T: Fn(StateUpdating)>(status: T) -> anyhow::Result<Self> {
+    #[tracing::instrument(level = "debug", skip(status_updater), ret)]
+    pub fn get_from_config<T: Fn(StateUpdating)>(status_updater: T) -> anyhow::Result<Self> {
         tracing::debug!("Trying to get launcher state");
 
         let config = crate::config::get()?;
@@ -187,6 +206,17 @@ impl LauncherState {
             });
         }
 
-        Self::get(wine_prefix, config.game.path, voices, config.patch.servers, status)
+        Self::get(LauncherStateParams {
+            wine_prefix,
+            game_path: config.game.path,
+
+            selected_voices: voices,
+
+            patch_servers: config.patch.servers,
+            patch_folder: config.patch.path,
+            use_xlua_patch: false, // TODO
+
+            status_updater
+        })
     }
 }

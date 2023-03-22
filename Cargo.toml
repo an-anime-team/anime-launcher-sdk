@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "0.5.3"
+version = "0.5.4"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -10,7 +10,7 @@ edition = "2021"
 anime-game-core = { path = "anime-game-core", features = ["genshin", "all"] }
 
 anyhow = "1.0"
-dirs = "4.0.0"
+dirs = "5.0.0"
 tracing = "0.1"
 cached = { version = "0.42", features = ["proc_macro"] }
 
