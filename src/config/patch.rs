@@ -25,7 +25,7 @@ impl Default for Patch {
                 String::from("https://codespace.gay/Maroxy/dawnin")
             ],
 
-            apply_xlua: false,
+            apply_xlua: true,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !Path::new("/.flatpak-info").exists()
