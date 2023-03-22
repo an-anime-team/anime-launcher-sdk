@@ -222,7 +222,7 @@ impl LauncherState {
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
-            use_xlua_patch: config.patch.xlua_patch,
+            use_xlua_patch: config.patch.apply_xlua,
 
             status_updater
         })
