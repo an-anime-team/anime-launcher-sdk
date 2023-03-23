@@ -1,5 +1,4 @@
 use std::process::{Command, Stdio};
-use std::path::PathBuf;
 
 use anime_game_core::genshin::telemetry;
 
@@ -18,7 +17,7 @@ fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String 
     command.to_string()
         .replace("%build%", &wine_build.to_string_lossy())
         .replace("%prefix%", &config.game.wine.prefix.to_string_lossy())
-        .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&PathBuf::from("/tmp")).to_string_lossy())
+        .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&std::env::temp_dir()).to_string_lossy())
         .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
         .replace("%game%", &config.game.path.to_string_lossy())
 }
