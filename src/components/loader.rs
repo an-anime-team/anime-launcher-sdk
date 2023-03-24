@@ -166,6 +166,8 @@ impl ComponentsLoader {
         }
     }
 
+    /// Try to get wine versions from components index
+    #[tracing::instrument(level = "debug", ret)]
     pub fn get_wine_versions(&self) -> anyhow::Result<Vec<wine::Group>> {
         get_wine_versions(&self.folder)
     }
