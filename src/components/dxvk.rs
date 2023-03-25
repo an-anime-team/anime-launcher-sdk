@@ -32,7 +32,7 @@ impl Group {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
     /// Standard environment variables that are applied when you launch the game
     /// 
@@ -43,14 +43,6 @@ pub struct Features {
     /// - `%launcher%` - path to launcher folder
     /// - `%game%` - path to the game
     pub env: HashMap<String, String>
-}
-
-impl Default for Features {
-    fn default() -> Self {
-        Self {
-            env: HashMap::new()
-        }
-    }
 }
 
 impl From<&JsonValue> for Features {
@@ -161,9 +153,7 @@ pub fn get_downloaded<T: Into<PathBuf>>(components: T, folder: T) -> anyhow::Res
     let folder: PathBuf = folder.into();
 
     for mut group in get_groups(components)? {
-        group.versions = group.versions.into_iter()
-            .filter(|version| folder.join(&version.name).exists())
-            .collect();
+        group.versions.retain(|version| folder.join(&version.name).exists());
 
         if !group.versions.is_empty() {
             downloaded.push(group);

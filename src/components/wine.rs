@@ -190,12 +190,8 @@ impl Version {
             self.features.clone()
         }
 
-        else if let Some(features) = &group.features {
-            Some(features.to_owned())
-        }
-
         else {
-            None
+            group.features.as_ref().map(|features| features.to_owned())
         }
     }
 
@@ -376,9 +372,7 @@ pub fn get_downloaded<T: Into<PathBuf>>(components: T, folder: T) -> anyhow::Res
     let folder: PathBuf = folder.into();
 
     for mut group in get_groups(components)? {
-        group.versions = group.versions.into_iter()
-            .filter(|version| folder.join(&version.name).exists())
-            .collect();
+        group.versions.retain(|version| folder.join(&version.name).exists());
 
         if !group.versions.is_empty() {
             downloaded.push(group);
