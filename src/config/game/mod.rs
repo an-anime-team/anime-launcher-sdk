@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+use crate::anime_game_core::genshin::consts::{GameEdition, GAME_EDITION};
 use crate::consts::launcher_dir;
 
 pub mod wine;
@@ -36,7 +37,10 @@ impl Default for Game {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join("Genshin Impact"), // TODO: change it based on GameEdition
+            path: launcher_dir.join(match unsafe { GAME_EDITION } {
+                GameEdition::Global => concat!("Ge", "nshi", "n Imp", "act"),
+                GameEdition::China  => concat!("Yu", "anS", "hen")
+            }),
             voices: vec![
                 String::from("en-us")
             ],
