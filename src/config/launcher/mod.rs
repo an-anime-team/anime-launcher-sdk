@@ -94,7 +94,7 @@ impl Default for Launcher {
     fn default() -> Self {
         Self {
             language: String::from("en-us"),
-            temp: launcher_dir(),
+            temp: launcher_dir().ok(),
             repairer: Repairer::default(),
             edition: GameEdition::default(),
             style: LauncherStyle::default(),

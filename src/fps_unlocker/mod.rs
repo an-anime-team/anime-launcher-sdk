@@ -51,7 +51,7 @@ impl FpsUnlocker {
             std::fs::create_dir_all(&dir)?;
         }
 
-        match downloader.download_to(dir.join("unlocker.exe"), |_, _| {}) {
+        match downloader.download(dir.join("unlocker.exe"), |_, _| {}) {
             Ok(_) => Ok(Self { dir }),
             Err(err) => {
                 tracing::error!("Downloading failed: {err}");
@@ -61,14 +61,17 @@ impl FpsUnlocker {
         }
     }
 
+    #[inline]
     pub fn get_binary(&self) -> PathBuf {
         Self::get_binary_in(&self.dir)
     }
 
+    #[inline]
     pub fn get_binary_in<T: Into<PathBuf>>(dir: T) -> PathBuf {
         dir.into().join("unlocker.exe")
     }
 
+    #[inline]
     pub fn dir(&self) -> &PathBuf {
         &self.dir
     }

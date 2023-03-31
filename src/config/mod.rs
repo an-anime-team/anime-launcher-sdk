@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
@@ -26,12 +25,12 @@ use prelude::*;
 
 static mut CONFIG: Option<Config> = None; 
 
+#[tracing::instrument(level = "trace")]
 /// Get config data
 /// 
 /// This method will load config from file once and store it into the memory.
 /// If you know that the config file was updated - you should run `get_raw` method
 /// that always loads config directly from the file. This will also update in-memory config
-#[tracing::instrument(level = "trace")]
 pub fn get() -> anyhow::Result<Config> {
     unsafe {
         match &CONFIG {
@@ -41,59 +40,54 @@ pub fn get() -> anyhow::Result<Config> {
     }
 }
 
+#[tracing::instrument(level = "debug", ret)]
 /// Get config data
 /// 
 /// This method will always load data directly from the file and update in-memory config
-#[tracing::instrument(level = "debug", ret)]
 pub fn get_raw() -> anyhow::Result<Config> {
     tracing::debug!("Reading config data from file");
 
-    match config_file() {
-        Some(path) => {
-            // Try to read config if the file exists
-            if Path::new(&path).exists() {
-                let mut file = File::open(path)?;
-                let mut json = String::new();
+    let path = config_file()?;
 
-                file.read_to_string(&mut json)?;
+    // Try to read config if the file exists
+    if path.exists() {
+        let mut file = File::open(path)?;
+        let mut json = String::new();
 
-                match serde_json::from_str(&json) {
-                    Ok(config) => {
-                        let config = Config::from(&config);
+        file.read_to_string(&mut json)?;
 
-                        unsafe {
-                            CONFIG = Some(config.clone());
-                        }
+        match serde_json::from_str(&json) {
+            Ok(config) => {
+                let config = Config::from(&config);
 
-                        Ok(config)
-                    },
-                    Err(err) => {
-                        tracing::error!("Failed to decode config data from json format: {}", err.to_string());
-
-                        Err(anyhow::anyhow!("Failed to decode config data from json format: {}", err.to_string()))
-                    }
+                unsafe {
+                    CONFIG = Some(config.clone());
                 }
+
+                Ok(config)
             }
 
-            // Otherwise create default config file
-            else {
-                update_raw(Config::default())?;
+            Err(err) => {
+                tracing::error!("Failed to decode config data from json format: {err}");
 
-                Ok(Config::default())
+                Err(anyhow::anyhow!("Failed to decode config data from json format: {err}"))
             }
-        },
-        None => {
-            tracing::error!("Failed to get config file path");
-
-            Err(anyhow::anyhow!("Failed to get config file path"))
         }
+    }
+
+    // Otherwise create default config file
+    else {
+        update_raw(Config::default())?;
+
+        Ok(Config::default())
     }
 }
 
+#[inline]
+#[tracing::instrument(level = "trace")]
 /// Update in-memory config data
 /// 
 /// Use `update_raw` if you want to update config file itself
-#[tracing::instrument(level = "trace")]
 pub fn update(config: Config) {
     tracing::trace!("Updating hot config record");
 
@@ -102,42 +96,33 @@ pub fn update(config: Config) {
     }
 }
 
+#[tracing::instrument(level = "debug", ret)]
 /// Update config file
 /// 
 /// This method will also update in-memory config data
-#[tracing::instrument(level = "debug", ret)]
 pub fn update_raw(config: Config) -> anyhow::Result<()> {
     tracing::debug!("Updating config data");
 
     update(config.clone());
 
-    match config_file() {
-        Some(path) => {
-            let mut file = File::create(&path)?;
+    let mut file = File::create(config_file()?)?;
 
-            match serde_json::to_string_pretty(&config) {
-                Ok(json) => {
-                    file.write_all(json.as_bytes())?;
+    match serde_json::to_string_pretty(&config) {
+        Ok(json) => {
+            file.write_all(json.as_bytes())?;
 
-                    Ok(())
-                },
-                Err(err) => {
-                    tracing::error!("Failed to encode config data into json format: {}", err.to_string());
-
-                    Err(anyhow::anyhow!("Failed to encode config data into json format: {}", err.to_string()))
-                }
-            }
+            Ok(())
         },
-        None => {
-            tracing::error!("Failed to get config file path");
+        Err(err) => {
+            tracing::error!("Failed to encode config data into json format: {}", err.to_string());
 
-            Err(anyhow::anyhow!("Failed to get config file path"))
+            Err(anyhow::anyhow!("Failed to encode config data into json format: {}", err.to_string()))
         }
     }
 }
 
-/// Update config file from the in-memory saved config
 #[tracing::instrument(level = "debug", ret)]
+/// Update config file from the in-memory saved config
 pub fn flush() -> anyhow::Result<()> {
     tracing::debug!("Flushing config data");
 
@@ -197,6 +182,7 @@ use crate::components::dxvk;
 
 #[cfg(feature = "components")]
 impl Config {
+    #[inline]
     /// Try to get selected wine version
     /// 
     /// Returns:
@@ -210,6 +196,7 @@ impl Config {
         }
     }
 
+    #[inline]
     /// Try to get DXVK version applied to wine prefix
     /// 
     /// Returns:

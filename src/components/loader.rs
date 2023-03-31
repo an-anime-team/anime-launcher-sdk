@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use crate::anime_game_core::traits::git_sync::RemoteGitSync;
+use crate::anime_game_core::traits::git_sync::RemoteGitSyncExt;
+
 use super::wine;
 use super::dxvk;
 
@@ -153,13 +154,15 @@ pub struct ComponentsLoader {
     folder: PathBuf
 }
 
-impl RemoteGitSync for ComponentsLoader {
+impl RemoteGitSyncExt for ComponentsLoader {
+    #[inline]
     fn folder(&self) -> &Path {
         self.folder.as_path()
     }
 }
 
 impl ComponentsLoader {
+    #[inline]
     pub fn new<T: Into<PathBuf>>(folder: T) -> Self {
         Self {
             folder: folder.into()
@@ -167,12 +170,14 @@ impl ComponentsLoader {
     }
 
     /// Try to get wine versions from components index
+    #[inline]
     #[tracing::instrument(level = "debug", ret)]
     pub fn get_wine_versions(&self) -> anyhow::Result<Vec<wine::Group>> {
         get_wine_versions(&self.folder)
     }
 
     /// Try to get dxvk versions from components index
+    #[inline]
     #[tracing::instrument(level = "debug", ret)]
     pub fn get_dxvk_versions(&self) -> anyhow::Result<Vec<dxvk::Group>> {
         get_dxvk_versions(&self.folder)
