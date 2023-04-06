@@ -73,12 +73,14 @@ impl From<&JsonValue> for Features {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Version {
     pub name: String,
+    pub title: String,
     pub version: String,
     pub uri: String,
     pub features: Option<Features>
 }
 
 impl Version {
+    #[inline]
     /// Get latest recommended dxvk version
     pub fn latest<T: Into<PathBuf>>(components: T) -> anyhow::Result<Self> {
         Ok(get_groups(components)?[0].versions[0].clone())
@@ -110,15 +112,15 @@ impl Version {
         Ok(None)
     }
 
-    /// Check is current dxvk downloaded in specified folder
     #[inline]
+    /// Check is current dxvk downloaded in specified folder
     pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
-    /// Install current dxvk
-    #[tracing::instrument(level = "debug", ret)]
     #[inline]
+    #[tracing::instrument(level = "debug", ret)]
+    /// Install current dxvk
     pub fn install<T: Into<PathBuf> + std::fmt::Debug>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
         tracing::debug!("Installing DXVK");
 
@@ -129,9 +131,9 @@ impl Version {
         )
     }
 
-    /// Uninstall current dxvk
-    #[tracing::instrument(level = "debug", ret)]
     #[inline]
+    #[tracing::instrument(level = "debug", ret)]
+    /// Uninstall current dxvk
     pub fn uninstall(&self, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
         tracing::debug!("Uninstalling DXVK");
 
@@ -142,6 +144,7 @@ impl Version {
     }
 }
 
+#[inline]
 pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {
     ComponentsLoader::new(components).get_dxvk_versions()
 }

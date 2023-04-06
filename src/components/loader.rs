@@ -116,6 +116,7 @@ pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
                             for version in versions {
                                 dxvk_versions.push(dxvk::Version {
                                     name: version["name"].as_str().unwrap().to_string(),
+                                    title: version["title"].as_str().unwrap().to_string(),
                                     version: version["version"].as_str().unwrap().to_string(),
                                     uri: version["uri"].as_str().unwrap().to_string(),
                                     features: version.get("features").map(|v| v.into())
@@ -169,16 +170,16 @@ impl ComponentsLoader {
         }
     }
 
-    /// Try to get wine versions from components index
     #[inline]
     #[tracing::instrument(level = "debug", ret)]
+    /// Try to get wine versions from components index
     pub fn get_wine_versions(&self) -> anyhow::Result<Vec<wine::Group>> {
         get_wine_versions(&self.folder)
     }
 
-    /// Try to get dxvk versions from components index
     #[inline]
     #[tracing::instrument(level = "debug", ret)]
+    /// Try to get dxvk versions from components index
     pub fn get_dxvk_versions(&self) -> anyhow::Result<Vec<dxvk::Group>> {
         get_dxvk_versions(&self.folder)
     }
