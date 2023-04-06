@@ -23,6 +23,9 @@ pub mod fps_unlocker;
 #[cfg(feature = "discord-rpc")]
 pub mod discord_rpc;
 
+#[cfg(feature = "environment-emulation")]
+pub mod env_emulation;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Check if specified binary is available
@@ -35,12 +38,11 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn is_available(binary: &str) -> bool {
     tracing::trace!("Checking package availability");
 
-    match Command::new(binary).stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
-        Ok(mut child) => {
-            child.kill();
+    let Ok(mut child) = Command::new(binary).stdout(Stdio::null()).stderr(Stdio::null()).spawn() else {
+        return false;
+    };
 
-            true
-        },
-        Err(_) => false
-    }
+    child.kill();
+
+    true
 }

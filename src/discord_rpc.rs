@@ -95,12 +95,14 @@ impl DiscordRpc {
             .assets(Assets::new().large_image(&config.icon))
     }
 
+    #[inline]
     pub fn update(&self, update: RpcUpdates) -> Result<(), SendError<RpcUpdates>> {
         self.sender.send(update)
     }
 }
 
 impl Drop for DiscordRpc {
+    #[inline]
     #[allow(unused_must_use)]
     fn drop(&mut self) {
         self.update(RpcUpdates::Disconnect);

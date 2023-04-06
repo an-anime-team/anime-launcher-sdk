@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "0.5.8"
+version = "0.5.9"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.5.0"
+tag = "1.5.1"
 features = ["genshin", "all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -34,6 +34,7 @@ components = ["dep:wincompatlib", "dep:lazy_static"]
 game = ["components", "config"]
 fps-unlocker = ["dep:md-5"]
 discord-rpc = ["dep:discord-rich-presence"]
+environment-emulation = []
 
-all = ["states", "config", "components", "game", "fps-unlocker", "discord-rpc"]
+all = ["states", "config", "components", "game", "fps-unlocker", "discord-rpc", "environment-emulation"]
 default = ["all"]

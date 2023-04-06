@@ -9,6 +9,9 @@ use anime_game_core::genshin::consts::GameEdition as CoreGameEdition;
 
 use crate::consts::launcher_dir;
 
+#[cfg(feature = "environment-emulation")]
+use crate::env_emulation::Environment;
+
 pub mod repairer;
 
 #[cfg(feature = "discord-rpc")]
@@ -87,7 +90,10 @@ pub struct Launcher {
     pub style: LauncherStyle,
 
     #[cfg(feature = "discord-rpc")]
-    pub discord_rpc: DiscordRpc
+    pub discord_rpc: DiscordRpc,
+
+    #[cfg(feature = "environment-emulation")]
+    pub environment: Environment
 }
 
 impl Default for Launcher {
@@ -100,7 +106,10 @@ impl Default for Launcher {
             style: LauncherStyle::default(),
 
             #[cfg(feature = "discord-rpc")]
-            discord_rpc: DiscordRpc::default()
+            discord_rpc: DiscordRpc::default(),
+
+            #[cfg(feature = "environment-emulation")]
+            environment: Environment::default()
         }
     }
 }
@@ -148,6 +157,12 @@ impl From<&JsonValue> for Launcher {
             discord_rpc: match value.get("discord_rpc") {
                 Some(value) => DiscordRpc::from(value),
                 None => default.discord_rpc
+            },
+
+            #[cfg(feature = "environment-emulation")]
+            environment: match value.get("environment") {
+                Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.environment),
+                None => default.environment
             }
         }
     }

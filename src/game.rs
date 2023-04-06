@@ -1,6 +1,8 @@
 use std::process::{Command, Stdio};
 
+use anime_game_core::prelude::*;
 use anime_game_core::genshin::telemetry;
+use anime_game_core::genshin::game::Game;
 
 use super::consts;
 use super::config;
@@ -89,6 +91,17 @@ pub fn run() -> anyhow::Result<()> {
         std::fs::write(bat_path, std::fs::read_to_string(original_bat_path)?
             .replace("start GenshinImpact.exe %*", &format!("start GenshinImpact.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))
             .replace("start YuanShen.exe %*", &format!("start YuanShen.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy())))?;
+    }
+
+    // Generate `config.ini` if environment emulation feature is presented
+
+    #[cfg(feature = "environment-emulation")] {
+        let game = Game::new(&config.game.path);
+
+        std::fs::write(
+            config.game.path.join("config.ini"),
+            config.launcher.environment.generate_config(game.get_version()?.to_string())
+        )?;
     }
 
     // Prepare bash -c '<command>'
