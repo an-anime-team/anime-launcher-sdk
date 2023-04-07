@@ -32,7 +32,7 @@ impl Group {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
     /// Standard environment variables that are applied when you launch the game
     /// 
@@ -42,7 +42,19 @@ pub struct Features {
     /// - `%temp%` - path to temp folder specified in config file
     /// - `%launcher%` - path to launcher folder
     /// - `%game%` - path to the game
-    pub env: HashMap<String, String>
+    pub env: HashMap<String, String>,
+
+    pub recommended: bool
+}
+
+impl Default for Features {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            env: HashMap::new(),
+            recommended: true
+        }
+    }
 }
 
 impl From<&JsonValue> for Features {
@@ -65,6 +77,11 @@ impl From<&JsonValue> for Features {
                     default.env
                 },
                 None => default.env
+            },
+
+            recommended: match value.get("recommended") {
+                Some(value) => value.as_bool().unwrap_or(default.recommended),
+                None => default.recommended
             }
         }
     }

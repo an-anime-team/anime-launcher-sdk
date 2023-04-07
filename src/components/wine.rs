@@ -64,17 +64,21 @@ pub struct Features {
     /// - `%temp%` - path to temp folder specified in config file
     /// - `%launcher%` - path to launcher folder
     /// - `%game%` - path to the game
-    pub env: HashMap<String, String>
+    pub env: HashMap<String, String>,
+
+    pub recommended: bool
 }
 
 impl Default for Features {
+    #[inline]
     fn default() -> Self {
         Self {
             bundle: None,
             need_dxvk: true,
             compact_launch: false,
             command: None,
-            env: HashMap::new()
+            env: HashMap::new(),
+            recommended: true
         }
     }
 }
@@ -125,6 +129,11 @@ impl From<&JsonValue> for Features {
                 }
 
                 None => default.env
+            },
+
+            recommended: match value.get("recommended") {
+                Some(value) => value.as_bool().unwrap_or(default.recommended),
+                None => default.recommended
             }
         }
     }
@@ -140,6 +149,7 @@ pub struct Version {
 }
 
 impl Version {
+    #[inline]
     /// Get latest recommended wine version
     pub fn latest<T: Into<PathBuf>>(components: T) -> anyhow::Result<Self> {
         Ok(get_groups(components)?[0].versions[0].clone())
@@ -171,14 +181,14 @@ impl Version {
         Ok(None)
     }
 
-    /// Check is current wine downloaded in specified folder
     #[inline]
+    /// Check is current wine downloaded in specified folder
     pub fn is_downloaded_in<T: Into<PathBuf>>(&self, folder: T) -> bool {
         folder.into().join(&self.name).exists()
     }
 
-    /// Return this version's features
     #[inline]
+    /// Return this version's features
     pub fn version_features(&self) -> Option<Features> {
         self.features.clone()
     }
@@ -191,7 +201,7 @@ impl Version {
         }
 
         else {
-            group.features.as_ref().map(|features| features.to_owned())
+            group.features.clone()
         }
     }
 
@@ -213,7 +223,6 @@ impl Version {
     /// Convert current wine struct to one from `wincompatlib`
     /// 
     /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
-    #[inline]
     pub fn to_wine<T: Into<PathBuf>>(&self, components: T, wine_folder: Option<T>) -> WincompatlibWine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
@@ -269,18 +278,21 @@ pub enum WincompatlibWine {
 }
 
 impl From<Wine> for WincompatlibWine {
+    #[inline]
     fn from(wine: Wine) -> Self {
         Self::Default(wine)
     }
 }
 
 impl From<Proton> for WincompatlibWine {
+    #[inline]
     fn from(proton: Proton) -> Self {
         Self::Proton(proton)
     }
 }
 
 impl WineWithExt for WincompatlibWine {
+    #[inline]
     fn with_prefix<T: Into<PathBuf>>(self, prefix: T) -> Self {
         match self {
             Self::Default(wine) => Self::Default(wine.with_prefix(prefix)),
@@ -288,6 +300,7 @@ impl WineWithExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn with_arch(self, arch: WineArch) -> Self {
         match self {
             Self::Default(wine) => Self::Default(wine.with_arch(arch)),
@@ -295,6 +308,7 @@ impl WineWithExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn with_boot(self, boot: WineBoot) -> Self {
         match self {
             Self::Default(wine) => Self::Default(wine.with_boot(boot)),
@@ -302,6 +316,7 @@ impl WineWithExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn with_server<T: Into<PathBuf>>(self, server: T) -> Self {
         match self {
             Self::Default(wine) => Self::Default(wine.with_server(server)),
@@ -309,6 +324,7 @@ impl WineWithExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn with_loader(self, loader: WineLoader) -> Self {
         match self {
             Self::Default(wine) => Self::Default(wine.with_loader(loader)),
@@ -318,6 +334,7 @@ impl WineWithExt for WincompatlibWine {
 }
 
 impl WineBootExt for WincompatlibWine {
+    #[inline]
     fn wineboot_command(&self) -> std::process::Command {
         match self {
             Self::Default(wine) => wine.wineboot_command(),
@@ -325,6 +342,7 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn update_prefix<T: Into<PathBuf>>(&self, path: Option<T>) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.update_prefix(path),
@@ -332,6 +350,7 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn stop_processes(&self, force: bool) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.stop_processes(force),
@@ -339,6 +358,7 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn restart(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.restart(),
@@ -346,6 +366,7 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn shutdown(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.shutdown(),
@@ -353,6 +374,7 @@ impl WineBootExt for WincompatlibWine {
         }
     }
 
+    #[inline]
     fn end_session(&self) -> Result<Output> {
         match self {
             Self::Default(wine) => wine.end_session(),
@@ -361,6 +383,7 @@ impl WineBootExt for WincompatlibWine {
     }
 }
 
+#[inline]
 pub fn get_groups<T: Into<PathBuf>>(components: T) -> anyhow::Result<Vec<Group>> {
     ComponentsLoader::new(components).get_wine_versions()
 }

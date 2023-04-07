@@ -189,6 +189,8 @@ pub fn run() -> anyhow::Result<()> {
         }
     }
 
+    // TODO: fix mangohud
+
     command.envs(config.game.wine.sync.get_env_vars());
     command.envs(config.game.enhancements.hud.get_env_vars(&config));
     command.envs(config.game.enhancements.fsr.get_env_vars());
