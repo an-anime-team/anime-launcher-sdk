@@ -176,20 +176,12 @@ pub fn run() -> anyhow::Result<()> {
 
     // Add environment flags for selected dxvk
     if let Ok(Some(dxvk )) = config.get_selected_dxvk() {
-        if let Some(features) = &dxvk.features {
+        if let Ok(Some(features)) = dxvk.features(&config.components.path) {
             for (key, value) in features.env.iter() {
                 command.env(key, replace_keywords(value, &config));
             }
         }
-
-        else if let Ok(Some(group)) = dxvk.find_group(&config.components.path) {
-            for (key, value) in group.features.env.into_iter() {
-                command.env(key, replace_keywords(value, &config));
-            }
-        }
     }
-
-    // TODO: fix mangohud
 
     command.envs(config.game.wine.sync.get_env_vars());
     command.envs(config.game.enhancements.hud.get_env_vars(&config));

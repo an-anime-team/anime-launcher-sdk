@@ -127,15 +127,10 @@ pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
                         None => anyhow::bail!("Wrong components index structure: wine versions must be a list")
                     }
 
-                    let features = match group.get("features") {
-                        Some(features) => features.into(),
-                        None => dxvk::Features::default()
-                    };
-
                     dxvk_groups.push(dxvk::Group {
                         name,
                         title,
-                        features,
+                        features: group.get("features").map(|v| v.into()),
                         versions: dxvk_versions
                     });
                 }

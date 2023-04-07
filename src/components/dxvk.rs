@@ -11,7 +11,7 @@ use super::loader::ComponentsLoader;
 pub struct Group {
     pub name: String,
     pub title: String,
-    pub features: Features,
+    pub features: Option<Features>,
     pub versions: Vec<Version>
 }
 
@@ -127,6 +127,39 @@ impl Version {
         }
 
         Ok(None)
+    }
+
+    #[inline]
+    /// Return this version's features
+    pub fn version_features(&self) -> Option<Features> {
+        self.features.clone()
+    }
+
+    /// Return this version's features if they persist, or
+    /// return group's features otherwise
+    pub fn features_in(&self, group: &Group) -> Option<Features> {
+        if self.features.is_some() {
+            self.features.clone()
+        }
+
+        else {
+            group.features.clone()
+        }
+    }
+
+    /// Return this version's features if they persist, or
+    /// try to return group's features otherwise
+    pub fn features<T: Into<PathBuf>>(&self, components: T) -> anyhow::Result<Option<Features>> {
+        if self.features.is_some() {
+            Ok(self.features.clone())
+        }
+
+        else {
+            match self.find_group(components)? {
+                Some(group) => Ok(group.features),
+                None => Ok(None)
+            }
+        }
     }
 
     #[inline]
