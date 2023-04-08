@@ -150,7 +150,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(game_path.join("compact_launch.bat"), format!("start {}\nexit", windows_command))?;
+        std::fs::write(game_path.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
 
         windows_command = String::from("compact_launch.bat");
     }
