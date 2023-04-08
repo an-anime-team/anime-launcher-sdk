@@ -127,7 +127,7 @@ impl LauncherState {
                 // Sync local patch folder with remote if needed
                 if patch.is_sync(&params.patch_servers)?.is_none() {
                     for server in &params.patch_servers {
-                        if let Ok(true) = patch.sync(server) {
+                        if patch.sync(server).is_ok() {
                             break;
                         }
                     }
