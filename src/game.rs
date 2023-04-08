@@ -21,7 +21,7 @@ fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String 
         .replace("%prefix%", &config.game.wine.prefix.to_string_lossy())
         .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&std::env::temp_dir()).to_string_lossy())
         .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
-        .replace("%game%", &config.game.path.to_string_lossy())
+        .replace("%game%", &config.game.path.for_edition(config.launcher.edition).to_string_lossy())
 }
 
 /// Try to run the game
@@ -32,8 +32,9 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
 
     let config = config::get()?;
+    let game_path = config.game.path.for_edition(config.launcher.edition);
 
-    if !config.game.path.exists() {
+    if !game_path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -84,8 +85,8 @@ pub fn run() -> anyhow::Result<()> {
             return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
         }
 
-        let bat_path = config.game.path.join("fps_unlocker.bat");
-        let original_bat_path = config.game.path.join("launcher.bat");
+        let bat_path = game_path.join("fps_unlocker.bat");
+        let original_bat_path = game_path.join("launcher.bat");
 
         // Generate fpsunlocker.bat from launcher.bat
         std::fs::write(bat_path, std::fs::read_to_string(original_bat_path)?
@@ -96,10 +97,10 @@ pub fn run() -> anyhow::Result<()> {
     // Generate `config.ini` if environment emulation feature is presented
 
     #[cfg(feature = "environment-emulation")] {
-        let game = Game::new(&config.game.path);
+        let game = Game::new(game_path);
 
         std::fs::write(
-            config.game.path.join("config.ini"),
+            game_path.join("config.ini"),
             config.launcher.environment.generate_config(game.get_version()?.to_string())
         )?;
     }
@@ -149,7 +150,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(config.game.path.join("compact_launch.bat"), format!("start {}\nexit", windows_command))?;
+        std::fs::write(game_path.join("compact_launch.bat"), format!("start {}\nexit", windows_command))?;
 
         windows_command = String::from("compact_launch.bat");
     }
@@ -199,7 +200,7 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
-    command.current_dir(config.game.path).spawn()?.wait_with_output()?;
+    command.current_dir(game_path).spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {

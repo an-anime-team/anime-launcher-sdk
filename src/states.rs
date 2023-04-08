@@ -217,7 +217,7 @@ impl LauncherState {
 
         Self::get(LauncherStateParams {
             wine_prefix,
-            game_path: config.game.path,
+            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
 
             selected_voices: voices,
 

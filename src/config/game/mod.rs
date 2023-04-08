@@ -1,12 +1,9 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::anime_game_core::genshin::consts::GameEdition;
-use crate::consts::launcher_dir;
-
+pub mod paths;
 pub mod wine;
 pub mod dxvk;
 pub mod enhancements;
@@ -15,6 +12,7 @@ pub mod prelude {
     pub use super::enhancements::prelude::*;
     pub use super::wine::prelude::*;
 
+    pub use super::paths::Paths;
     pub use super::Game;
     pub use super::dxvk::Dxvk;
 }
@@ -23,10 +21,10 @@ use prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Game {
-    pub path: PathBuf,
+    pub path: Paths,
     pub voices: Vec<String>,
-    pub wine: prelude::Wine,
-    pub dxvk: prelude::Dxvk,
+    pub wine: Wine,
+    pub dxvk: Dxvk,
     pub enhancements: prelude::Enhancements,
     pub environment: HashMap<String, String>,
     pub command: Option<String>
@@ -34,13 +32,8 @@ pub struct Game {
 
 impl Default for Game {
     fn default() -> Self {
-        let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
-
         Self {
-            path: launcher_dir.join(match GameEdition::selected() {
-                GameEdition::Global => concat!("Ge", "nshi", "n Imp", "act"),
-                GameEdition::China  => concat!("Yu", "anS", "hen")
-            }),
+            path: Paths::default(),
             voices: vec![
                 String::from("en-us")
             ],
@@ -59,10 +52,7 @@ impl From<&JsonValue> for Game {
 
         Self {
             path: match value.get("path") {
-                Some(value) => match value.as_str() {
-                    Some(value) => PathBuf::from(value),
-                    None => default.path
-                },
+                Some(value) => Paths::from(value),
                 None => default.path
             },
 
