@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
-use std::process::Output;
+use std::process::{Child, Output};
 use std::io::Result;
+use std::ffi::OsStr;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
@@ -379,6 +380,49 @@ impl WineBootExt for WincompatlibWine {
         match self {
             Self::Default(wine) => wine.end_session(),
             Self::Proton(proton) => proton.end_session()
+        }
+    }
+}
+
+impl WineRunExt for WincompatlibWine {
+    #[inline]
+    fn run<T: AsRef<OsStr>>(&self, binary: T) -> Result<Child> {
+        match self {
+            Self::Default(wine) => wine.run(binary),
+            Self::Proton(proton) => proton.run(binary)
+        }
+    }
+
+    #[inline]
+    fn run_args<T, S>(&self, args: T) -> Result<Child>
+    where
+        T: IntoIterator<Item = S>,
+        S: AsRef<OsStr>
+    {
+        match self {
+            Self::Default(wine) => wine.run_args(args),
+            Self::Proton(proton) => proton.run_args(args)
+        }
+    }
+
+    #[inline]
+    fn run_args_with_env<T, K, S>(&self, args: T, envs: K) -> Result<Child>
+    where
+        T: IntoIterator<Item = S>,
+        K: IntoIterator<Item = (S, S)>,
+        S: AsRef<OsStr>
+    {
+        match self {
+            Self::Default(wine) => wine.run_args_with_env(args, envs),
+            Self::Proton(proton) => proton.run_args_with_env(args, envs)
+        }
+    }
+
+    #[inline]
+    fn winepath(&self, path: &str) -> Result<PathBuf> {
+        match self {
+            Self::Default(wine) => wine.winepath(path),
+            Self::Proton(proton) => proton.winepath(path)
         }
     }
 }

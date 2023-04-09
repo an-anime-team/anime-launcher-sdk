@@ -6,7 +6,7 @@ use super::wine;
 use super::dxvk;
 
 /// Try to get wine versions from components index
-#[tracing::instrument(level = "debug", ret)]
+#[tracing::instrument(level = "debug")]
 #[cached::proc_macro::cached(key = "PathBuf", convert = r##"{ index.to_path_buf() }"##, result)]
 pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
     tracing::debug!("Getting wine versions");
@@ -76,7 +76,7 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
 }
 
 /// Try to get dxvk versions from components index
-#[tracing::instrument(level = "debug", ret)]
+#[tracing::instrument(level = "debug")]
 #[cached::proc_macro::cached(key = "PathBuf", convert = r##"{ index.to_path_buf() }"##, result)]
 pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
     tracing::debug!("Getting dxvk versions");
@@ -166,14 +166,14 @@ impl ComponentsLoader {
     }
 
     #[inline]
-    #[tracing::instrument(level = "debug", ret)]
+    #[tracing::instrument(level = "debug")]
     /// Try to get wine versions from components index
     pub fn get_wine_versions(&self) -> anyhow::Result<Vec<wine::Group>> {
         get_wine_versions(&self.folder)
     }
 
     #[inline]
-    #[tracing::instrument(level = "debug", ret)]
+    #[tracing::instrument(level = "debug")]
     /// Try to get dxvk versions from components index
     pub fn get_dxvk_versions(&self) -> anyhow::Result<Vec<dxvk::Group>> {
         get_dxvk_versions(&self.folder)
