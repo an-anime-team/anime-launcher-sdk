@@ -19,6 +19,12 @@ pub enum LauncherState {
         voices: Vec<VersionDiff>
     },
 
+    FolderMigrationRequired {
+        from: PathBuf,
+        to: PathBuf,
+        cleanup_folder: Option<PathBuf>
+    },
+
     UnityPlayerPatchAvailable(UnityPlayerPatch),
     XluaPatchAvailable(XluaPatch),
 
@@ -87,6 +93,24 @@ impl LauncherState {
         (params.status_updater)(StateUpdating::Game);
 
         let game = Game::new(&params.game_path);
+
+        // Check if game is installed
+        if game.is_installed() {
+            let data_folder = params.game_path.join(GameEdition::selected().data_folder());
+
+            let old_audio_folder_base = data_folder.join("StreamingAssets/Audio");
+            let old_audio_folder = old_audio_folder_base.join("GeneratedSoundBanks/Windows");
+
+            // Migrate pre-3.6 voiceovers format to post-3.6 if the base game is updated
+            if old_audio_folder.exists() && game.get_version()?.version == [3, 6, 0] {
+                return Ok(Self::FolderMigrationRequired {
+                    from: old_audio_folder,
+                    to: data_folder.join("StreamingAssets/AudioAssets"),
+                    cleanup_folder: Some(old_audio_folder_base)
+                });
+            }
+        }
+
         let diff = game.try_get_diff()?;
 
         match diff {
