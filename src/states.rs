@@ -101,8 +101,8 @@ impl LauncherState {
             let old_audio_folder_base = data_folder.join("StreamingAssets/Audio");
             let old_audio_folder = old_audio_folder_base.join("GeneratedSoundBanks/Windows");
 
-            // Migrate pre-3.6 voiceovers format to post-3.6 if the base game is updated
-            if old_audio_folder.exists() && game.get_version()?.version == [3, 6, 0] {
+            // Migrate pre-3.6 voiceovers format to post-3.6
+            if old_audio_folder.exists() {
                 return Ok(Self::FolderMigrationRequired {
                     from: old_audio_folder,
                     to: data_folder.join("StreamingAssets/AudioAssets"),
@@ -149,6 +149,7 @@ impl LauncherState {
                 let patch = Patch::new(&params.patch_folder);
 
                 // Sync local patch folder with remote if needed
+                // TODO: maybe I shouldn't do it here?
                 if patch.is_sync(&params.patch_servers)?.is_none() {
                     for server in &params.patch_servers {
                         if patch.sync(server).is_ok() {
