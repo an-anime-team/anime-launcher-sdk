@@ -5,11 +5,14 @@ pub use wincompatlib;
 
 pub mod consts;
 
+#[cfg(feature = "genshin")]
+pub mod genshin;
+
+#[cfg(feature = "honkai")]
+pub mod honkai;
+
 #[cfg(feature = "config")]
 pub mod config;
-
-#[cfg(feature = "states")]
-pub mod states;
 
 #[cfg(feature = "components")]
 pub mod components;
@@ -22,9 +25,6 @@ pub mod fps_unlocker;
 
 #[cfg(feature = "discord-rpc")]
 pub mod discord_rpc;
-
-#[cfg(feature = "environment-emulation")]
-pub mod env_emulation;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
