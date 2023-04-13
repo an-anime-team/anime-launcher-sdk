@@ -1,46 +1,24 @@
 use std::path::PathBuf;
 
-use anime_game_core::prelude::*;
-use anime_game_core::genshin::prelude::*;
-
+use serde::{Serialize, Deserialize};
 use wincompatlib::prelude::*;
 
-use serde::{Serialize, Deserialize};
+use anime_game_core::prelude::*;
+use anime_game_core::honkai::prelude::*;
 
-use super::components::wine::WincompatlibWine;
+use crate::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {
     Launch,
 
     /// Always contains `VersionDiff::Predownload`
-    PredownloadAvailable {
-        game: VersionDiff,
-        voices: Vec<VersionDiff>
-    },
-
-    FolderMigrationRequired {
-        from: PathBuf,
-        to: PathBuf,
-        cleanup_folder: Option<PathBuf>
-    },
-
-    UnityPlayerPatchAvailable(UnityPlayerPatch),
-    XluaPatchAvailable(XluaPatch),
+    PredownloadAvailable(VersionDiff),
 
     #[cfg(feature = "components")]
     WineNotInstalled,
 
     PrefixNotExists,
-
-    // Always contains `VersionDiff::Diff`
-    VoiceUpdateAvailable(VersionDiff),
-
-    /// Always contains `VersionDiff::Outdated`
-    VoiceOutdated(VersionDiff),
-
-    /// Always contains `VersionDiff::NotInstalled`
-    VoiceNotInstalled(VersionDiff),
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
@@ -52,16 +30,9 @@ pub enum LauncherState {
     GameNotInstalled(VersionDiff)
 }
 
-impl Default for LauncherState {
-    fn default() -> Self {
-        Self::Launch
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StateUpdating {
     Game,
-    Voice(VoiceLocale),
     Patch
 }
 
@@ -71,11 +42,8 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
 
-    pub selected_voices: Vec<VoiceLocale>,
-
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
-    pub use_xlua_patch: bool,
 
     pub status_updater: F
 }
@@ -94,57 +62,12 @@ impl LauncherState {
 
         let game = Game::new(&params.game_path);
 
-        // Check if game is installed
-        if game.is_installed() {
-            let data_folder = params.game_path.join(GameEdition::selected().data_folder());
-
-            let old_audio_folder_base = data_folder.join("StreamingAssets/Audio");
-            let old_audio_folder = old_audio_folder_base.join("GeneratedSoundBanks/Windows");
-
-            // Migrate pre-3.6 voiceovers format to post-3.6
-            if old_audio_folder.exists() {
-                return Ok(Self::FolderMigrationRequired {
-                    from: old_audio_folder,
-                    to: data_folder.join("StreamingAssets/AudioAssets"),
-                    cleanup_folder: Some(old_audio_folder_base)
-                });
-            }
-        }
-
         let diff = game.try_get_diff()?;
 
         match diff {
             VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
-                let mut predownload_voice = Vec::new();
-
-                for locale in params.selected_voices {
-                    let mut voice_package = VoicePackage::with_locale(locale)?;
-
-                    (params.status_updater)(StateUpdating::Voice(voice_package.locale()));
-
-                    // Replace voice package struct with the one constructed in the game's folder
-                    // so it'll properly calculate its difference instead of saying "not installed"
-                    if voice_package.is_installed_in(&params.game_path) {
-                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, voice_package.locale())) {
-                            Some(locale) => locale,
-                            None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
-                        };
-                    }
-
-                    let diff = voice_package.try_get_diff()?;
-
-                    match diff {
-                        VersionDiff::Latest(_) => (),
-                        VersionDiff::Predownload { .. } => predownload_voice.push(diff),
-
-                        VersionDiff::Diff { .. } => return Ok(Self::VoiceUpdateAvailable(diff)),
-                        VersionDiff::Outdated { .. } => return Ok(Self::VoiceOutdated(diff)),
-                        VersionDiff::NotInstalled { .. } => return Ok(Self::VoiceNotInstalled(diff))
-                    }
-                }
-
                 // Check game patch status
-                (params.status_updater)(StateUpdating::Patch);
+                /*(params.status_updater)(StateUpdating::Patch);
 
                 let patch = Patch::new(&params.patch_folder);
 
@@ -172,14 +95,11 @@ impl LauncherState {
                     if !xlua_patch.is_applied(&params.game_path)? {
                         return Ok(Self::XluaPatchAvailable(xlua_patch));
                     }
-                }
+                }*/
 
                 // Check if update predownload available
                 if let VersionDiff::Predownload { .. } = diff {
-                    Ok(Self::PredownloadAvailable {
-                        game: diff,
-                        voices: predownload_voice
-                    })
+                    Ok(Self::PredownloadAvailable(diff))
                 }
 
                 // Otherwise we can launch the game
@@ -231,24 +151,12 @@ impl LauncherState {
             }
         }
 
-        let mut voices = Vec::with_capacity(config.game.voices.len());
-
-        for voice in config.game.voices {
-            voices.push(match VoiceLocale::from_str(&voice) {
-                Some(locale) => locale,
-                None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice))
-            });
-        }
-
         Self::get(LauncherStateParams {
             wine_prefix,
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
 
-            selected_voices: voices,
-
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
-            use_xlua_patch: config.patch.apply_xlua,
 
             status_updater
         })

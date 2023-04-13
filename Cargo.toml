@@ -7,11 +7,11 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies.anime-game-core]
-git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.6.2"
-features = ["genshin", "all"]
+# git = "https://github.com/an-anime-team/anime-game-core"
+# tag = "1.6.2"
+features = ["all"]
 
-# path = "../anime-game-core" # ! for dev purposes only
+path = "../anime-game-core" # ! for dev purposes only
 
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
@@ -28,13 +28,19 @@ md-5 = { version = "0.10", features = ["asm"], optional = true }
 discord-rich-presence = { version = "0.2.3", optional = true }
 
 [features]
+genshin = ["anime-game-core/genshin"]
+honkai = ["anime-game-core/honkai"]
+
+# Common features
 states = []
 config = ["dep:serde", "dep:serde_json", "dep:enum-ordinalize"]
 components = ["dep:wincompatlib", "dep:lazy_static"]
 game = ["components", "config"]
-fps-unlocker = ["dep:md-5"]
 discord-rpc = ["dep:discord-rich-presence"]
-environment-emulation = []
 
-all = ["states", "config", "components", "game", "fps-unlocker", "discord-rpc", "environment-emulation"]
+# Genshin-specific features
+environment-emulation = []
+fps-unlocker = ["dep:md-5"]
+
+all = ["states", "config", "components", "game", "discord-rpc", "environment-emulation", "fps-unlocker"]
 default = ["all"]
