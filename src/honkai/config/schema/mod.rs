@@ -1,6 +1,12 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+#[cfg(feature = "components")]
+use crate::components::wine::Version as WineVersion;
+
+#[cfg(feature = "components")]
+use crate::components::dxvk::Version as DxvkVersion;
+
 pub mod launcher;
 pub mod game;
 pub mod patch;
@@ -54,6 +60,26 @@ impl From<&JsonValue> for Schema {
                 Some(value) => Patch::from(value),
                 None => default.patch
             },
+        }
+    }
+}
+
+impl Schema {
+    #[cfg(feature = "components")]
+    /// Get selected wine version
+    pub fn get_selected_wine(&self) -> anyhow::Result<Option<WineVersion>> {
+        match &self.game.wine.selected {
+            Some(selected) => WineVersion::find_in(&self.components.path, selected),
+            None => Ok(None)
+        }
+    }
+
+    #[cfg(feature = "components")]
+    /// Get selected dxvk version
+    pub fn get_selected_dxvk(&self) -> anyhow::Result<Option<DxvkVersion>> {
+        match wincompatlib::dxvk::Dxvk::get_version(&self.game.wine.prefix)? {
+            Some(version) => DxvkVersion::find_in(&self.components.path, version),
+            None => Ok(None)
         }
     }
 }

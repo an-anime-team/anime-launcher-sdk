@@ -7,7 +7,14 @@ use discord_rich_presence::{
     DiscordIpcClient
 };
 
-use super::config::prelude::DiscordRpc as DiscordRpcConfig;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DiscordRpcParams {
+    pub app_id: u64,
+    pub enabled: bool,
+    pub title: String,
+    pub subtitle: String,
+    pub icon: String
+}
 
 #[derive(Debug, Clone)]
 pub enum RpcUpdates {
@@ -34,12 +41,12 @@ pub struct DiscordRpc {
 }
 
 impl DiscordRpc {
-    pub fn new(mut config: DiscordRpcConfig) -> Self {
+    pub fn new(mut params: DiscordRpcParams) -> Self {
         let (sender, receiver) = mpsc::channel();
 
         Self {
             _thread: std::thread::spawn(move || {
-                let mut client = DiscordIpcClient::new(&config.app_id.to_string())
+                let mut client = DiscordIpcClient::new(&params.app_id.to_string())
                     .expect("Failed to register discord ipc client");
 
                 let mut connected = false;
@@ -52,7 +59,7 @@ impl DiscordRpc {
 
                                 client.connect().expect("Failed to connect to discord");
 
-                                client.set_activity(Self::get_activity(&config))
+                                client.set_activity(Self::get_activity(&params))
                                     .expect("Failed to update discord rpc activity");
                             }
                         }
@@ -66,12 +73,12 @@ impl DiscordRpc {
                         }
 
                         RpcUpdates::UpdateActivity { title, subtitle, icon } => {
-                            config.title = title;
-                            config.subtitle = subtitle;
-                            config.icon = icon;
+                            params.title = title;
+                            params.subtitle = subtitle;
+                            params.icon = icon;
 
                             if connected {
-                                client.set_activity(Self::get_activity(&config))
+                                client.set_activity(Self::get_activity(&params))
                                     .expect("Failed to update discord rpc activity");
                             }
                         }
@@ -88,7 +95,7 @@ impl DiscordRpc {
         }
     }
 
-    pub fn get_activity(config: &DiscordRpcConfig) -> Activity {
+    pub fn get_activity(config: &DiscordRpcParams) -> Activity {
         Activity::new()
             .details(&config.title)
             .state(&config.subtitle)

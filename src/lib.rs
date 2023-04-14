@@ -15,11 +15,8 @@ pub mod config;
 #[cfg(feature = "components")]
 pub mod components;
 
-#[cfg(feature = "game")]
-// pub mod game;
-
 #[cfg(feature = "discord-rpc")]
-// pub mod discord_rpc;
+pub mod discord_rpc;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 pub mod schema;
 
+pub use schema::Schema;
+
 use crate::config::Config as ConfigTrait;
 use crate::honkai::consts::config_file;
 

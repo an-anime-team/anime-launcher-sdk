@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
+use crate::discord_rpc::DiscordRpcParams;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DiscordRpc {
     pub app_id: u64,
@@ -8,6 +10,19 @@ pub struct DiscordRpc {
     pub title: String,
     pub subtitle: String,
     pub icon: String
+}
+
+impl From<DiscordRpc> for DiscordRpcParams {
+    #[inline]
+    fn from(config: DiscordRpc) -> Self {
+        Self {
+            app_id: config.app_id,
+            enabled: config.enabled,
+            title: config.title,
+            subtitle: config.subtitle,
+            icon: config.icon
+        }
+    }
 }
 
 // TODO: add honkers-specific discord rpc

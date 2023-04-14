@@ -1,19 +1,17 @@
 use std::process::{Command, Stdio};
 
-use anime_game_core::prelude::*;
-use anime_game_core::genshin::telemetry;
-use anime_game_core::genshin::game::Game;
+use anime_game_core::honkai::telemetry;
 
-use super::consts;
-use super::config;
+use crate::config::Config as _;
+use crate::honkai::config::Config;
+use crate::honkai::config::schema::Schema;
 
-#[cfg(feature = "fps-unlocker")]
-use super::fps_unlocker::FpsUnlocker;
+use crate::honkai::consts;
 
 #[cfg(feature = "discord-rpc")]
-use super::discord_rpc::*;
+use crate::discord_rpc::*;
 
-fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String {
+fn replace_keywords<T: ToString>(command: T, config: &Schema) -> String {
     let wine_build = config.game.wine.builds.join(config.game.wine.selected.as_ref().unwrap());
 
     command.to_string()
@@ -21,7 +19,7 @@ fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String 
         .replace("%prefix%", &config.game.wine.prefix.to_string_lossy())
         .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&std::env::temp_dir()).to_string_lossy())
         .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
-        .replace("%game%", &config.game.path.for_edition(config.launcher.edition).to_string_lossy())
+        .replace("%game%", &config.game.path.to_string_lossy())
 }
 
 /// Try to run the game
@@ -31,10 +29,9 @@ fn replace_keywords<T: ToString>(command: T, config: &config::Config) -> String 
 pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
 
-    let config = config::get()?;
-    let game_path = config.game.path.for_edition(config.launcher.edition);
+    let config = Config::get()?;
 
-    if !game_path.exists() {
+    if !config.game.path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -50,59 +47,6 @@ pub fn run() -> anyhow::Result<()> {
 
     if let Some(server) = telemetry::is_disabled(consts::TELEMETRY_CHECK_TIMEOUT) {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
-    }
-
-    // Prepare fps unlocker
-    // 1) Download if needed
-    // 2) Generate config file
-    // 3) Generate fpsunlocker.bat from launcher.bat
-
-    #[cfg(feature = "fps-unlocker")]
-    if config.game.enhancements.fps_unlocker.enabled {
-        tracing::info!("Preparing FPS unlocker");
-
-        let unlocker = match FpsUnlocker::from_dir(&config.game.enhancements.fps_unlocker.path) {
-            Ok(Some(unlocker)) => unlocker,
-
-            other => {
-                // Ok(None) means unknown version, so we should delete it before downloading newer one
-                // because otherwise downloader will try to continue downloading "partially downloaded" file
-                if let Ok(None) = other {
-                    std::fs::remove_file(FpsUnlocker::get_binary_in(&config.game.enhancements.fps_unlocker.path))?;
-                }
-
-                tracing::info!("Unlocker is not downloaded. Downloading");
-
-                match FpsUnlocker::download(&config.game.enhancements.fps_unlocker.path) {
-                    Ok(unlocker) => unlocker,
-                    Err(err) => return Err(anyhow::anyhow!("Failed to download FPS unlocker: {err}"))
-                }
-            }
-        };
-
-        // Generate FPS unlocker config file
-        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config) {
-            return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
-        }
-
-        let bat_path = game_path.join("fps_unlocker.bat");
-        let original_bat_path = game_path.join("launcher.bat");
-
-        // Generate fpsunlocker.bat from launcher.bat
-        std::fs::write(bat_path, std::fs::read_to_string(original_bat_path)?
-            .replace("start GenshinImpact.exe %*", &format!("start GenshinImpact.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))
-            .replace("start YuanShen.exe %*", &format!("start YuanShen.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy())))?;
-    }
-
-    // Generate `config.ini` if environment emulation feature is presented
-
-    #[cfg(feature = "environment-emulation")] {
-        let game = Game::new(game_path);
-
-        std::fs::write(
-            game_path.join("config.ini"),
-            config.launcher.environment.generate_config(game.get_version()?.to_string())
-        )?;
     }
 
     // Prepare bash -c '<command>'
@@ -123,16 +67,12 @@ pub fn run() -> anyhow::Result<()> {
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command() {
+    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("honkers") {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
 
-    windows_command += if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
-        "fps_unlocker.bat "
-    } else {
-        "launcher.bat "
-    };
+    windows_command += "launcher.bat ";
 
     if config.game.wine.borderless {
         windows_command += "-screen-fullscreen 0 -popupwindow ";
@@ -150,7 +90,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(game_path.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
+        std::fs::write(config.game.path.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
 
         windows_command = String::from("compact_launch.bat");
     }
@@ -185,7 +125,7 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     command.envs(config.game.wine.sync.get_env_vars());
-    command.envs(config.game.enhancements.hud.get_env_vars(&config));
+    command.envs(config.game.enhancements.hud.get_env_vars(config.game.enhancements.gamescope.enabled));
     command.envs(config.game.enhancements.fsr.get_env_vars());
     command.envs(config.game.wine.language.get_env_vars());
 
@@ -200,11 +140,11 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
-    command.current_dir(game_path).spawn()?.wait_with_output()?;
+    command.current_dir(config.game.path).spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
-        Some(DiscordRpc::new(config.launcher.discord_rpc))
+        Some(DiscordRpc::new(config.launcher.discord_rpc.into()))
     } else {
         None
     };
