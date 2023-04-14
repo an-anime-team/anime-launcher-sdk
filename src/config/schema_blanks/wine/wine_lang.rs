@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use enum_ordinalize::Ordinalize;
 
-#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
 pub enum WineLang {
     System,
     English,
@@ -21,12 +21,14 @@ pub enum WineLang {
 }
 
 impl Default for WineLang {
+    #[inline]
     fn default() -> Self {
         Self::System
     }
 }
 
 impl From<&JsonValue> for WineLang {
+    #[inline]
     fn from(value: &JsonValue) -> Self {
         serde_json::from_value(value.clone()).unwrap_or_default()
     }
@@ -53,6 +55,7 @@ impl WineLang {
 }
 
 impl std::fmt::Display for WineLang {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:?}", self))
     }

@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::config::prelude::*;
+use crate::config::schema_blanks::resolution::Resolution;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VirtualDesktop {
@@ -11,6 +11,7 @@ pub struct VirtualDesktop {
 }
 
 impl Default for VirtualDesktop {
+    #[inline]
     fn default() -> Self {
         Self {
             enabled: false,
@@ -44,14 +45,16 @@ impl From<&JsonValue> for VirtualDesktop {
 }
 
 impl VirtualDesktop {
+    #[inline]
     pub fn get_resolution(&self) -> Resolution {
         Resolution::from_pair(self.width, self.height)
     }
 
-    /// `explorer /desktop=animegame,[width]x[height]`
-    pub fn get_command(&self) -> Option<String> {
+    #[inline]
+    /// `explorer /desktop=[desktop_name],[width]x[height]`
+    pub fn get_command<T: AsRef<str>>(&self, desktop_name: T) -> Option<String> {
         if self.enabled {
-            Some(format!("explorer /desktop=animegame,{}x{}", self.width, self.height))
+            Some(format!("explorer /desktop={},{}x{}", desktop_name.as_ref(), self.width, self.height))
         }
 
         else {

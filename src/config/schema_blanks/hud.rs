@@ -1,13 +1,11 @@
+use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
 use enum_ordinalize::Ordinalize;
 
-use std::collections::HashMap;
-
-use crate::config::Config;
-
-#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
 pub enum HUD {
     None,
     DXVK,
@@ -15,12 +13,14 @@ pub enum HUD {
 }
 
 impl Default for HUD {
+    #[inline]
     fn default() -> Self {
         Self::None
     }
 }
 
 impl From<&JsonValue> for HUD {
+    #[inline]
     fn from(value: &JsonValue) -> Self {
         serde_json::from_value(value.clone()).unwrap_or_default()
     }
@@ -28,7 +28,7 @@ impl From<&JsonValue> for HUD {
 
 impl HUD {
     /// Get environment variables corresponding to used wine hud
-    pub fn get_env_vars(&self, config: &Config) -> HashMap<&str, &str> {
+    pub fn get_env_vars(&self, gamescope_enabled: bool) -> HashMap<&str, &str> {
         match self {
             Self::None => HashMap::new(),
             Self::DXVK => HashMap::from([
@@ -37,7 +37,7 @@ impl HUD {
             Self::MangoHUD => {
                 // Don't show mangohud if gamescope is enabled
                 // otherwise it'll be doubled
-                if config.game.enhancements.gamescope.enabled {
+                if gamescope_enabled {
                     HashMap::new()
                 } else {
                     HashMap::from([

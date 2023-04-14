@@ -8,6 +8,7 @@ pub struct Repairer {
 }
 
 impl Default for Repairer {
+    #[inline]
     fn default() -> Self {
         Self {
             threads: 4,

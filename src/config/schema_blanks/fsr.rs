@@ -10,6 +10,7 @@ pub struct Fsr {
 }
 
 impl Default for Fsr {
+    #[inline]
     fn default() -> Self {
         Self {
             strength: 2,
@@ -38,11 +39,11 @@ impl From<&JsonValue> for Fsr {
 
 impl Fsr {
     /// Get environment variables corresponding to used amd fsr options
-    pub fn get_env_vars(&self) -> HashMap<&str, String> {
+    pub fn get_env_vars(&self) -> HashMap<&str, u64> {
         if self.enabled {
             HashMap::from([
-                ("WINE_FULLSCREEN_FSR", String::from("1")),
-                ("WINE_FULLSCREEN_FSR_STRENGTH", self.strength.to_string())
+                ("WINE_FULLSCREEN_FSR", 1),
+                ("WINE_FULLSCREEN_FSR_STRENGTH", self.strength)
             ])
         }
         

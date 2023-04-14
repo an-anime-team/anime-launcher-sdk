@@ -3,8 +3,6 @@ use std::process::{Command, Stdio};
 pub use anime_game_core;
 pub use wincompatlib;
 
-pub mod consts;
-
 #[cfg(feature = "genshin")]
 pub mod genshin;
 
@@ -18,13 +16,10 @@ pub mod config;
 pub mod components;
 
 #[cfg(feature = "game")]
-pub mod game;
-
-#[cfg(feature = "fps-unlocker")]
-pub mod fps_unlocker;
+// pub mod game;
 
 #[cfg(feature = "discord-rpc")]
-pub mod discord_rpc;
+// pub mod discord_rpc;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

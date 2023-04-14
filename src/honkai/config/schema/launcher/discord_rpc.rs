@@ -10,7 +10,10 @@ pub struct DiscordRpc {
     pub icon: String
 }
 
+// TODO: add honkers-specific discord rpc
+
 impl Default for DiscordRpc {
+    #[inline]
     fn default() -> Self {
         Self {
             app_id: 901534333360304168,

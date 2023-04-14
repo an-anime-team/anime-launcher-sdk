@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Resolution {
     // qHD; 960x540
     MiniHD,
@@ -19,8 +21,9 @@ pub enum Resolution {
 }
 
 impl Resolution {
-    pub fn list() -> Vec<Self> {
-        vec![
+    #[inline]
+    pub fn list() -> &'static [Self] {
+        &[
             Self::MiniHD,
             Self::HD,
             Self::FullHD,
@@ -34,13 +37,14 @@ impl Resolution {
             let pair = res.get_pair();
 
             if pair.0 == width && pair.1 == height {
-                return res;
+                return res.to_owned();
             }
         }
 
         Self::Custom(width, height)
     }
 
+    #[inline]
     pub fn get_pair(&self) -> (u64, u64) {
         match self {
             Self::MiniHD  => (960,  540),

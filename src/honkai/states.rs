@@ -6,7 +6,11 @@ use wincompatlib::prelude::*;
 use anime_game_core::prelude::*;
 use anime_game_core::honkai::prelude::*;
 
-use crate::components::wine::WincompatlibWine;
+use crate::config::Config;
+use crate::components::wine::{
+    Version as WineVersion,
+    WincompatlibWine
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {
@@ -119,41 +123,43 @@ impl LauncherState {
     pub fn get_from_config<T: Fn(StateUpdating)>(status_updater: T) -> anyhow::Result<Self> {
         tracing::debug!("Trying to get launcher state");
 
-        let config = crate::config::get()?;
+        let config = crate::honkai::config::Config::get()?;
 
         let mut wine_prefix = config.game.wine.prefix.clone();
 
         // Check wine existence
         #[cfg(feature = "components")]
         {
-            if let Some(wine) = config.get_selected_wine()? {
-                if !config.game.wine.builds.join(&wine.name).exists() {
-                    return Ok(Self::WineNotInstalled);
+            match config.game.wine.selected {
+                Some(wine) => {
+                    if let Some(wine) = WineVersion::find_in(&config.components.path, wine)? {
+                        if !config.game.wine.builds.join(&wine.name).exists() {
+                            return Ok(Self::WineNotInstalled);
+                        }
+
+                        let wine = wine
+                            .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
+                            .with_prefix(&config.game.wine.prefix);
+
+                        match wine {
+                            WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
+                                wine_prefix = prefix;
+                            }
+
+                            WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
+                                wine_prefix = prefix;
+                            }
+                        }
+                    }
                 }
 
-                let wine = wine
-                    .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
-                    .with_prefix(&config.game.wine.prefix);
-
-                match wine {
-                    WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
-                        wine_prefix = prefix;
-                    }
-
-                    WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
-                        wine_prefix = prefix;
-                    }
-                }
-            }
-
-            else {
-                return Ok(Self::WineNotInstalled);
+                None => return Ok(Self::WineNotInstalled)
             }
         }
 
         Self::get(LauncherStateParams {
             wine_prefix,
-            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_path: config.game.path,
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,

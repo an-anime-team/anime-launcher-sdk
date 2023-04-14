@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use enum_ordinalize::Ordinalize;
 
-#[derive(Ordinalize, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
 pub enum WineSync {
     None,
     ESync,
@@ -14,12 +14,14 @@ pub enum WineSync {
 }
 
 impl Default for WineSync {
+    #[inline]
     fn default() -> Self {
         Self::FSync
     }
 }
 
 impl From<&JsonValue> for WineSync {
+    #[inline]
     fn from(value: &JsonValue) -> Self {
         serde_json::from_value(value.clone()).unwrap_or_default()
     }

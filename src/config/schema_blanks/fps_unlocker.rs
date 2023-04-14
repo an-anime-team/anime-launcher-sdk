@@ -1,29 +1,23 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-pub mod fps;
-pub mod window_mode;
-
-pub mod prelude {
-    pub use super::fps::Fps;
-    pub use super::window_mode::WindowMode;
-}
-
-use prelude::*;
+use super::window_mode::WindowMode;
+use super::fps::Fps;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Config {
-    pub fps: u64,
+pub struct FpsUnlockerConfig {
+    pub fps: Fps,
     pub power_saving: bool,
     pub monitor: u64,
     pub window_mode: WindowMode,
     pub priority: u64
 }
 
-impl Default for Config {
+impl Default for FpsUnlockerConfig {
+    #[inline]
     fn default() -> Self {
         Self {
-            fps: 120,
+            fps: Fps::HundredTwenty,
             power_saving: false,
             monitor: 1,
             window_mode: WindowMode::default(),
@@ -32,13 +26,13 @@ impl Default for Config {
     }
 }
 
-impl From<&JsonValue> for Config {
+impl From<&JsonValue> for FpsUnlockerConfig {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
         Self {
             fps: match value.get("fps") {
-                Some(value) => value.as_u64().unwrap_or(default.fps),
+                Some(value) => value.as_u64().map(Fps::from_num).unwrap_or(default.fps),
                 None => default.fps
             },
 

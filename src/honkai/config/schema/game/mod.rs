@@ -1,42 +1,42 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-pub mod paths;
-pub mod wine;
-pub mod dxvk;
+use crate::config::schema_blanks::prelude::*;
+use crate::honkai::consts::launcher_dir;
+
+crate::config_impl_wine_schema!(launcher_dir);
+crate::config_impl_dxvk_schema!(launcher_dir);
+
 pub mod enhancements;
 
 pub mod prelude {
-    pub use super::enhancements::prelude::*;
-    pub use super::wine::prelude::*;
-
-    pub use super::paths::Paths;
-    pub use super::Game;
-    pub use super::dxvk::Dxvk;
+    pub use super::Wine;
+    pub use super::Dxvk;
+    pub use super::enhancements::Enhancements;
 }
 
 use prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Game {
-    pub path: Paths,
-    pub voices: Vec<String>,
+    pub path: PathBuf,
     pub wine: Wine,
     pub dxvk: Dxvk,
-    pub enhancements: prelude::Enhancements,
+    pub enhancements: Enhancements,
     pub environment: HashMap<String, String>,
     pub command: Option<String>
 }
 
 impl Default for Game {
+    #[inline]
     fn default() -> Self {
+        let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
+
         Self {
-            path: Paths::default(),
-            voices: vec![
-                String::from("en-us")
-            ],
+            path: launcher_dir,
             wine: Wine::default(),
             dxvk: Dxvk::default(),
             enhancements: Enhancements::default(),
@@ -52,26 +52,11 @@ impl From<&JsonValue> for Game {
 
         Self {
             path: match value.get("path") {
-                Some(value) => Paths::from(value),
-                None => default.path
-            },
-
-            voices: match value.get("voices") {
-                Some(value) => match value.as_array() {
-                    Some(values) => {
-                        let mut voices = Vec::new();
-
-                        for value in values {
-                            if let Some(voice) = value.as_str() {
-                                voices.push(voice.to_string());
-                            }
-                        }
-
-                        voices
-                    },
-                    None => default.voices
+                Some(value) => match value.as_str() {
+                    Some(value) => PathBuf::from(value),
+                    None => default.path
                 },
-                None => default.voices
+                None => default.path
             },
 
             wine: match value.get("wine") {

@@ -26,6 +26,70 @@ pub struct Gamescope {
     pub window_type: WindowType
 }
 
+impl Default for Gamescope {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            game: Size::default(),
+            gamescope: Size::default(),
+            framerate: Framerate::default(),
+            integer_scaling: true,
+            fsr: false,
+            nis: false,
+            window_type: WindowType::default()
+        }
+    }
+}
+
+impl From<&JsonValue> for Gamescope {
+    fn from(value: &JsonValue) -> Self {
+        let default = Self::default();
+
+        Self {
+            enabled: match value.get("enabled") {
+                Some(value) => value.as_bool().unwrap_or(default.enabled),
+                None => default.enabled
+            },
+
+            game: match value.get("game") {
+                Some(value) => Size::from(value),
+                None => default.game
+            },
+
+            gamescope: match value.get("gamescope") {
+                Some(value) => Size::from(value),
+                None => default.gamescope
+            },
+
+            framerate: match value.get("framerate") {
+                Some(value) => Framerate::from(value),
+                None => default.framerate
+            },
+
+            integer_scaling: match value.get("integer_scaling") {
+                Some(value) => value.as_bool().unwrap_or(default.integer_scaling),
+                None => default.integer_scaling
+            },
+
+            fsr: match value.get("fsr") {
+                Some(value) => value.as_bool().unwrap_or(default.fsr),
+                None => default.fsr
+            },
+
+            nis: match value.get("nis") {
+                Some(value) => value.as_bool().unwrap_or(default.nis),
+                None => default.nis
+            },
+
+            window_type: match value.get("window_type") {
+                Some(value) => WindowType::from(value),
+                None => default.window_type
+            }
+        }
+    }
+}
+
 impl Gamescope {
     pub fn get_command(&self) -> Option<String> {
         // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
@@ -88,69 +152,6 @@ impl Gamescope {
 
         else {
             None
-        }
-    }
-}
-
-impl Default for Gamescope {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            game: Size::default(),
-            gamescope: Size::default(),
-            framerate: Framerate::default(),
-            integer_scaling: true,
-            fsr: false,
-            nis: false,
-            window_type: WindowType::default()
-        }
-    }
-}
-
-impl From<&JsonValue> for Gamescope {
-    fn from(value: &JsonValue) -> Self {
-        let default = Self::default();
-
-        Self {
-            enabled: match value.get("enabled") {
-                Some(value) => value.as_bool().unwrap_or(default.enabled),
-                None => default.enabled
-            },
-
-            game: match value.get("game") {
-                Some(value) => Size::from(value),
-                None => default.game
-            },
-
-            gamescope: match value.get("gamescope") {
-                Some(value) => Size::from(value),
-                None => default.gamescope
-            },
-
-            framerate: match value.get("framerate") {
-                Some(value) => Framerate::from(value),
-                None => default.framerate
-            },
-
-            integer_scaling: match value.get("integer_scaling") {
-                Some(value) => value.as_bool().unwrap_or(default.integer_scaling),
-                None => default.integer_scaling
-            },
-
-            fsr: match value.get("fsr") {
-                Some(value) => value.as_bool().unwrap_or(default.fsr),
-                None => default.fsr
-            },
-
-            nis: match value.get("nis") {
-                Some(value) => value.as_bool().unwrap_or(default.nis),
-                None => default.nis
-            },
-
-            window_type: match value.get("window_type") {
-                Some(value) => WindowType::from(value),
-                None => default.window_type
-            }
         }
     }
 }
