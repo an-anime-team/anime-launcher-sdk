@@ -36,7 +36,7 @@ impl Default for Game {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir,
+            path: launcher_dir.join(concat!("Hon", "kai Imp", "act")),
             wine: Wine::default(),
             dxvk: Dxvk::default(),
             enhancements: Enhancements::default(),
