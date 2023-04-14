@@ -44,7 +44,7 @@ impl ConfigTrait for Config {
         unsafe {
             match &CONFIG {
                 Some(config) => Ok(config.clone()),
-                None => Self::get()
+                None => Self::get_raw()
             }
         }
     }
