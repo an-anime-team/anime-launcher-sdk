@@ -52,7 +52,7 @@ impl Default for ConfigSchema {
 impl ConfigSchema {
     pub fn from_config(config: FpsUnlockerConfig) -> Self {
         Self {
-            FPSTarget: config.fps.to_num(),
+            FPSTarget: config.fps,
             UsePowerSave: config.power_saving,
             PopupWindow: config.window_mode == WindowMode::Popup,
             Fullscreen: config.window_mode == WindowMode::Fullscreen,

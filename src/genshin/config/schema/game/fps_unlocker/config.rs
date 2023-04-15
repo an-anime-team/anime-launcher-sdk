@@ -5,7 +5,7 @@ use crate::config::schema_blanks::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    pub fps: Fps,
+    pub fps: u64, // TODO: Fps enum
     pub power_saving: bool,
     pub monitor: u64,
     pub window_mode: WindowMode,
@@ -16,7 +16,7 @@ impl Default for Config {
     #[inline]
     fn default() -> Self {
         Self {
-            fps: Fps::HundredTwenty,
+            fps: 120,
             power_saving: false,
             monitor: 1,
             window_mode: WindowMode::default(),
@@ -31,7 +31,7 @@ impl From<&JsonValue> for Config {
 
         Self {
             fps: match value.get("fps") {
-                Some(value) => value.as_u64().map(Fps::from_num).unwrap_or(default.fps),
+                Some(value) => value.as_u64().unwrap_or(default.fps),
                 None => default.fps
             },
 
