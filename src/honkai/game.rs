@@ -71,7 +71,7 @@ pub fn run() -> anyhow::Result<()> {
         windows_command += " ";
     }
 
-    windows_command += "launcher.bat ";
+    windows_command += "launch.bat ";
 
     if config.game.wine.borderless {
         windows_command += "-screen-fullscreen 0 -popupwindow ";
