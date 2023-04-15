@@ -16,6 +16,8 @@ pub enum LauncherState {
     /// Always contains `VersionDiff::Predownload`
     PredownloadAvailable(VersionDiff),
 
+    PatchAvailable(MainPatch),
+
     #[cfg(feature = "components")]
     WineNotInstalled,
 
@@ -68,7 +70,7 @@ impl LauncherState {
         match diff {
             VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
                 // Check game patch status
-                /*(params.status_updater)(StateUpdating::Patch);
+                (params.status_updater)(StateUpdating::Patch);
 
                 let patch = Patch::new(&params.patch_folder);
 
@@ -82,21 +84,12 @@ impl LauncherState {
                     }
                 }
 
-                // Check UnityPlayer patch
-                let player_patch = patch.unity_player_patch()?;
+                // Check main patch status
+                let player_patch = patch.main_patch()?;
 
                 if !player_patch.is_applied(&params.game_path)? {
-                    return Ok(Self::UnityPlayerPatchAvailable(player_patch));
+                    return Ok(Self::PatchAvailable(player_patch));
                 }
-
-                // Check xlua patch
-                if params.use_xlua_patch {
-                    let xlua_patch = patch.xlua_patch()?;
-
-                    if !xlua_patch.is_applied(&params.game_path)? {
-                        return Ok(Self::XluaPatchAvailable(xlua_patch));
-                    }
-                }*/
 
                 // Check if update predownload available
                 if let VersionDiff::Predownload { .. } = diff {
