@@ -6,11 +6,8 @@ use wincompatlib::prelude::*;
 use anime_game_core::prelude::*;
 use anime_game_core::honkai::prelude::*;
 
-use crate::config::Config;
-use crate::components::wine::{
-    Version as WineVersion,
-    WincompatlibWine
-};
+use crate::config::ConfigExt;
+use crate::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {

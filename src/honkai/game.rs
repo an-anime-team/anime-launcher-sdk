@@ -2,9 +2,8 @@ use std::process::{Command, Stdio};
 
 use anime_game_core::honkai::telemetry;
 
-use crate::config::Config as _;
-use crate::honkai::config::Config;
-use crate::honkai::config::schema::Schema;
+use crate::config::ConfigExt;
+use crate::honkai::config::{Config, Schema};
 
 use crate::honkai::consts;
 
