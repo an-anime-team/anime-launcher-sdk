@@ -6,9 +6,6 @@ pub mod fps;
 pub mod window_mode;
 pub mod dxvk;
 
-#[cfg(feature = "fps-unlocker")]
-pub mod fps_unlocker;
-
 pub mod wine;
 pub mod gamescope;
 

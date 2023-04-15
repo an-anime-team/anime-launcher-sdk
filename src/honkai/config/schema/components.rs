@@ -19,7 +19,7 @@ impl Default for Components {
         Self {
             path: launcher_dir.join("components"),
             servers: vec![
-                "https://github.com/an-anime-team/components".to_string()
+                String::from("https://github.com/an-anime-team/components")
             ]
         }
     }

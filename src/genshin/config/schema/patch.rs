@@ -3,12 +3,13 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::honkai::consts::launcher_dir;
+use crate::genshin::consts::launcher_dir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
+    pub apply_xlua: bool,
     pub root: bool
 }
 
@@ -21,8 +22,11 @@ impl Default for Patch {
             path: launcher_dir.join("patch"),
 
             servers: vec![
-                String::from("https://notabug.org/mkrsym1/dusk")
+                String::from("https://notabug.org/Krock/dawn"),
+                String::from("https://codespace.gay/Maroxy/dawnin")
             ],
+
+            apply_xlua: true,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !PathBuf::from("/.flatpak-info").exists()
@@ -59,6 +63,11 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
+            },
+
+            apply_xlua: match value.get("apply_xlua") {
+                Some(value) => value.as_bool().unwrap_or(default.apply_xlua),
+                None => default.apply_xlua
             },
 
             root: match value.get("root") {

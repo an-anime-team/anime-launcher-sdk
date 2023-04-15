@@ -3,34 +3,29 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::honkai::consts::launcher_dir;
+use crate::genshin::consts::launcher_dir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Patch {
+pub struct Components {
     pub path: PathBuf,
-    pub servers: Vec<String>,
-    pub root: bool
+    pub servers: Vec<String>
 }
 
-impl Default for Patch {
+impl Default for Components {
     #[inline]
     fn default() -> Self {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join("patch"),
-
+            path: launcher_dir.join("components"),
             servers: vec![
-                String::from("https://notabug.org/mkrsym1/dusk")
-            ],
-
-            // Disable root requirement for patching if we're running launcher in flatpak
-            root: !PathBuf::from("/.flatpak-info").exists()
+                String::from("https://github.com/an-anime-team/components")
+            ]
         }
     }
 }
 
-impl From<&JsonValue> for Patch {
+impl From<&JsonValue> for Components {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
@@ -59,11 +54,6 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
-            },
-
-            root: match value.get("root") {
-                Some(value) => value.as_bool().unwrap_or(default.root),
-                None => default.root
             }
         }
     }

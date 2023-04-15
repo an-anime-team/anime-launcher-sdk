@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use anime_game_core::installer::downloader::Downloader;
-
 use md5::{Md5, Digest};
 
-use crate::config::game::enhancements::fps_unlocker::config::Config as FpsUnlockerConfig;
+use anime_game_core::installer::downloader::Downloader;
+
+use super::config::schema::prelude::FpsUnlocker as FpsUnlockerConfig;
 
 pub mod config_schema;
 
@@ -89,4 +89,3 @@ impl FpsUnlocker {
         )?)
     }
 }
-

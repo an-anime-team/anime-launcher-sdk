@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::config::prelude::*;
+use crate::config::schema_blanks::prelude::*;
 use super::FpsUnlockerConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,7 +52,7 @@ impl Default for ConfigSchema {
 impl ConfigSchema {
     pub fn from_config(config: FpsUnlockerConfig) -> Self {
         Self {
-            FPSTarget: config.fps,
+            FPSTarget: config.fps.to_num(),
             UsePowerSave: config.power_saving,
             PopupWindow: config.window_mode == WindowMode::Popup,
             Fullscreen: config.window_mode == WindowMode::Fullscreen,

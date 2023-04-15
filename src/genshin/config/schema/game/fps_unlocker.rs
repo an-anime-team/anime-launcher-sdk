@@ -1,11 +1,10 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use super::window_mode::WindowMode;
-use super::fps::Fps;
+use crate::config::schema_blanks::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FpsUnlockerConfig {
+pub struct FpsUnlocker {
     pub fps: Fps,
     pub power_saving: bool,
     pub monitor: u64,
@@ -13,7 +12,7 @@ pub struct FpsUnlockerConfig {
     pub priority: u64
 }
 
-impl Default for FpsUnlockerConfig {
+impl Default for FpsUnlocker {
     #[inline]
     fn default() -> Self {
         Self {
@@ -26,7 +25,7 @@ impl Default for FpsUnlockerConfig {
     }
 }
 
-impl From<&JsonValue> for FpsUnlockerConfig {
+impl From<&JsonValue> for FpsUnlocker {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
