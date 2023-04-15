@@ -6,12 +6,10 @@ use wincompatlib::prelude::*;
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::prelude::*;
 
-use crate::config::Config as _;
+use crate::config::ConfigExt;
 use crate::genshin::config::Config;
-use crate::components::wine::{
-    Version as WineVersion,
-    WincompatlibWine
-};
+
+use crate::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {

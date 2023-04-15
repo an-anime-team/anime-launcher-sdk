@@ -4,14 +4,14 @@ pub mod schema;
 
 pub use schema::Schema;
 
-use crate::config::Config as ConfigTrait;
+use crate::config::ConfigExt;
 use crate::genshin::consts::config_file;
 
 static mut CONFIG: Option<schema::Schema> = None;
 
 pub struct Config;
 
-impl ConfigTrait for Config {
+impl ConfigExt for Config {
     type Schema = schema::Schema;
 
     #[inline]

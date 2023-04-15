@@ -11,3 +11,6 @@ pub mod env_emulation;
 
 #[cfg(feature = "fps-unlocker")]
 pub mod fps_unlocker;
+
+#[cfg(feature = "game")]
+pub mod game;

@@ -4,7 +4,7 @@ use md5::{Md5, Digest};
 
 use anime_game_core::installer::downloader::Downloader;
 
-use super::config::schema::prelude::FpsUnlocker as FpsUnlockerConfig;
+use super::config::schema::prelude::FpsUnlockerConfig;
 
 pub mod config_schema;
 

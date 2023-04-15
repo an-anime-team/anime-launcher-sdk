@@ -20,6 +20,9 @@ pub mod prelude {
     pub use super::Wine;
     pub use super::Dxvk;
 
+    #[cfg(feature = "fps-unlocker")]
+    pub use super::fps_unlocker::prelude::*;
+
     pub use super::paths::Paths;
     pub use super::enhancements::Enhancements;
 

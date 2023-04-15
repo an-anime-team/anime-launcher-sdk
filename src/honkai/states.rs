@@ -130,30 +130,28 @@ impl LauncherState {
         // Check wine existence
         #[cfg(feature = "components")]
         {
-            match config.game.wine.selected {
-                Some(wine) => {
-                    if let Some(wine) = WineVersion::find_in(&config.components.path, wine)? {
-                        if !config.game.wine.builds.join(&wine.name).exists() {
-                            return Ok(Self::WineNotInstalled);
-                        }
-
-                        let wine = wine
-                            .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
-                            .with_prefix(&config.game.wine.prefix);
-
-                        match wine {
-                            WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
-                                wine_prefix = prefix;
-                            }
-
-                            WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
-                                wine_prefix = prefix;
-                            }
-                        }
-                    }
+            if let Some(wine) = config.get_selected_wine()? {
+                if !config.game.wine.builds.join(&wine.name).exists() {
+                    return Ok(Self::WineNotInstalled);
                 }
 
-                None => return Ok(Self::WineNotInstalled)
+                let wine = wine
+                    .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
+                    .with_prefix(&config.game.wine.prefix);
+
+                match wine {
+                    WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
+                        wine_prefix = prefix;
+                    }
+
+                    WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
+                        wine_prefix = prefix;
+                    }
+                }
+            }
+
+            else {
+                return Ok(Self::WineNotInstalled);
             }
         }
 

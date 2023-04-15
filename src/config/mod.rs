@@ -3,7 +3,7 @@ use std::path::PathBuf;
 /// Workpieces to create your custom config file schema
 pub mod schema_blanks;
 
-pub trait Config {
+pub trait ConfigExt {
     /// Default associated config schema
     type Schema;
 
