@@ -1,8 +1,5 @@
 use std::path::PathBuf;
 
-/// Timeout used to check acessibility of telemetry servers
-pub const TELEMETRY_CHECK_TIMEOUT: Option<u64> = Some(3);
-
 /// Get default launcher dir path
 /// 
 /// `$HOME/.local/share/anime-game-launcher`
