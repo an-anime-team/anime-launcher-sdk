@@ -7,7 +7,7 @@ pub use mounts::Mounts;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sandbox {
-    /// Use `bwrap` to run the game. Default is `true`
+    /// Use `bwrap` to run the game. Default is `false`
     pub enabled: bool,
 
     /// Mount tmpfs to `/home`, `/var/home/$USER` and `$HOME`. Default is `true`
