@@ -1,11 +1,12 @@
 use std::process::{Command, Stdio};
+use std::path::PathBuf;
 
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::telemetry;
 use anime_game_core::genshin::game::Game;
 
 use crate::config::ConfigExt;
-use crate::genshin::config::{Config, Schema};
+use crate::genshin::config::Config;
 
 use crate::genshin::consts;
 
@@ -15,15 +16,21 @@ use super::fps_unlocker::FpsUnlocker;
 #[cfg(feature = "discord-rpc")]
 use crate::discord_rpc::*;
 
-fn replace_keywords<T: ToString>(command: T, config: &Schema) -> String {
-    let wine_build = config.game.wine.builds.join(config.game.wine.selected.as_ref().unwrap());
+#[derive(Debug, Clone)]
+struct Folders {
+    pub wine: PathBuf,
+    pub prefix: PathBuf,
+    pub game: PathBuf,
+    pub temp: PathBuf
+}
 
+fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
     command.to_string()
-        .replace("%build%", &wine_build.to_string_lossy())
-        .replace("%prefix%", &config.game.wine.prefix.to_string_lossy())
-        .replace("%temp%", &config.launcher.temp.as_ref().unwrap_or(&std::env::temp_dir()).to_string_lossy())
+        .replace("%build%", folders.wine.to_str().unwrap())
+        .replace("%prefix%", folders.prefix.to_str().unwrap())
+        .replace("%temp%", folders.game.to_str().unwrap())
         .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
-        .replace("%game%", &config.game.path.for_edition(config.launcher.edition).to_string_lossy())
+        .replace("%game%", folders.temp.to_str().unwrap())
 }
 
 /// Try to run the game
@@ -34,6 +41,7 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
 
     let config = Config::get()?;
+
     let game_path = config.game.path.for_edition(config.launcher.edition);
 
     if !game_path.exists() {
@@ -46,13 +54,20 @@ pub fn run() -> anyhow::Result<()> {
 
     let features = wine.features(&config.components.path)?.unwrap_or_default();
 
+    let mut folders = Folders {
+        wine: config.game.wine.builds.join(&wine.name),
+        prefix: config.game.wine.prefix.clone(),
+        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+        temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
+    };
+
     // Check telemetry servers
 
     tracing::info!("Checking telemetry");
 
-    if let Some(server) = telemetry::is_disabled(consts::TELEMETRY_CHECK_TIMEOUT) {
-        return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
-    }
+    //if let Some(server) = telemetry::is_disabled(consts::TELEMETRY_CHECK_TIMEOUT) {
+    //    return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
+    //}
 
     // Prepare fps unlocker
     // 1) Download if needed
@@ -116,11 +131,9 @@ pub fn run() -> anyhow::Result<()> {
         bash_command += "gamemoderun ";
     }
 
-    let wine_build = config.game.wine.builds.join(&wine.name);
-
     let run_command = features.command
-        .map(|command| replace_keywords(command, &config))
-        .unwrap_or(format!("'{}'", wine_build.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
+        .map(|command| replace_keywords(command, &folders))
+        .unwrap_or(folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy().to_string());
 
     bash_command += &run_command;
     bash_command += " ";
@@ -150,17 +163,50 @@ pub fn run() -> anyhow::Result<()> {
         bash_command = format!("{gamescope} -- {bash_command}");
     }
 
+    // bwrap <params> -- <command to run>
+    #[cfg(feature = "sandbox")]
+    if config.sandbox.enabled {
+        let bwrap = config.sandbox.get_command(
+            folders.wine.to_str().unwrap(),
+            folders.prefix.to_str().unwrap(),
+            folders.game.to_str().unwrap()
+        );
+
+        let sandboxed_folders = Folders {
+            wine: PathBuf::from("/tmp/sandbox/wine"),
+            prefix: PathBuf::from("/tmp/sandbox/prefix"),
+            game: PathBuf::from("/tmp/sandbox/game"),
+            temp: PathBuf::from("/tmp")
+        };
+
+        bash_command = bash_command
+            .replace(folders.wine.to_str().unwrap(), sandboxed_folders.wine.to_str().unwrap())
+            .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
+            .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
+            .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
+
+        bash_command = format!("{bwrap} -- {bash_command}");
+        folders = sandboxed_folders;
+    }
+
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(game_path.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
+        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
 
         windows_command = String::from("compact_launch.bat");
     }
 
-    let bash_command = match &config.game.command {
-        Some(command) => replace_keywords(command, &config).replace("%command%", &bash_command),
-        None => bash_command
-    } + &windows_command;
+    // Finalize launching command
+    bash_command = match &config.game.command {
+        // Use user-given launch command
+        Some(command) => replace_keywords(command, &folders)
+            .replace("%command%", &format!("{bash_command} {windows_command}"))
+            .replace("%bash_command%", &bash_command)
+            .replace("%windows_command%", &windows_command),
+
+        // Combine bash and windows parts of the command
+        None => format!("{bash_command} {windows_command}")
+    };
 
     let mut command = Command::new("bash");
 
@@ -170,18 +216,18 @@ pub fn run() -> anyhow::Result<()> {
     // Setup environment
 
     command.env("WINEARCH", "win64");
-    command.env("WINEPREFIX", &config.game.wine.prefix);
+    command.env("WINEPREFIX", &folders.prefix);
 
     // Add environment flags for selected wine
     for (key, value) in features.env.into_iter() {
-        command.env(key, replace_keywords(value, &config));
+        command.env(key, replace_keywords(value, &folders));
     }
 
     // Add environment flags for selected dxvk
     if let Ok(Some(dxvk )) = config.get_selected_dxvk() {
         if let Ok(Some(features)) = dxvk.features(&config.components.path) {
             for (key, value) in features.env.iter() {
-                command.env(key, replace_keywords(value, &config));
+                command.env(key, replace_keywords(value, &folders));
             }
         }
     }
@@ -202,7 +248,10 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
-    command.current_dir(game_path).spawn()?.wait_with_output()?;
+    // We use real current dir here because sandboxed one
+    // obviously doesn't exist
+    command.current_dir(config.game.path.for_edition(config.launcher.edition))
+        .spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
