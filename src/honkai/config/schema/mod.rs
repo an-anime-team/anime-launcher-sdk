@@ -60,6 +60,13 @@ impl From<&JsonValue> for Schema {
                 None => default.game
             },
 
+            #[cfg(feature = "sandbox")]
+            sandbox: match value.get("sandbox") {
+                Some(value) => Sandbox::from(value),
+                None => default.sandbox
+            },
+
+            #[cfg(feature = "components")]
             components: match value.get("components") {
                 Some(value) => Components::from(value),
                 None => default.components
