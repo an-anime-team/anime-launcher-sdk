@@ -24,5 +24,5 @@ pub mod prelude {
     pub use super::gamescope::prelude::*;
 
     #[cfg(feature = "sandbox")]
-    pub use super::sandbox::Sandbox;
+    pub use super::sandbox::*;
 }
