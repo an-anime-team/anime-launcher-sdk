@@ -31,7 +31,7 @@ impl ConfigExt for Config {
 
     #[inline]
     fn deserialize_schema<T: AsRef<str>>(schema: T) -> anyhow::Result<Self::Schema> {
-        Ok(serde_json::from_str(schema.as_ref())?)
+        Ok(Self::Schema::from(&serde_json::from_str(schema.as_ref())?))
     }
 
     #[inline]

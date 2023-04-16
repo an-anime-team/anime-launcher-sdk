@@ -1,6 +1,9 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+#[cfg(feature = "sandbox")]
+use crate::config::schema_blanks::sandbox::Sandbox;
+
 #[cfg(feature = "components")]
 use crate::components::wine::Version as WineVersion;
 
@@ -32,6 +35,9 @@ use prelude::*;
 pub struct Schema {
     pub launcher: Launcher,
     pub game: Game,
+
+    #[cfg(feature = "sandbox")]
+    pub sandbox: Sandbox,
 
     #[cfg(feature = "components")]
     pub components: Components,

@@ -11,6 +11,7 @@ SDK based on [anime-game-core](https://github.com/an-anime-team/anime-game-core)
 | Manage components (list wine/dxvk versions, etc) | `components` |
 | Run the game | `game` |
 | Use Discord RPC when the game is running | `discord-rpc` |
+| Run the game in `bwrap` sandbox | `sandbox` |
 
 ## Anime Game specific features
 

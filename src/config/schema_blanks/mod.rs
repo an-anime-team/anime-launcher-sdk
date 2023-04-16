@@ -9,6 +9,9 @@ pub mod dxvk;
 pub mod wine;
 pub mod gamescope;
 
+#[cfg(feature = "sandbox")]
+pub mod sandbox;
+
 pub mod prelude {
     pub use super::resolution::Resolution;
     pub use super::repairer::Repairer;
@@ -19,4 +22,7 @@ pub mod prelude {
 
     pub use super::wine::prelude::*;
     pub use super::gamescope::prelude::*;
+
+    #[cfg(feature = "sandbox")]
+    pub use super::sandbox::Sandbox;
 }

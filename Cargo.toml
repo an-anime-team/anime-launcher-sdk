@@ -37,10 +37,11 @@ config = ["dep:serde", "dep:serde_json", "dep:enum-ordinalize"]
 components = ["dep:wincompatlib", "dep:lazy_static"]
 game = ["components", "config"]
 discord-rpc = ["dep:discord-rich-presence"]
+sandbox = []
 
 # Genshin-specific features
 environment-emulation = []
 fps-unlocker = ["dep:md-5"]
 
-all = ["states", "config", "components", "game", "discord-rpc", "environment-emulation", "fps-unlocker"]
+all = ["states", "config", "components", "game", "discord-rpc", "sandbox", "environment-emulation", "fps-unlocker"]
 default = ["all"]
