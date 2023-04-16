@@ -65,7 +65,7 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Checking telemetry");
 
-    if let Some(server) = telemetry::is_disabled()? {
+    if let Ok(Some(server)) = telemetry::is_disabled() {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
     }
 
