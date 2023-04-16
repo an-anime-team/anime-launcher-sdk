@@ -22,8 +22,7 @@ impl Default for Patch {
             path: launcher_dir.join("patch"),
 
             servers: vec![
-                String::from("https://notabug.org/Krock/dawn"),
-                String::from("https://codespace.gay/Maroxy/dawnin")
+                String::from("https://notabug.org/Krock/dawn")
             ],
 
             apply_xlua: true,
