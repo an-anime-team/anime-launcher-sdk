@@ -9,6 +9,7 @@ use crate::honkai::consts::launcher_dir;
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
+    pub apply_mfplat: bool,
     pub root: bool
 }
 
@@ -23,6 +24,8 @@ impl Default for Patch {
             servers: vec![
                 String::from("https://notabug.org/mkrsym1/dusk")
             ],
+
+            apply_mfplat: true,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !PathBuf::from("/.flatpak-info").exists()
@@ -59,6 +62,11 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
+            },
+
+            apply_mfplat: match value.get("apply_mfplat") {
+                Some(value) => value.as_bool().unwrap_or(default.apply_mfplat),
+                None => default.apply_mfplat
             },
 
             root: match value.get("root") {

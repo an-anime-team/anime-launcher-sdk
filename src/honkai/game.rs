@@ -71,8 +71,6 @@ pub fn run() -> anyhow::Result<()> {
         bash_command += "gamemoderun ";
     }
 
-    let wine_build = config.game.wine.builds.join(&wine.name);
-
     let run_command = features.command
         .map(|command| replace_keywords(command, &folders))
         .unwrap_or(folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy().to_string());

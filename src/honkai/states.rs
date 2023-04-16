@@ -16,7 +16,8 @@ pub enum LauncherState {
     /// Always contains `VersionDiff::Predownload`
     PredownloadAvailable(VersionDiff),
 
-    PatchAvailable(MainPatch),
+    MfplatPatchAvailable,
+    MainPatchAvailable(MainPatch),
 
     #[cfg(feature = "components")]
     WineNotInstalled,
@@ -47,6 +48,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
 
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
+    pub apply_mfplat: bool,
 
     pub status_updater: F
 }
@@ -72,6 +74,11 @@ impl LauncherState {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
+                // Check if mfplat patch is needed
+                if params.apply_mfplat && !MfplatPatch::is_applied(&params.wine_prefix)? {
+                    return Ok(Self::MfplatPatchAvailable);
+                }
+
                 let patch = Patch::new(&params.patch_folder);
 
                 // Sync local patch folder with remote if needed
@@ -88,7 +95,7 @@ impl LauncherState {
                 let player_patch = patch.main_patch()?;
 
                 if !player_patch.is_applied(&params.game_path)? {
-                    return Ok(Self::PatchAvailable(player_patch));
+                    return Ok(Self::MainPatchAvailable(player_patch));
                 }
 
                 // Check if update predownload available
@@ -151,6 +158,7 @@ impl LauncherState {
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
+            apply_mfplat: config.patch.apply_mfplat,
 
             status_updater
         })
