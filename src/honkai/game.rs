@@ -209,7 +209,7 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
+        if !output.contains("BH3.exe") {
             break;
         }
     }
