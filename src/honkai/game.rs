@@ -73,7 +73,7 @@ pub fn run() -> anyhow::Result<()> {
 
     let run_command = features.command
         .map(|command| replace_keywords(command, &folders))
-        .unwrap_or(folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy().to_string());
+        .unwrap_or(format!("'{}'", folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
 
     bash_command += &run_command;
     bash_command += " ";
