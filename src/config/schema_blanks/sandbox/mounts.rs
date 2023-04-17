@@ -9,7 +9,10 @@ pub struct Mounts {
     pub read_only: HashMap<String, String>,
 
     /// Bind original directory into the sandbox with writing access
-    pub bind: HashMap<String, String>
+    pub bind: HashMap<String, String>,
+
+    /// Symlink original files into sandbox with writing access
+    pub symlinks: HashMap<String, String>
 }
 
 impl From<&JsonValue> for Mounts {
@@ -51,6 +54,24 @@ impl From<&JsonValue> for Mounts {
                     None => default.bind
                 },
                 None => default.bind
+            },
+
+            symlinks: match value.get("symlinks") {
+                Some(value) => match value.as_object() {
+                    Some(values) => {
+                        let mut vars = HashMap::new();
+
+                        for (name, value) in values {
+                            if let Some(value) = value.as_str() {
+                                vars.insert(name.clone(), value.to_string());
+                            }
+                        }
+
+                        vars
+                    },
+                    None => default.symlinks
+                },
+                None => default.symlinks
             }
         }
     }

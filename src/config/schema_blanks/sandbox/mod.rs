@@ -16,6 +16,9 @@ pub struct Sandbox {
     /// Spoof original hostname. Default is `None`
     pub hostname: Option<String>,
 
+    /// Append additional bwrap arguments. Default is `None`
+    pub args: Option<String>,
+
     /// List of paths to which tmpfs will be mounted. Default is empty
     pub private: Vec<String>,
 
@@ -30,6 +33,7 @@ impl Default for Sandbox {
             enabled: false,
             isolate_home: true,
             hostname: None,
+            args: None,
             private: vec![],
             mounts: Mounts::default()
         }
@@ -63,6 +67,20 @@ impl From<&JsonValue> for Sandbox {
                     }
                 },
                 None => default.hostname
+            },
+
+            args: match value.get("args") {
+                Some(value) => {
+                    if value.is_null() {
+                        None
+                    } else {
+                        match value.as_str() {
+                            Some(value) => Some(value.to_string()),
+                            None => default.args
+                        }
+                    }
+                },
+                None => default.args
             },
 
             private: match value.get("private") {
@@ -108,6 +126,7 @@ impl Sandbox {
     /// | `game_dir` | `/tmp/sandbox/game` | bind | false |
     /// | <mounts/read_only> | <mounts/read_only> | read-only bind | true |
     /// | <mounts/binds> | <mounts/binds> | bind | true |
+    /// | <mounts/symlinks> | <mounts/symlinks> | symlink | true |
     pub fn get_command(&self, wine_dir: impl AsRef<str>, prefix_dir: impl AsRef<str>, game_dir: impl AsRef<str>) -> String {
         let mut command = String::from("bwrap --ro-bind / /");
 
@@ -142,15 +161,22 @@ impl Sandbox {
             command += &format!(" --bind '{}' '{}'", from.trim(), to.trim());
         }
 
+        for (from, to) in &self.mounts.symlinks {
+            command += &format!(" --symlink '{}' '{}'", from.trim(), to.trim());
+        }
+
         command += &format!(" --bind '{}' /tmp/sandbox/wine", wine_dir.as_ref());
         command += &format!(" --bind '{}' /tmp/sandbox/prefix", prefix_dir.as_ref());
         command += &format!(" --bind '{}' /tmp/sandbox/game", game_dir.as_ref());
 
-        command.push_str(" --chdir /");
         command.push_str(" --die-with-parent");
 
         command.push_str(" --unshare-all");
         command.push_str(" --share-net");
+
+        if let Some(args) = &self.args {
+            command.push_str(args.trim());
+        }
 
         command
     }

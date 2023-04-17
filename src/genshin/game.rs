@@ -185,7 +185,7 @@ pub fn run() -> anyhow::Result<()> {
             .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
             .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
 
-        bash_command = format!("{bwrap} -- {bash_command}");
+        bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
         folders = sandboxed_folders;
     }
 
