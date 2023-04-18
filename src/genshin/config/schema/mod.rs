@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use wincompatlib::wine::WineWithExt;
+use wincompatlib::prelude::*;
 
 #[cfg(feature = "sandbox")]
 use crate::config::schema_blanks::sandbox::Sandbox;
@@ -119,7 +119,7 @@ impl Schema {
 
             let prefix = match wine {
                 WincompatlibWine::Default(wine) => wine.prefix,
-                WincompatlibWine::Proton(proton) => proton.proton_prefix
+                WincompatlibWine::Proton(proton) => proton.wine().prefix.clone()
             };
 
             if let Some(prefix) = prefix {
