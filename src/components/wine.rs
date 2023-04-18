@@ -273,8 +273,7 @@ pub struct Files {
     pub wine: String,
     pub wine64: Option<String>,
     pub wineserver: Option<String>,
-    pub wineboot: Option<String>,
-    pub winecfg: Option<String>
+    pub wineboot: Option<String>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
