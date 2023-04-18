@@ -248,7 +248,12 @@ impl Version {
 
         if let Ok(Some(features)) = self.features(components) {
             if let Some(Bundle::Proton) = features.bundle {
-                return WincompatlibWine::Proton(Proton::new(wine_folder, None));
+                let mut proton = Proton::new(wine_folder, None);
+
+                // Small workaround. Most of stuff will work with just this
+                proton.steam_client_path = Some(PathBuf::from(""));
+
+                return WincompatlibWine::Proton(proton);
             }
         }
 
