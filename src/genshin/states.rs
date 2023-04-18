@@ -1,15 +1,12 @@
 use std::path::PathBuf;
 
 use serde::{Serialize, Deserialize};
-use wincompatlib::prelude::*;
 
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::prelude::*;
 
 use crate::config::ConfigExt;
 use crate::genshin::config::Config;
-
-use crate::components::wine::WincompatlibWine;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LauncherState {
@@ -61,7 +58,6 @@ pub enum StateUpdating {
     Patch
 }
 
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
@@ -197,47 +193,26 @@ impl LauncherState {
 
         let config = Config::get()?;
 
-        let mut wine_prefix = config.game.wine.prefix.clone();
+        match &config.game.wine.selected {
+            #[cfg(feature = "components")]
+            Some(selected) if !config.game.wine.builds.join(selected).exists() => return Ok(Self::WineNotInstalled),
 
-        // Check wine existence
-        #[cfg(feature = "components")]
-        {
-            if let Some(wine) = config.get_selected_wine()? {
-                if !config.game.wine.builds.join(&wine.name).exists() {
-                    return Ok(Self::WineNotInstalled);
-                }
+            None => return Ok(Self::WineNotInstalled),
 
-                let wine = wine
-                    .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
-                    .with_prefix(&config.game.wine.prefix);
-
-                match wine {
-                    WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
-                        wine_prefix = prefix;
-                    }
-
-                    WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
-                        wine_prefix = prefix;
-                    }
-                }
-            }
-
-            else {
-                return Ok(Self::WineNotInstalled);
-            }
+            _ => ()
         }
 
         let mut voices = Vec::with_capacity(config.game.voices.len());
 
-        for voice in config.game.voices {
-            voices.push(match VoiceLocale::from_str(&voice) {
+        for voice in &config.game.voices {
+            voices.push(match VoiceLocale::from_str(voice) {
                 Some(locale) => locale,
                 None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice))
             });
         }
 
         Self::get(LauncherStateParams {
-            wine_prefix,
+            wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
 
             selected_voices: voices,

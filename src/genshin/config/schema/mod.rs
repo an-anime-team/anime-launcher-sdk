@@ -1,11 +1,18 @@
+use std::path::PathBuf;
+
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
+
+use wincompatlib::wine::WineWithExt;
 
 #[cfg(feature = "sandbox")]
 use crate::config::schema_blanks::sandbox::Sandbox;
 
 #[cfg(feature = "components")]
-use crate::components::wine::Version as WineVersion;
+use crate::components::wine::{
+    WincompatlibWine,
+    Version as WineVersion
+};
 
 #[cfg(feature = "components")]
 use crate::components::dxvk::Version as DxvkVersion;

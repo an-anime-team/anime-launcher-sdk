@@ -40,7 +40,6 @@ pub enum StateUpdating {
     Patch
 }
 
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
@@ -122,38 +121,17 @@ impl LauncherState {
 
         let config = crate::honkai::config::Config::get()?;
 
-        let mut wine_prefix = config.game.wine.prefix.clone();
+        match &config.game.wine.selected {
+            #[cfg(feature = "components")]
+            Some(selected) if !config.game.wine.builds.join(selected).exists() => return Ok(Self::WineNotInstalled),
 
-        // Check wine existence
-        #[cfg(feature = "components")]
-        {
-            if let Some(wine) = config.get_selected_wine()? {
-                if !config.game.wine.builds.join(&wine.name).exists() {
-                    return Ok(Self::WineNotInstalled);
-                }
+            None => return Ok(Self::WineNotInstalled),
 
-                let wine = wine
-                    .to_wine(&config.components.path, Some(&config.game.wine.builds.join(&wine.name)))
-                    .with_prefix(&config.game.wine.prefix);
-
-                match wine {
-                    WincompatlibWine::Default(wine) => if let Some(prefix) = wine.prefix {
-                        wine_prefix = prefix;
-                    }
-
-                    WincompatlibWine::Proton(proton) => if let Some(prefix) = proton.wine().prefix.clone() {
-                        wine_prefix = prefix;
-                    }
-                }
-            }
-
-            else {
-                return Ok(Self::WineNotInstalled);
-            }
+            _ => ()
         }
 
         Self::get(LauncherStateParams {
-            wine_prefix,
+            wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path,
 
             patch_servers: config.patch.servers,
