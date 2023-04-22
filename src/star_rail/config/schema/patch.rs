@@ -9,7 +9,6 @@ use crate::star_rail::consts::launcher_dir;
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
-    pub apply_xlua: bool,
     pub root: bool
 }
 
@@ -24,8 +23,6 @@ impl Default for Patch {
             servers: vec![
                 String::from("https://notabug.org/Krock/dawn")
             ],
-
-            apply_xlua: true,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !PathBuf::from("/.flatpak-info").exists()
@@ -62,11 +59,6 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
-            },
-
-            apply_xlua: match value.get("apply_xlua") {
-                Some(value) => value.as_bool().unwrap_or(default.apply_xlua),
-                None => default.apply_xlua
             },
 
             root: match value.get("root") {
