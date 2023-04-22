@@ -7,11 +7,11 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies.anime-game-core]
-git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.7.4"
+# git = "https://github.com/an-anime-team/anime-game-core"
+# tag = "1.7.4"
 features = ["all"]
 
-# path = "../anime-game-core" # ! for dev purposes only
+path = "../anime-game-core" # ! for dev purposes only
 
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
@@ -31,6 +31,7 @@ discord-rich-presence = { version = "0.2.3", optional = true }
 [features]
 genshin = ["anime-game-core/genshin"]
 honkai = ["anime-game-core/honkai"]
+star-rail = ["anime-game-core/star-rail"]
 
 # Common features
 states = []
