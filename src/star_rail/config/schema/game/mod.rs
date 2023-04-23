@@ -11,19 +11,21 @@ crate::config_impl_wine_schema!(launcher_dir);
 crate::config_impl_dxvk_schema!(launcher_dir);
 
 pub mod enhancements;
+pub mod paths;
 
 pub mod prelude {
     pub use super::Wine;
     pub use super::Dxvk;
 
     pub use super::enhancements::Enhancements;
+    pub use super::paths::Paths;
 }
 
 use prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Game {
-    pub path: PathBuf,
+    pub path: Paths,
     pub wine: Wine,
     pub dxvk: Dxvk,
     pub enhancements: Enhancements,
@@ -37,7 +39,7 @@ impl Default for Game {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join(concat!("Hon", "kai Sta", "r Rail")),
+            path: Paths::default(),
             wine: Wine::default(),
             dxvk: Dxvk::default(),
             enhancements: Enhancements::default(),
@@ -53,10 +55,7 @@ impl From<&JsonValue> for Game {
 
         Self {
             path: match value.get("path") {
-                Some(value) => match value.as_str() {
-                    Some(value) => PathBuf::from(value),
-                    None => default.path
-                },
+                Some(value) => Paths::from(value),
                 None => default.path
             },
 

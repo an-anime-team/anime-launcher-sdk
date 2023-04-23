@@ -36,8 +36,9 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
 
     let config = Config::get()?;
+    let game_path = config.game.path.for_edition(config.launcher.edition).to_path_buf();
 
-    if !config.game.path.exists() {
+    if !game_path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -45,12 +46,12 @@ pub fn run() -> anyhow::Result<()> {
         anyhow::bail!("Couldn't find wine executable");
     };
 
-    let features = wine.features(&config.components.path)?.unwrap_or_default();
+    let features = wine.features(&game_path)?.unwrap_or_default();
 
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.clone(),
+        game: game_path.clone(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -186,8 +187,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    command.current_dir(&config.game.path)
-        .spawn()?.wait_with_output()?;
+    command.current_dir(game_path).spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
@@ -207,7 +207,7 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
+        if !output.contains("StarRail.exe") {
             break;
         }
     }

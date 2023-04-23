@@ -123,7 +123,7 @@ impl LauncherState {
 
         Self::get(LauncherStateParams {
             wine_prefix: config.get_wine_prefix_path(),
-            game_path: config.game.path,
+            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
