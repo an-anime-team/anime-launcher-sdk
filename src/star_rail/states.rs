@@ -42,6 +42,7 @@ pub enum StateUpdating {
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
+    pub game_edition: GameEdition,
 
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
@@ -82,7 +83,7 @@ impl LauncherState {
                 }
 
                 // Check the main patch
-                let main_patch = patch.main_patch()?;
+                let main_patch = patch.main_patch(params.game_edition)?;
 
                 if !main_patch.is_applied(&params.game_path)? {
                     return Ok(Self::MainPatchAvailable(main_patch));
@@ -124,6 +125,7 @@ impl LauncherState {
         Self::get(LauncherStateParams {
             wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_edition: config.launcher.edition,
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,

@@ -21,7 +21,8 @@ impl Default for Patch {
             path: launcher_dir.join("patch"),
 
             servers: vec![
-                String::from("https://notabug.org/Krock/dawn")
+                // Temp solution
+                format!("file://{}/patch", launcher_dir.to_string_lossy())
             ],
 
             // Disable root requirement for patching if we're running launcher in flatpak
