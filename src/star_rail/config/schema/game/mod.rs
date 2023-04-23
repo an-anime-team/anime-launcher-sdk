@@ -36,8 +36,6 @@ pub struct Game {
 impl Default for Game {
     #[inline]
     fn default() -> Self {
-        let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
-
         Self {
             path: Paths::default(),
             wine: Wine::default(),
