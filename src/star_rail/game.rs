@@ -46,7 +46,7 @@ pub fn run() -> anyhow::Result<()> {
         anyhow::bail!("Couldn't find wine executable");
     };
 
-    let features = wine.features(&game_path)?.unwrap_or_default();
+    let features = wine.features(&config.components.path)?.unwrap_or_default();
 
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
@@ -79,7 +79,7 @@ pub fn run() -> anyhow::Result<()> {
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("an_anime_game") {
+    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("star_rail") {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
