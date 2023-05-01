@@ -21,8 +21,7 @@ impl Default for Patch {
             path: launcher_dir.join("patch"),
 
             servers: vec![
-                // Temp solution
-                format!("file://{}/patch", launcher_dir.to_string_lossy())
+                String::from("https://notabug.org/mkrsym1/astra")
             ],
 
             // Disable root requirement for patching if we're running launcher in flatpak
