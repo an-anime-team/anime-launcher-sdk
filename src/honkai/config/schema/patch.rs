@@ -22,6 +22,7 @@ impl Default for Patch {
             path: launcher_dir.join("patch"),
 
             servers: vec![
+                String::from("https://codeberg.org/an-anime-team/dusk"),
                 String::from("https://notabug.org/mkrsym1/dusk")
             ],
 
@@ -55,6 +56,11 @@ impl From<&JsonValue> for Patch {
                             if let Some(server) = value.as_str() {
                                 servers.push(server.to_string());
                             }
+                        }
+
+                        // Add repository mirror if it's not here (so old default installation)
+                        if servers.as_ref() == ["https://notabug.org/mkrsym1/dusk"] {
+                            servers = default.servers;
                         }
 
                         servers
