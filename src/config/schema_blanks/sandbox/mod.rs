@@ -117,10 +117,12 @@ impl Sandbox {
     /// | Original | Mounted | Type | Optional |
     /// | :- | :- | :- | :- |
     /// | `/` | `/` | read-only bind | false |
+    /// | `/tmp` | `/tmp` | bind | false |
+    /// | `/proc` | `/proc` | bind | false |
+    /// | `/dev` | `/dev` | dev bind | false |
     /// | - | `/home` | tmpfs | true |
     /// | - | `/var/home/$USER` | tmpfs | true |
     /// | - | `$HOME` | tmpfs | true |
-    /// | - | `/tmp` | tmpfs | false |
     /// | `wine_dir` | `/tmp/sandbox/wine` | bind | false |
     /// | `prefix_dir` | `/tmp/sandbox/prefix` | bind | false |
     /// | `game_dir` | `/tmp/sandbox/game` | bind | false |
@@ -129,6 +131,10 @@ impl Sandbox {
     /// | <mounts/symlinks> | <mounts/symlinks> | symlink | true |
     pub fn get_command(&self, wine_dir: impl AsRef<str>, prefix_dir: impl AsRef<str>, game_dir: impl AsRef<str>) -> String {
         let mut command = String::from("bwrap --ro-bind / /");
+
+        command.push_str(" --bind /tmp /tmp");
+        command.push_str(" --bind /proc /proc");
+        command.push_str(" --dev-bind /dev /dev");
 
         if let Some(hostname) = &self.hostname {
             command += &format!(" --hostname '{hostname}'");
@@ -151,8 +157,6 @@ impl Sandbox {
             command += &format!(" --tmpfs '{}'", path.trim());
         }
 
-        command.push_str(" --tmpfs /tmp");
-
         for (from, to) in &self.mounts.read_only {
             command += &format!(" --ro-bind '{}' '{}'", from.trim(), to.trim());
         }
@@ -171,8 +175,12 @@ impl Sandbox {
 
         command.push_str(" --die-with-parent");
 
-        command.push_str(" --unshare-all");
-        command.push_str(" --share-net");
+        // --unshare-pid breaks wine
+
+        command.push_str(" --unshare-user");
+        command.push_str(" --unshare-ipc");
+        command.push_str(" --unshare-uts");
+        command.push_str(" --unshare-cgroup");
 
         if let Some(args) = &self.args {
             command.push_str(args.trim());
