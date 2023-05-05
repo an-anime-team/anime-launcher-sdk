@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.1.6"
+version = "1.2.0"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -40,10 +40,11 @@ components = ["dep:wincompatlib", "dep:lazy_static"]
 game = ["components", "config"]
 discord-rpc = ["dep:discord-rich-presence"]
 sandbox = []
+sessions = []
 
 # Genshin-specific features
 environment-emulation = []
 fps-unlocker = ["dep:md-5"]
 
-all = ["states", "config", "components", "game", "discord-rpc", "sandbox", "environment-emulation", "fps-unlocker"]
+all = ["states", "config", "components", "game", "discord-rpc", "sandbox", "sessions", "environment-emulation", "fps-unlocker"]
 default = ["all"]

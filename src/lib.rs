@@ -23,6 +23,9 @@ pub mod components;
 #[cfg(feature = "discord-rpc")]
 pub mod discord_rpc;
 
+#[cfg(feature = "sessions")]
+pub mod sessions;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Check if specified binary is available
