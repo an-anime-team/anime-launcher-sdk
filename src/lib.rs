@@ -3,14 +3,16 @@ use std::process::{Command, Stdio};
 pub use anime_game_core;
 pub use wincompatlib;
 
+mod games;
+
 #[cfg(feature = "genshin")]
-pub mod genshin;
+pub use games::genshin;
 
 #[cfg(feature = "honkai")]
-pub mod honkai;
+pub use games::honkai;
 
 #[cfg(feature = "star-rail")]
-pub mod star_rail;
+pub use games::star_rail;
 
 #[cfg(feature = "config")]
 pub mod config;
