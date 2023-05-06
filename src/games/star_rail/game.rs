@@ -15,7 +15,7 @@ use crate::discord_rpc::*;
 use crate::sessions::SessionsExt;
 
 #[cfg(feature = "sessions")]
-use crate::genshin::sessions::Sessions;
+use crate::star_rail::sessions::Sessions;
 
 #[derive(Debug, Clone)]
 struct Folders {
