@@ -245,6 +245,11 @@ pub fn run() -> anyhow::Result<()> {
 
     command.envs(config.game.environment);
 
+    #[cfg(feature = "sessions")]
+    if let Some(current) = Sessions::get_current()? {
+        Sessions::apply(current, &folders.prefix)?;
+    }
+
     // Run command
 
     let variables = command
