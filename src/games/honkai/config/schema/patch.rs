@@ -26,7 +26,10 @@ impl Default for Patch {
                 String::from("https://notabug.org/mkrsym1/dusk")
             ],
 
-            apply_mfplat: true,
+            // Seems to not be needed with wine 8+
+            // which is recommended by default, so will work
+            // for most of users
+            apply_mfplat: false,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !PathBuf::from("/.flatpak-info").exists()
