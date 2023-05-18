@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.2.4"
+version = "1.2.5"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.8.1"
+tag = "1.8.2"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -46,5 +46,16 @@ sessions = []
 environment-emulation = []
 fps-unlocker = ["dep:md-5"]
 
-all = ["states", "config", "components", "game", "discord-rpc", "sandbox", "sessions", "environment-emulation", "fps-unlocker"]
+all = [
+    "states",
+    "config",
+    "components",
+    "game",
+    "discord-rpc",
+    "sandbox",
+    "sessions",
+    "environment-emulation",
+    "fps-unlocker"
+]
+
 default = ["all"]
