@@ -1,6 +1,7 @@
+use std::path::Path;
+
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
-use std::fs::metadata;
 
 mod mounts;
 
@@ -142,52 +143,27 @@ impl Sandbox {
         }
 
         if self.isolate_home {
-            match metadata("/home") {
-                Ok(meta) => {
-                    if meta.is_dir() {
-                        command.push_str(" --tmpfs /home");
-                    } else {
-                        tracing::info!("/var/home is not a directory.")
-                    }
-                },
-                Err(_) => tracing::info!("/home does not exist.")
+            if Path::new("/home").is_dir() {
+                command.push_str(" --tmpfs /home");
             }
-            match metadata("/var/home") {
-                Ok(meta) => {
-                    if meta.is_dir() {
-                        command.push_str(" --tmpfs /var/home");
-                    } else {
-                        tracing::info!("/var/home is not a directory.")
-                    }
-                },
-                Err(_) => tracing::info!("/var/home does not exist.")
+
+            if Path::new("/var/home").is_dir() {
+                command.push_str(" --tmpfs /var/home");
             }
 
             if let Ok(user) = std::env::var("USER") {
                 let dir = format!("/var/home/{}", user.trim());
-                match metadata(&dir) {
-                    Ok(meta) => {
-                        if meta.is_dir() {
-                            command += &format!(" --tmpfs '{}'", dir);
-                        } else {
-                            tracing::info!("{} is not a directory.", dir)
-                        }
-                    },
-                    Err(_) => tracing::info!("{} does not exist.", dir)
+
+                if Path::new(&dir).is_dir() {
+                    command += &format!(" --tmpfs '{dir}'");
                 }
             }
 
             if let Ok(home) = std::env::var("HOME") {
                 let dir = home.trim();
-                match metadata(dir) {
-                    Ok(meta) => {
-                        if meta.is_dir() {
-                            command += &format!(" --tmpfs '{}'", dir);
-                        } else {
-                            tracing::info!("{} is not a directory.", dir)
-                        }
-                    },
-                    Err(_) => tracing::info!("{} does not exist.", dir)
+
+                if Path::new(&dir).is_dir() {
+                    command += &format!(" --tmpfs '{dir}'");
                 }
             }
         }
