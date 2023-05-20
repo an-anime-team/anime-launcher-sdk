@@ -11,9 +11,6 @@ use crate::config::ConfigExt;
 pub enum LauncherState {
     Launch,
 
-    /// Always contains `VersionDiff::Predownload`
-    PredownloadAvailable(VersionDiff),
-
     MfplatPatchAvailable,
     MainPatchAvailable(MainPatch),
 
@@ -24,9 +21,6 @@ pub enum LauncherState {
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
-
-    /// Always contains `VersionDiff::Outdated`
-    GameOutdated(VersionDiff),
 
     /// Always contains `VersionDiff::NotInstalled`
     GameNotInstalled(VersionDiff)
@@ -67,7 +61,7 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
+            VersionDiff::Latest(_) => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
@@ -95,19 +89,10 @@ impl LauncherState {
                     return Ok(Self::MainPatchAvailable(player_patch));
                 }
 
-                // Check if update predownload available
-                if let VersionDiff::Predownload { .. } = diff {
-                    Ok(Self::PredownloadAvailable(diff))
-                }
-
-                // Otherwise we can launch the game
-                else {
-                    Ok(Self::Launch)
-                }
+                Ok(Self::Launch)
             }
 
             VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
-            VersionDiff::Outdated { .. } => Ok(Self::GameOutdated(diff)),
             VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
         }
     }

@@ -28,6 +28,8 @@ pub mod sessions;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+// TODO: rewrite it to find this binary in PATH instead
+
 /// Check if specified binary is available
 /// 
 /// ```
