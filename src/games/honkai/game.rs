@@ -189,11 +189,11 @@ pub fn run() -> anyhow::Result<()> {
     command.envs(config.game.wine.language.get_env_vars());
     command.envs(config.game.wine.shared_libraries.get_env_vars(wine_folder));
 
-    command.envs(config.game.environment);
+    command.envs(&config.game.environment);
 
     #[cfg(feature = "sessions")]
     if let Some(current) = Sessions::get_current()? {
-        Sessions::apply(current, &folders.prefix)?;
+        Sessions::apply(current, config.get_wine_prefix_path())?;
     }
 
     // Run command
@@ -212,7 +212,7 @@ pub fn run() -> anyhow::Result<()> {
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
-        Some(DiscordRpc::new(config.launcher.discord_rpc.into()))
+        Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
     } else {
         None
     };
@@ -240,7 +240,7 @@ pub fn run() -> anyhow::Result<()> {
 
     #[cfg(feature = "sessions")]
     if let Some(current) = Sessions::get_current()? {
-        Sessions::update(current, folders.prefix)?;
+        Sessions::update(current, config.get_wine_prefix_path())?;
     }
 
     Ok(())
