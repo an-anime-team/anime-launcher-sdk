@@ -9,8 +9,7 @@ use enum_ordinalize::Ordinalize;
 pub enum WineSync {
     None,
     ESync,
-    FSync,
-    Futex2
+    FSync
 }
 
 impl Default for WineSync {
@@ -30,12 +29,13 @@ impl From<&JsonValue> for WineSync {
 impl WineSync {
     /// Get environment variables corresponding to used wine sync
     pub fn get_env_vars(&self) -> HashMap<&str, &str> {
-        HashMap::from([(match self {
+        let key = match self {
             Self::None => return HashMap::new(),
 
-            Self::ESync  => "WINEESYNC",
-            Self::FSync  => "WINEFSYNC",
-            Self::Futex2 => "WINEFSYNC_FUTEX2"
-        }, "1")])
+            Self::ESync => "WINEESYNC",
+            Self::FSync => "WINEFSYNC"
+        };
+
+        HashMap::from([(key, "1")])
     }
 }

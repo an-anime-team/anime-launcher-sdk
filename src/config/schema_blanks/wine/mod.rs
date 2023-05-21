@@ -1,11 +1,13 @@
 pub mod wine_lang;
 pub mod wine_sync;
 pub mod virtual_desktop;
+pub mod shared_libraries;
 
 pub mod prelude {
     pub use super::wine_lang::WineLang;
     pub use super::wine_sync::WineSync;
     pub use super::virtual_desktop::VirtualDesktop;
+    pub use super::shared_libraries::SharedLibraries;
 }
 
 #[macro_export]
@@ -19,7 +21,8 @@ macro_rules! config_impl_wine_schema {
             pub sync: WineSync,
             pub language: WineLang,
             pub borderless: bool,
-            pub virtual_desktop: VirtualDesktop
+            pub virtual_desktop: VirtualDesktop,
+            pub shared_libraries: SharedLibraries
         }
 
         impl Default for Wine {
@@ -34,7 +37,8 @@ macro_rules! config_impl_wine_schema {
                     sync: WineSync::default(),
                     language: WineLang::default(),
                     borderless: false,
-                    virtual_desktop: VirtualDesktop::default()
+                    virtual_desktop: VirtualDesktop::default(),
+                    shared_libraries: SharedLibraries::default()
                 }
             }
         }
@@ -92,7 +96,12 @@ macro_rules! config_impl_wine_schema {
                     virtual_desktop: match value.get("virtual_desktop") {
                         Some(value) => VirtualDesktop::from(value),
                         None => default.virtual_desktop
-                    }
+                    },
+
+                    shared_libraries: match value.get("shared_libraries") {
+                        Some(value) => SharedLibraries::from(value),
+                        None => default.shared_libraries
+                    },
                 }
             }
         }

@@ -37,7 +37,7 @@ impl From<&JsonValue> for WineLang {
 impl WineLang {
     /// Get environment variables corresponding to used wine language
     pub fn get_env_vars(&self) -> HashMap<&str, &str> {
-        HashMap::from([("LANG", match self {
+        let lang = match self {
             Self::System => return HashMap::new(),
 
             Self::English    => "en_US.UTF-8",
@@ -50,7 +50,12 @@ impl WineLang {
             Self::Chinese    => "zh_CN.UTF-8",
             Self::Japanese   => "ja_JP.UTF-8",
             Self::Korean     => "ko_KR.UTF-8"
-        })])
+        };
+
+        HashMap::from([
+            ("LANG", lang),
+            ("LC_ALL", lang)
+        ])
     }
 }
 
