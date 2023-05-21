@@ -60,9 +60,10 @@ pub enum StateUpdating {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
-    pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
+    pub game_edition: GameEdition,
 
+    pub wine_prefix: PathBuf,
     pub selected_voices: Vec<VoiceLocale>,
 
     pub patch_servers: Vec<String>,
@@ -84,11 +85,11 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path);
+        let game = Game::new(&params.game_path, params.game_edition);
 
         // Check if game is installed
         if game.is_installed() {
-            let data_folder = params.game_path.join(GameEdition::selected().data_folder());
+            let data_folder = params.game_path.join(params.game_edition.data_folder());
 
             let old_audio_folder_base = data_folder.join("StreamingAssets/Audio");
             let old_audio_folder = old_audio_folder_base.join("GeneratedSoundBanks/Windows");
@@ -106,18 +107,18 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
+            VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
                 let mut predownload_voice = Vec::new();
 
                 for locale in params.selected_voices {
-                    let mut voice_package = VoicePackage::with_locale(locale)?;
+                    let mut voice_package = VoicePackage::with_locale(locale, params.game_edition)?;
 
                     (params.status_updater)(StateUpdating::Voice(voice_package.locale()));
 
                     // Replace voice package struct with the one constructed in the game's folder
                     // so it'll properly calculate its difference instead of saying "not installed"
                     if voice_package.is_installed_in(&params.game_path) {
-                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, voice_package.locale())) {
+                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, params.game_edition, voice_package.locale()), params.game_edition) {
                             Some(locale) => locale,
                             None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
                         };
@@ -126,7 +127,7 @@ impl LauncherState {
                     let diff = voice_package.try_get_diff()?;
 
                     match diff {
-                        VersionDiff::Latest(_) => (),
+                        VersionDiff::Latest { .. } => (),
                         VersionDiff::Predownload { .. } => predownload_voice.push(diff),
 
                         VersionDiff::Diff { .. } => return Ok(Self::VoiceUpdateAvailable(diff)),
@@ -138,7 +139,7 @@ impl LauncherState {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
-                let patch = Patch::new(&params.patch_folder);
+                let patch = Patch::new(&params.patch_folder, params.game_edition);
 
                 // Sync local patch folder with remote if needed
                 // TODO: maybe I shouldn't do it here?
@@ -212,9 +213,10 @@ impl LauncherState {
         }
 
         Self::get(LauncherStateParams {
-            wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_edition: config.launcher.edition,
 
+            wine_prefix: config.get_wine_prefix_path(),
             selected_voices: voices,
 
             patch_servers: config.patch.servers,

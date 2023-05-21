@@ -71,7 +71,7 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Checking telemetry");
 
-    if let Ok(Some(server)) = telemetry::is_disabled() {
+    if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
     }
 
@@ -120,7 +120,7 @@ pub fn run() -> anyhow::Result<()> {
     // Generate `config.ini` if environment emulation feature is presented
 
     #[cfg(feature = "environment-emulation")] {
-        let game = Game::new(game_path);
+        let game = Game::new(game_path, config.launcher.edition);
 
         std::fs::write(
             game_path.join("config.ini"),

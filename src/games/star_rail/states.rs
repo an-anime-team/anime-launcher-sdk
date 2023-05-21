@@ -40,9 +40,10 @@ pub enum StateUpdating {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
-    pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
     pub game_edition: GameEdition,
+
+    pub wine_prefix: PathBuf,
 
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
@@ -62,11 +63,11 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path);
+        let game = Game::new(&params.game_path, params.game_edition);
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(_) | VersionDiff::Predownload { .. } => {
+            VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
@@ -123,9 +124,10 @@ impl LauncherState {
         }
 
         Self::get(LauncherStateParams {
-            wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
+
+            wine_prefix: config.get_wine_prefix_path(),
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
