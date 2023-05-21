@@ -3,6 +3,8 @@ use std::path::PathBuf;
 
 use anime_game_core::star_rail::telemetry;
 
+use crate::components::wine::Bundle as WineBundle;
+
 use crate::config::ConfigExt;
 use crate::star_rail::config::Config;
 
@@ -175,10 +177,18 @@ pub fn run() -> anyhow::Result<()> {
         }
     }
 
-    command.envs(config.game.wine.sync.get_env_vars());
+    let mut wine_folder = folders.wine.clone();
+
+    if features.bundle == Some(WineBundle::Proton) {
+        wine_folder.push("files");
+    }
+
     command.envs(config.game.enhancements.hud.get_env_vars(config.game.enhancements.gamescope.enabled));
     command.envs(config.game.enhancements.fsr.get_env_vars());
+
+    command.envs(config.game.wine.sync.get_env_vars());
     command.envs(config.game.wine.language.get_env_vars());
+    command.envs(config.game.wine.shared_libraries.get_env_vars(wine_folder));
 
     command.envs(config.game.environment);
 
