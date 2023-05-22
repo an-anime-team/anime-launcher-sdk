@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum FsrQuality {
-    Default,
+use enum_ordinalize::Ordinalize;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
+pub enum FsrQuality {
     /// `WINE_FULLSCREEN_FSR_MODE=ultra`
     Ultra,
 
@@ -23,7 +23,7 @@ pub enum FsrQuality {
 impl Default for FsrQuality {
     #[inline]
     fn default() -> Self {
-        Self::Default
+        Self::Balanced
     }
 }
 
@@ -86,15 +86,12 @@ impl Fsr {
 
             // Set FSR quality mode if some is selected
             // https://github.com/GloriousEggroll/wine-ge-custom/releases/tag/GE-Proton7-25
-            if self.quality != FsrQuality::Default {
-                env.insert("WINE_FULLSCREEN_FSR_MODE", match self.quality {
-                    FsrQuality::Default     => String::from("balanced"),
-                    FsrQuality::Ultra       => String::from("ultra"),
-                    FsrQuality::Quality     => String::from("quality"),
-                    FsrQuality::Balanced    => String::from("balanced"),
-                    FsrQuality::Performance => String::from("performance")
-                });
-            }
+            env.insert("WINE_FULLSCREEN_FSR_MODE", match self.quality {
+                FsrQuality::Ultra       => String::from("ultra"),
+                FsrQuality::Quality     => String::from("quality"),
+                FsrQuality::Balanced    => String::from("balanced"),
+                FsrQuality::Performance => String::from("performance")
+            });
 
             env
         }

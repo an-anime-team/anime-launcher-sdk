@@ -15,7 +15,7 @@ pub mod sandbox;
 pub mod prelude {
     pub use super::resolution::Resolution;
     pub use super::repairer::Repairer;
-    pub use super::fsr::Fsr;
+    pub use super::fsr::*;
     pub use super::hud::HUD;
     pub use super::fps::Fps;
     pub use super::window_mode::WindowMode;
