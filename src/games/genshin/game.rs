@@ -171,6 +171,13 @@ pub fn run() -> anyhow::Result<()> {
         bash_command = format!("{gamescope} -- {bash_command}");
     }
 
+    // Bundle all windows arguments used to run the game into a single file
+    if features.compact_launch {
+        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
+
+        windows_command = String::from("compact_launch.bat");
+    }
+
     // bwrap <params> -- <command to run>
     #[cfg(feature = "sandbox")]
     if config.sandbox.enabled {
@@ -195,13 +202,6 @@ pub fn run() -> anyhow::Result<()> {
 
         bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
         folders = sandboxed_folders;
-    }
-
-    // Bundle all windows arguments used to run the game into a single file
-    if features.compact_launch {
-        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
-
-        windows_command = String::from("compact_launch.bat");
     }
 
     // Finalize launching command
