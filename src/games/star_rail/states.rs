@@ -71,7 +71,7 @@ impl LauncherState {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
-                let patch = Patch::new(&params.patch_folder);
+                let patch = Patch::new(&params.patch_folder, params.game_edition);
 
                 // Sync local patch folder with remote if needed
                 // TODO: maybe I shouldn't do it here?
@@ -84,7 +84,7 @@ impl LauncherState {
                 }
 
                 // Check the main patch
-                let main_patch = patch.main_patch(params.game_edition)?;
+                let main_patch = patch.main_patch()?;
 
                 if !main_patch.is_applied(&params.game_path)? {
                     return Ok(Self::MainPatchAvailable(main_patch));
