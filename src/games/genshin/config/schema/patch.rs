@@ -26,7 +26,7 @@ impl Default for Patch {
                 String::from("https://notabug.org/Krock/dawn")
             ],
 
-            apply_xlua: true,
+            apply_xlua: false,
 
             // Disable root requirement for patching if we're running launcher in flatpak
             root: !PathBuf::from("/.flatpak-info").exists()
