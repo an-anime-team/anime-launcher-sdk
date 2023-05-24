@@ -68,6 +68,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
 
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
+    pub use_main_patch: bool,
     pub use_xlua_patch: bool,
 
     pub status_updater: F
@@ -152,10 +153,12 @@ impl LauncherState {
                 }
 
                 // Check UnityPlayer patch
-                let player_patch = patch.unity_player_patch()?;
+                if params.use_main_patch {
+                    let player_patch = patch.unity_player_patch()?;
 
-                if !player_patch.is_applied(&params.game_path)? {
-                    return Ok(Self::UnityPlayerPatchAvailable(player_patch));
+                    if !player_patch.is_applied(&params.game_path)? {
+                        return Ok(Self::UnityPlayerPatchAvailable(player_patch));
+                    }
                 }
 
                 // Check xlua patch
@@ -221,6 +224,7 @@ impl LauncherState {
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
+            use_main_patch: config.patch.apply_main,
             use_xlua_patch: config.patch.apply_xlua,
 
             status_updater

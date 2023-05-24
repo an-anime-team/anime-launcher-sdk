@@ -9,6 +9,7 @@ use crate::genshin::consts::launcher_dir;
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
+    pub apply_main: bool,
     pub apply_xlua: bool,
     pub root: bool
 }
@@ -26,6 +27,7 @@ impl Default for Patch {
                 String::from("https://notabug.org/Krock/dawn")
             ],
 
+            apply_main: true,
             apply_xlua: false,
 
             // Disable root requirement for patching if we're running launcher in flatpak
@@ -68,6 +70,11 @@ impl From<&JsonValue> for Patch {
                     None => default.servers
                 },
                 None => default.servers
+            },
+
+            apply_main: match value.get("apply_main") {
+                Some(value) => value.as_bool().unwrap_or(default.apply_main),
+                None => default.apply_main
             },
 
             apply_xlua: match value.get("apply_xlua") {
