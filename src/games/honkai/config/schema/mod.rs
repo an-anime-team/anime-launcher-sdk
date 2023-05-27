@@ -9,13 +9,13 @@ use wincompatlib::prelude::*;
 use crate::config::schema_blanks::sandbox::Sandbox;
 
 #[cfg(feature = "components")]
-use crate::components::wine::{
-    WincompatlibWine,
-    Version as WineVersion
+use crate::components::{
+    wine::{
+        WincompatlibWine,
+        Version as WineVersion
+    },
+    dxvk::Version as DxvkVersion
 };
-
-#[cfg(feature = "components")]
-use crate::components::dxvk::Version as DxvkVersion;
 
 pub mod launcher;
 pub mod game;

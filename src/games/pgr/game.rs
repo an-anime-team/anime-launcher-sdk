@@ -1,19 +1,14 @@
 use std::process::{Command, Stdio};
 use std::path::PathBuf;
 
-use anime_game_core::prelude::*;
-use anime_game_core::genshin::telemetry;
-use anime_game_core::genshin::game::Game;
+use anime_game_core::pgr::telemetry;
 
 use crate::components::wine::Bundle as WineBundle;
 
 use crate::config::ConfigExt;
-use crate::genshin::config::Config;
+use crate::pgr::config::Config;
 
-use crate::genshin::consts;
-
-#[cfg(feature = "fps-unlocker")]
-use super::fps_unlocker::FpsUnlocker;
+use crate::pgr::consts;
 
 #[cfg(feature = "discord-rpc")]
 use crate::discord_rpc::*;
@@ -21,7 +16,7 @@ use crate::discord_rpc::*;
 #[cfg(feature = "sessions")]
 use crate::{
     sessions::SessionsExt,
-    genshin::sessions::Sessions
+    pgr::sessions::Sessions
 };
 
 #[derive(Debug, Clone)]
@@ -50,9 +45,7 @@ pub fn run() -> anyhow::Result<()> {
 
     let config = Config::get()?;
 
-    let game_path = config.game.path.for_edition(config.launcher.edition);
-
-    if !game_path.exists() {
+    if !config.game.path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -65,7 +58,7 @@ pub fn run() -> anyhow::Result<()> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+        game: config.game.path.clone(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -73,61 +66,8 @@ pub fn run() -> anyhow::Result<()> {
 
     tracing::info!("Checking telemetry");
 
-    if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
+    if let Ok(Some(server)) = telemetry::is_disabled() {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
-    }
-
-    // Prepare fps unlocker
-    // 1) Download if needed
-    // 2) Generate config file
-    // 3) Generate fpsunlocker.bat from launcher.bat
-
-    #[cfg(feature = "fps-unlocker")]
-    if config.game.enhancements.fps_unlocker.enabled {
-        tracing::info!("Preparing FPS unlocker");
-
-        let unlocker = match FpsUnlocker::from_dir(&config.game.enhancements.fps_unlocker.path) {
-            Ok(Some(unlocker)) => unlocker,
-
-            other => {
-                // Ok(None) means unknown version, so we should delete it before downloading newer one
-                // because otherwise downloader will try to continue downloading "partially downloaded" file
-                if let Ok(None) = other {
-                    std::fs::remove_file(FpsUnlocker::get_binary_in(&config.game.enhancements.fps_unlocker.path))?;
-                }
-
-                tracing::info!("Unlocker is not downloaded. Downloading");
-
-                match FpsUnlocker::download(&config.game.enhancements.fps_unlocker.path) {
-                    Ok(unlocker) => unlocker,
-                    Err(err) => return Err(anyhow::anyhow!("Failed to download FPS unlocker: {err}"))
-                }
-            }
-        };
-
-        // Generate FPS unlocker config file
-        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config) {
-            return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
-        }
-
-        let bat_path = game_path.join("fps_unlocker.bat");
-        let original_bat_path = game_path.join("launcher.bat");
-
-        // Generate fpsunlocker.bat from launcher.bat
-        std::fs::write(bat_path, std::fs::read_to_string(original_bat_path)?
-            .replace("start GenshinImpact.exe %*", &format!("start GenshinImpact.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))
-            .replace("start YuanShen.exe %*", &format!("start YuanShen.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy())))?;
-    }
-
-    // Generate `config.ini` if environment emulation feature is presented
-
-    #[cfg(feature = "environment-emulation")] {
-        let game = Game::new(game_path, config.launcher.edition);
-
-        std::fs::write(
-            game_path.join("config.ini"),
-            config.launcher.environment.generate_config(game.get_version()?.to_string())
-        )?;
     }
 
     // Prepare bash -c '<command>'
@@ -146,16 +86,12 @@ pub fn run() -> anyhow::Result<()> {
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("an_anime_game") {
+    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("honkers") {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
 
-    windows_command += if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
-        "fps_unlocker.bat "
-    } else {
-        "launcher.bat "
-    };
+    windows_command += "launch.bat ";
 
     if config.game.wine.borderless {
         windows_command += "-screen-fullscreen 0 -popupwindow ";
@@ -271,7 +207,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    command.current_dir(config.game.path.for_edition(config.launcher.edition))
+    command.current_dir(&config.game.path)
         .spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
@@ -292,7 +228,7 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("GenshinImpact.e") && !output.contains("unlocker.exe") {
+        if !output.contains("BH3.exe") {
             break;
         }
     }

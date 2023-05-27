@@ -14,10 +14,10 @@ use crate::honkai::consts;
 use crate::discord_rpc::*;
 
 #[cfg(feature = "sessions")]
-use crate::sessions::SessionsExt;
-
-#[cfg(feature = "sessions")]
-use crate::honkai::sessions::Sessions;
+use crate::{
+    sessions::SessionsExt,
+    honkai::sessions::Sessions
+};
 
 #[derive(Debug, Clone)]
 struct Folders {

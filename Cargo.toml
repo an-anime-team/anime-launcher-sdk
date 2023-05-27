@@ -1,14 +1,15 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.4.6"
+version = "1.5.0"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
+repository = "https://github.com/an-anime-team/anime-launcher-sdk"
 edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.10.4"
+tag = "1.11.0"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -32,6 +33,7 @@ discord-rich-presence = { version = "0.2.3", optional = true }
 genshin = ["anime-game-core/genshin"]
 star-rail = ["anime-game-core/star-rail"]
 honkai = ["anime-game-core/honkai"]
+pgr = ["anime-game-core/pgr"]
 
 # Common features
 states = []

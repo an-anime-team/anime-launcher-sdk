@@ -14,10 +14,10 @@ use crate::star_rail::consts;
 use crate::discord_rpc::*;
 
 #[cfg(feature = "sessions")]
-use crate::sessions::SessionsExt;
-
-#[cfg(feature = "sessions")]
-use crate::star_rail::sessions::Sessions;
+use crate::{
+    sessions::SessionsExt,
+    star_rail::sessions::Sessions
+};
 
 #[derive(Debug, Clone)]
 struct Folders {
