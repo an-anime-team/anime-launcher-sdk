@@ -32,6 +32,7 @@ pub enum StateUpdating {
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
+    pub fast_verify: bool,
     pub status_updater: F
 }
 
@@ -47,7 +48,8 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path, ());
+        let game = Game::new(&params.game_path, ())
+            .with_fast_verify(params.fast_verify);
 
         let diff = game.try_get_diff()?;
 
@@ -76,6 +78,7 @@ impl LauncherState {
         Self::get(LauncherStateParams {
             wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path,
+            fast_verify: config.launcher.repairer.fast,
 
             status_updater
         })
