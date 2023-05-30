@@ -86,12 +86,12 @@ pub fn run() -> anyhow::Result<()> {
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("honkers") {
+    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("pgr") {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
 
-    windows_command += "launch.bat ";
+    windows_command += "PGR.exe ";
 
     if config.game.wine.borderless {
         windows_command += "-screen-fullscreen 0 -popupwindow ";
