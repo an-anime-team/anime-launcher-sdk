@@ -11,7 +11,7 @@ use super::consts::launcher_dir;
 
 /// Get default sessions file path
 /// 
-/// `$HOME/.local/share/honkers-launcher/sessions.json`
+/// `$HOME/.local/share/anime-borb-launcher/sessions.json`
 #[inline]
 pub fn sessions_file() -> anyhow::Result<PathBuf> {
     launcher_dir().map(|dir| dir.join("sessions.json"))
@@ -19,11 +19,8 @@ pub fn sessions_file() -> anyhow::Result<PathBuf> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionData {
-    // [Software\\miHoYo\\Honkai Impact 3rd]
-    pub game_reg: String,
-
-    // [Software\\miHoYoSDK]
-    pub sdk_reg: String
+    // [Software\\kurogame\\PGR]
+    pub game_reg: String
 }
 
 pub struct Sessions;
@@ -53,17 +50,12 @@ impl SessionsExt for Sessions {
         tracing::info!("Updating session '{name}' from prefix: {:?}", prefix.as_ref());
 
         let mut new_session = Self::SessionData {
-            game_reg: String::new(),
-            sdk_reg: String::new()
+            game_reg: String::new()
         };
 
         for entry in std::fs::read_to_string(prefix.as_ref().join("user.reg"))?.split("\n\n") {
-            if entry.starts_with("[Software\\\\miHoYo\\\\Honkai Impact 3rd]") {
+            if entry.starts_with("[Software\\\\kurogame\\\\PGR]") {
                 new_session.game_reg = entry.to_owned();
-            }
-
-            else if entry.starts_with("[Software\\\\miHoYoSDK]") {
-                new_session.sdk_reg = entry.to_owned();
             }
         }
 
@@ -84,12 +76,8 @@ impl SessionsExt for Sessions {
         let entries: String = std::fs::read_to_string(prefix.as_ref().join("user.reg"))?
             .split("\n\n")
             .map(|entry| {
-                let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\Honkai Impact 3rd]") {
+                let new_entry = if entry.starts_with("[Software\\\\kurogame\\\\PGR]") {
                     session.game_reg.clone()
-                }
-    
-                else if entry.starts_with("[Software\\\\miHoYoSDK]") {
-                    session.sdk_reg.clone()
                 }
 
                 else {
