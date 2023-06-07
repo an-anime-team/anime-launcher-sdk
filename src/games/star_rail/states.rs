@@ -1,14 +1,12 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
-
 use anime_game_core::prelude::*;
 use anime_game_core::star_rail::prelude::*;
 
 use crate::config::ConfigExt;
 use crate::star_rail::config::Config;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum LauncherState {
     Launch,
 
@@ -32,7 +30,7 @@ pub enum LauncherState {
     GameNotInstalled(VersionDiff)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
     Game,
     Patch

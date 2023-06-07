@@ -1,13 +1,14 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use wincompatlib::wine::ext::Corefont;
 
 use anime_game_core::prelude::*;
 use anime_game_core::pgr::prelude::*;
 
 use crate::config::ConfigExt;
+use crate::components::mfc140;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum LauncherState {
     Launch,
 
@@ -16,6 +17,9 @@ pub enum LauncherState {
 
     PrefixNotExists,
 
+    Mfc140NotInstalled,
+    CorefontsNotInstalled(Vec<Corefont>),
+
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
 
@@ -23,8 +27,9 @@ pub enum LauncherState {
     GameNotInstalled(VersionDiff)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
+    Components,
     Game
 }
 
@@ -43,6 +48,25 @@ impl LauncherState {
         // Check prefix existence
         if !params.wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
+        }
+
+        // Check wine components installation status
+        (params.status_updater)(StateUpdating::Components);
+
+        if !mfc140::is_installed(&params.wine_prefix) {
+            return Ok(Self::Mfc140NotInstalled);
+        }
+
+        let mut corefonts = Vec::new();
+
+        for font in Corefont::iterator() {
+            if !font.is_installed(&params.wine_prefix) {
+                corefonts.push(font);
+            }
+        }
+
+        if !corefonts.is_empty() {
+            return Ok(Self::CorefontsNotInstalled(corefonts));
         }
 
         // Check game installation status

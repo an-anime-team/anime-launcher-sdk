@@ -11,7 +11,7 @@ use crate::config::schema_blanks::sandbox::Sandbox;
 #[cfg(feature = "components")]
 use crate::components::{
     wine::{
-        WincompatlibWine,
+        UnifiedWine,
         Version as WineVersion
     },
     dxvk::Version as DxvkVersion
@@ -118,13 +118,11 @@ impl Schema {
                 .with_prefix(&self.game.wine.prefix);
 
             let prefix = match wine {
-                WincompatlibWine::Default(wine) => wine.prefix,
-                WincompatlibWine::Proton(proton) => proton.wine().prefix.clone()
+                UnifiedWine::Default(wine) => wine.prefix,
+                UnifiedWine::Proton(proton) => proton.wine().prefix.clone()
             };
 
-            if let Some(prefix) = prefix {
-                return prefix;
-            }
+            return prefix;
         }
 
         self.game.wine.prefix.clone()

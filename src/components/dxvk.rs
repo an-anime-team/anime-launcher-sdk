@@ -171,7 +171,7 @@ impl Version {
     #[inline]
     #[tracing::instrument(level = "debug", ret)]
     /// Install current dxvk
-    pub fn install<T: Into<PathBuf> + std::fmt::Debug>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+    pub fn install<T: Into<PathBuf> + std::fmt::Debug>(&self, dxvks_folder: T, wine: &Wine, params: InstallParams) -> anyhow::Result<()> {
         tracing::debug!("Installing DXVK");
 
         Dxvk::install(
@@ -184,7 +184,7 @@ impl Version {
     #[inline]
     #[tracing::instrument(level = "debug", ret)]
     /// Uninstall current dxvk
-    pub fn uninstall(&self, wine: &Wine, params: InstallParams) -> std::io::Result<()> {
+    pub fn uninstall(&self, wine: &Wine, params: InstallParams) -> anyhow::Result<()> {
         tracing::debug!("Uninstalling DXVK");
 
         Dxvk::uninstall(

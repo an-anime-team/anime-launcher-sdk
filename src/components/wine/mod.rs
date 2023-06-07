@@ -1,14 +1,16 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
-use std::process::{Child, Output};
-use std::io::Result;
-use std::ffi::OsStr;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
+
 use wincompatlib::prelude::*;
 
 use super::loader::ComponentsLoader;
+
+mod unified_wine;
+
+pub use unified_wine::UnifiedWine;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Group {
@@ -224,7 +226,7 @@ impl Version {
     /// Convert current wine struct to one from `wincompatlib`
     /// 
     /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
-    pub fn to_wine<T: Into<PathBuf>>(&self, components: T, wine_folder: Option<T>) -> WincompatlibWine {
+    pub fn to_wine<T: Into<PathBuf>>(&self, components: T, wine_folder: Option<T>) -> UnifiedWine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
         let (wine, arch) = match self.files.wine64.as_ref() {
@@ -253,18 +255,23 @@ impl Version {
                 // Small workaround. Most of stuff will work with just this
                 proton.steam_client_path = Some(PathBuf::from(""));
 
-                return WincompatlibWine::Proton(proton);
+                return UnifiedWine::Proton(proton);
             }
         }
 
-        WincompatlibWine::Default(Wine::new(
-            wine_folder.join(wine),
-            None,
-            Some(arch),
-            wineboot,
-            wineserver,
-            WineLoader::Current
-        ))
+        let mut wine = Wine::from_binary(wine_folder.join(wine))
+            .with_loader(WineLoader::Current)
+            .with_arch(arch);
+
+        if let Some(wineboot) = wineboot {
+            wine = wine.with_boot(wineboot);
+        }
+
+        if let Some(wineserver) = wineserver {
+            wine = wine.with_server(wineserver);
+        }
+
+        UnifiedWine::Default(wine)
     }
 }
 
@@ -274,161 +281,6 @@ pub struct Files {
     pub wine64: Option<String>,
     pub wineserver: Option<String>,
     pub wineboot: Option<String>
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum WincompatlibWine {
-    Default(Wine),
-    Proton(Proton)
-}
-
-impl From<Wine> for WincompatlibWine {
-    #[inline]
-    fn from(wine: Wine) -> Self {
-        Self::Default(wine)
-    }
-}
-
-impl From<Proton> for WincompatlibWine {
-    #[inline]
-    fn from(proton: Proton) -> Self {
-        Self::Proton(proton)
-    }
-}
-
-impl WineWithExt for WincompatlibWine {
-    #[inline]
-    fn with_prefix<T: Into<PathBuf>>(self, prefix: T) -> Self {
-        match self {
-            Self::Default(wine) => Self::Default(wine.with_prefix(prefix)),
-            Self::Proton(proton) => Self::Proton(proton.with_prefix(prefix))
-        }
-    }
-
-    #[inline]
-    fn with_arch(self, arch: WineArch) -> Self {
-        match self {
-            Self::Default(wine) => Self::Default(wine.with_arch(arch)),
-            Self::Proton(proton) => Self::Proton(proton.with_arch(arch))
-        }
-    }
-
-    #[inline]
-    fn with_boot(self, boot: WineBoot) -> Self {
-        match self {
-            Self::Default(wine) => Self::Default(wine.with_boot(boot)),
-            Self::Proton(proton) => Self::Proton(proton.with_boot(boot))
-        }
-    }
-
-    #[inline]
-    fn with_server<T: Into<PathBuf>>(self, server: T) -> Self {
-        match self {
-            Self::Default(wine) => Self::Default(wine.with_server(server)),
-            Self::Proton(proton) => Self::Proton(proton.with_server(server))
-        }
-    }
-
-    #[inline]
-    fn with_loader(self, loader: WineLoader) -> Self {
-        match self {
-            Self::Default(wine) => Self::Default(wine.with_loader(loader)),
-            Self::Proton(proton) => Self::Proton(proton.with_loader(loader))
-        }
-    }
-}
-
-impl WineBootExt for WincompatlibWine {
-    #[inline]
-    fn wineboot_command(&self) -> std::process::Command {
-        match self {
-            Self::Default(wine) => wine.wineboot_command(),
-            Self::Proton(proton) => proton.wineboot_command()
-        }
-    }
-
-    #[inline]
-    fn update_prefix<T: Into<PathBuf>>(&self, path: Option<T>) -> Result<Output> {
-        match self {
-            Self::Default(wine) => wine.update_prefix(path),
-            Self::Proton(proton) => proton.update_prefix(path)
-        }
-    }
-
-    #[inline]
-    fn stop_processes(&self, force: bool) -> Result<Output> {
-        match self {
-            Self::Default(wine) => wine.stop_processes(force),
-            Self::Proton(proton) => proton.stop_processes(force)
-        }
-    }
-
-    #[inline]
-    fn restart(&self) -> Result<Output> {
-        match self {
-            Self::Default(wine) => wine.restart(),
-            Self::Proton(proton) => proton.restart()
-        }
-    }
-
-    #[inline]
-    fn shutdown(&self) -> Result<Output> {
-        match self {
-            Self::Default(wine) => wine.shutdown(),
-            Self::Proton(proton) => proton.shutdown()
-        }
-    }
-
-    #[inline]
-    fn end_session(&self) -> Result<Output> {
-        match self {
-            Self::Default(wine) => wine.end_session(),
-            Self::Proton(proton) => proton.end_session()
-        }
-    }
-}
-
-impl WineRunExt for WincompatlibWine {
-    #[inline]
-    fn run<T: AsRef<OsStr>>(&self, binary: T) -> Result<Child> {
-        match self {
-            Self::Default(wine) => wine.run(binary),
-            Self::Proton(proton) => proton.run(binary)
-        }
-    }
-
-    #[inline]
-    fn run_args<T, S>(&self, args: T) -> Result<Child>
-    where
-        T: IntoIterator<Item = S>,
-        S: AsRef<OsStr>
-    {
-        match self {
-            Self::Default(wine) => wine.run_args(args),
-            Self::Proton(proton) => proton.run_args(args)
-        }
-    }
-
-    #[inline]
-    fn run_args_with_env<T, K, S>(&self, args: T, envs: K) -> Result<Child>
-    where
-        T: IntoIterator<Item = S>,
-        K: IntoIterator<Item = (S, S)>,
-        S: AsRef<OsStr>
-    {
-        match self {
-            Self::Default(wine) => wine.run_args_with_env(args, envs),
-            Self::Proton(proton) => proton.run_args_with_env(args, envs)
-        }
-    }
-
-    #[inline]
-    fn winepath(&self, path: &str) -> Result<PathBuf> {
-        match self {
-            Self::Default(wine) => wine.winepath(path),
-            Self::Proton(proton) => proton.winepath(path)
-        }
-    }
 }
 
 #[inline]
