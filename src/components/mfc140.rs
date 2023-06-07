@@ -45,8 +45,6 @@ pub fn install(wine_prefix: impl AsRef<Path>) -> anyhow::Result<()> {
         .arg("-d")
         .arg(&vcredist_extracted)
         .arg(vcredist_extracted.join("a11"))
-        .arg("-F")
-        .arg("a11")
         .spawn()?
         .wait_with_output()?;
 
@@ -57,10 +55,6 @@ pub fn install(wine_prefix: impl AsRef<Path>) -> anyhow::Result<()> {
     // w_try_cp_dll "${W_TMP}/win64"/mfc140.dll "${W_SYSTEM64_DLLS}"/mfc140.dll
     for lib in LIBRARIES {
         let dest = wine_prefix.as_ref().join("drive_c/windows/system32").join(lib);
-
-        if dest.exists() {
-            std::fs::remove_file(&dest)?;
-        }
 
         std::fs::copy(vcredist_extracted.join(lib), dest)?;
     }
