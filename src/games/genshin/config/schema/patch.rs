@@ -60,11 +60,6 @@ impl From<&JsonValue> for Patch {
                             }
                         }
 
-                        // Add repository mirror if it's not here (so old default installation)
-                        if servers.as_ref() == ["https://notabug.org/Krock/dawn"] {
-                            servers = default.servers;
-                        }
-
                         servers
                     },
                     None => default.servers

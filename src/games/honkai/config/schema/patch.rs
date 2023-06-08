@@ -61,11 +61,6 @@ impl From<&JsonValue> for Patch {
                             }
                         }
 
-                        // Add repository mirror if it's not here (so old default installation)
-                        if servers.as_ref() == ["https://notabug.org/mkrsym1/dusk"] {
-                            servers = default.servers;
-                        }
-
                         servers
                     },
                     None => default.servers
