@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-
 use std::path::{Path, PathBuf};
+
+use serde::{Serialize, Deserialize};
 
 use crate::sessions::{
     SessionsExt,
