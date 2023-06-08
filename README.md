@@ -27,4 +27,4 @@ SDK based on [anime-game-core](https://github.com/an-anime-team/anime-game-core)
 | [An Anime Game](https://github.com/an-anime-team/an-anime-game-launcher) | `gen-shin` (without dash) |
 | [Honkers Railway](https://github.com/an-anime-team/the-honkers-railway-launcher) | `star-rail` |
 | [Honkers](https://github.com/an-anime-team/honkers-launcher) | `hon-kai` (without dash) |
-| PGR | `pgr` |
+| [Punishing: Gray Raven](https://github.com/an-anime-team/an-anime-borb-launcher) | `pgr` |
