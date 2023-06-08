@@ -17,6 +17,11 @@ use crate::genshin::env_emulation::Environment;
 pub mod discord_rpc;
 
 pub mod prelude {
+    pub use super::{
+        Launcher,
+        LauncherStyle
+    };
+
     #[cfg(feature = "discord-rpc")]
     pub use super::discord_rpc::DiscordRpc;
 }
