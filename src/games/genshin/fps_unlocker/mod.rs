@@ -9,8 +9,8 @@ use super::config::schema::prelude::FpsUnlockerConfig;
 pub mod config_schema;
 
 const LATEST_INFO: (&str, &str) = (
-    "a885a80793278133f4cce2a7d28a88be",
-    "https://github.com/34736384/genshin-fps-unlock/releases/download/v2.1.0/unlockfps_clr.exe"
+    "6ae7e63ada5b5f911c1f927c06945674",
+    "https://github.com/34736384/genshin-fps-unlock/releases/download/v2.1.1/unlockfps_clr.exe"
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
