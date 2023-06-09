@@ -1,11 +1,30 @@
 use std::thread::JoinHandle;
 use std::sync::mpsc::{self, Sender, SendError};
 
+use serde::{Serialize, Deserialize};
+
+use anime_game_core::minreq;
+
 use discord_rich_presence::{
     activity::*,
     DiscordIpc,
     DiscordIpcClient
 };
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DiscordRpcAsset {
+    pub app_id: u64,
+    pub id: String,
+    pub r#type: u64,
+    pub name: String
+}
+
+impl DiscordRpcAsset {
+    #[inline]
+    pub fn get_uri(&self) -> String {
+        format!("https://cdn.discordapp.com/app-assets/{}/{}.png", self.app_id, self.id)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiscordRpcParams {
@@ -105,6 +124,20 @@ impl DiscordRpc {
     #[inline]
     pub fn update(&self, update: RpcUpdates) -> Result<(), SendError<RpcUpdates>> {
         self.sender.send(update)
+    }
+
+    pub fn get_assets(app_id: u64) -> anyhow::Result<Vec<DiscordRpcAsset>> {
+        Ok(minreq::get(format!("https://discord.com/api/v9/oauth2/applications/{app_id}/assets"))
+            .send()?
+            .json::<Vec<serde_json::Value>>()?
+            .into_iter()
+            .map(|value| DiscordRpcAsset {
+                app_id,
+                id: value["id"].as_str().unwrap().to_string(),
+                r#type: value["type"].as_u64().unwrap(),
+                name: value["name"].as_str().unwrap().to_string()
+            })
+            .collect())
     }
 }
 
