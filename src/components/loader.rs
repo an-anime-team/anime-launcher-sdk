@@ -48,6 +48,7 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
                                     name: version["name"].as_str().unwrap().to_string(),
                                     title: version["title"].as_str().unwrap().to_string(),
                                     uri: version["uri"].as_str().unwrap().to_string(),
+                                    format: version["format"].as_str().map(|str| str.to_string()),
                                     files: serde_json::from_value::<wine::Files>(version["files"].to_owned())?,
                                     features: version.get("features").map(|v| v.into())
                                 });
@@ -119,6 +120,7 @@ pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
                                     title: version["title"].as_str().unwrap().to_string(),
                                     version: version["version"].as_str().unwrap().to_string(),
                                     uri: version["uri"].as_str().unwrap().to_string(),
+                                    format: version["format"].as_str().map(|str| str.to_string()),
                                     features: version.get("features").map(|v| v.into())
                                 });
                             }

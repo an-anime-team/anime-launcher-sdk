@@ -93,6 +93,7 @@ pub struct Version {
     pub title: String,
     pub version: String,
     pub uri: String,
+    pub format: Option<String>,
     pub features: Option<Features>
 }
 

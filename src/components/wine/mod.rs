@@ -147,6 +147,7 @@ pub struct Version {
     pub name: String,
     pub title: String,
     pub uri: String,
+    pub format: Option<String>,
     pub files: Files,
     pub features: Option<Features>
 }
