@@ -222,7 +222,8 @@ pub fn run() -> anyhow::Result<()> {
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    command.current_dir(game_path).spawn()?.wait_with_output()?;
+    command.current_dir(game_path)
+        .spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
