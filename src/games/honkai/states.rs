@@ -54,7 +54,7 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path);
+        let game = Game::new(&params.game_path, ());
 
         let diff = game.try_get_diff()?;
 

@@ -28,7 +28,7 @@ pub mod prelude {
     pub use super::launcher::prelude::*;
     pub use super::game::prelude::*;
 
-    pub use super::launcher::*;
+    pub use super::launcher::prelude::*;
     pub use super::game::*;
     pub use super::patch::*;
 

@@ -53,12 +53,12 @@ impl From<&JsonValue> for DiscordRpc {
 
         let mut title = match value.get("title") {
             Some(value) => value.as_str().unwrap_or(&default.title).to_string(),
-            None => default.title
+            None => default.title.clone()
         };
 
         let mut subtitle = match value.get("subtitle") {
             Some(value) => value.as_str().unwrap_or(&default.subtitle).to_string(),
-            None => default.subtitle
+            None => default.subtitle.clone()
         };
 
         // If old values are detected - replace them by new

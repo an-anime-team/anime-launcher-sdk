@@ -14,6 +14,8 @@ use crate::star_rail::consts::launcher_dir;
 pub mod discord_rpc;
 
 pub mod prelude {
+    pub use super::{Launcher, LauncherStyle};
+
     #[cfg(feature = "discord-rpc")]
     pub use super::discord_rpc::DiscordRpc;
 }

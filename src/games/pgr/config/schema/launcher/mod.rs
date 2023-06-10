@@ -12,6 +12,8 @@ use crate::config::schema_blanks::prelude::*;
 use crate::pgr::consts::launcher_dir;
 
 pub mod prelude {
+    pub use super::{Launcher, LauncherStyle};
+
     #[cfg(feature = "discord-rpc")]
     pub use super::discord_rpc::DiscordRpc;
 }
