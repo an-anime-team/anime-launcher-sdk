@@ -25,8 +25,6 @@ impl From<DiscordRpc> for DiscordRpcParams {
     }
 }
 
-// TODO: add honkers-specific discord rpc
-
 impl Default for DiscordRpc {
     #[inline]
     fn default() -> Self {
