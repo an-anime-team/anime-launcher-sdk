@@ -10,7 +10,13 @@ pub enum LauncherState {
     Launch,
 
     MfplatPatchAvailable,
-    MainPatchAvailable(MainPatch),
+
+    PatchNotVerified,
+    PatchBroken,
+    PatchUnsafe,
+
+    PatchNotInstalled,
+    PatchUpdateAvailable,
 
     #[cfg(feature = "components")]
     WineNotInstalled,
@@ -35,7 +41,6 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
 
-    pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
     pub apply_mfplat: bool,
 
@@ -59,35 +64,29 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(_) => {
+            VersionDiff::Latest(version) => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
                 // Check if mfplat patch is needed
-                if params.apply_mfplat && !MfplatPatch::is_applied(&params.wine_prefix)? {
+                if params.apply_mfplat && !mfplat::is_applied(&params.wine_prefix)? {
                     return Ok(Self::MfplatPatchAvailable);
                 }
 
-                let patch = Patch::new(&params.patch_folder);
-
-                // Sync local patch folder with remote if needed
-                // TODO: maybe I shouldn't do it here?
-                if patch.is_sync(&params.patch_servers)?.is_none() {
-                    for server in &params.patch_servers {
-                        if patch.sync(server).is_ok() {
-                            break;
-                        }
-                    }
+                if !jadeite::is_installed(&params.patch_folder) {
+                    return Ok(Self::PatchNotInstalled);
                 }
 
-                // Check main patch status
-                let player_patch = patch.main_patch()?;
-
-                if !player_patch.is_applied(&params.game_path)? {
-                    return Ok(Self::MainPatchAvailable(player_patch));
+                if jadeite::get_latest()?.version > jadeite::get_version(params.patch_folder)? {
+                    return Ok(Self::PatchUpdateAvailable);
                 }
 
-                Ok(Self::Launch)
+                match jadeite::get_metadata()?.hsr.global.get_status(version) {
+                    JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
+                    JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
+                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
+                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe)
+                }
             }
 
             VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
@@ -115,7 +114,6 @@ impl LauncherState {
             wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path,
 
-            patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
             apply_mfplat: config.patch.apply_mfplat,
 

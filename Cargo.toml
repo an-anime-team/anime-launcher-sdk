@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.7.0"
+version = "1.7.1"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.12.0"
+tag = "1.12.1"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -37,7 +37,10 @@ pgr = ["anime-game-core/pgr"]
 
 genshin-patch = ["anime-game-core/patch-dawn"]
 star-rail-patch = ["anime-game-core/patch-jadeite"]
-honkai-patch = ["anime-game-core/patch-jadeite"]
+honkai-patch = [
+    "anime-game-core/patch-jadeite",
+    "anime-game-core/patch-mfplat"
+]
 
 # Common features
 states = []
