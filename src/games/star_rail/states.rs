@@ -10,15 +10,20 @@ use crate::star_rail::config::Config;
 pub enum LauncherState {
     Launch,
 
-    /// Always contains `VersionDiff::Predownload`
-    PredownloadAvailable(VersionDiff),
+    PatchNotVerified,
+    PatchBroken,
+    PatchUnsafe,
 
-    MainPatchAvailable(MainPatch),
+    PatchNotInstalled,
+    PatchUpdateAvailable,
 
     #[cfg(feature = "components")]
     WineNotInstalled,
 
     PrefixNotExists,
+
+    /// Always contains `VersionDiff::Predownload`
+    PredownloadAvailable(VersionDiff),
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
@@ -42,8 +47,6 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_edition: GameEdition,
 
     pub wine_prefix: PathBuf,
-
-    pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
 
     pub status_updater: F
@@ -65,37 +68,34 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
+            VersionDiff::Latest { version, .. } | VersionDiff::Predownload { current: version, .. } => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
-                let patch = Patch::new(&params.patch_folder, params.game_edition);
+                if !jadeite::is_installed(&params.patch_folder) {
+                    return Ok(Self::PatchNotInstalled);
+                }
 
-                // Sync local patch folder with remote if needed
-                // TODO: maybe I shouldn't do it here?
-                if patch.is_sync(&params.patch_servers)?.is_none() {
-                    for server in &params.patch_servers {
-                        if patch.sync(server).is_ok() {
-                            break;
+                if jadeite::get_latest()?.version > jadeite::get_version(params.patch_folder)? {
+                    return Ok(Self::PatchUpdateAvailable);
+                }
+
+                match jadeite::get_metadata()?.hsr.global.get_status(version) {
+                    JadeitePatchStatusVariant::Verified => {
+                        // Check if update predownload available
+                        if let VersionDiff::Predownload { .. } = diff {
+                            Ok(Self::PredownloadAvailable(diff))
+                        }
+
+                        // Otherwise we can launch the game
+                        else {
+                            Ok(Self::Launch)
                         }
                     }
-                }
 
-                // Check the main patch
-                let main_patch = patch.main_patch()?;
-
-                if !main_patch.is_applied(&params.game_path)? {
-                    return Ok(Self::MainPatchAvailable(main_patch));
-                }
-
-                // Check if update predownload available
-                if let VersionDiff::Predownload { .. } = diff {
-                    Ok(Self::PredownloadAvailable(diff))
-                }
-
-                // Otherwise we can launch the game
-                else {
-                    Ok(Self::Launch)
+                    JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
+                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
+                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe)
                 }
             }
 
@@ -126,8 +126,6 @@ impl LauncherState {
             game_edition: config.launcher.edition,
 
             wine_prefix: config.get_wine_prefix_path(),
-
-            patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
 
             status_updater

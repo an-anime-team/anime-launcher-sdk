@@ -7,9 +7,7 @@ use crate::star_rail::consts::launcher_dir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Patch {
-    pub path: PathBuf,
-    pub servers: Vec<String>,
-    pub root: bool
+    pub path: PathBuf
 }
 
 impl Default for Patch {
@@ -18,15 +16,7 @@ impl Default for Patch {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join("patch"),
-
-            servers: vec![
-                String::from("https://codeberg.org/an-anime-team/astra"),
-                String::from("https://notabug.org/mkrsym1/astra")
-            ],
-
-            // Disable root requirement for patching if we're running launcher in flatpak
-            root: !PathBuf::from("/.flatpak-info").exists()
+            path: launcher_dir.join("patch")
         }
     }
 }
@@ -36,35 +26,9 @@ impl From<&JsonValue> for Patch {
         let default = Self::default();
 
         Self {
-            path: match value.get("path") {
-                Some(value) => match value.as_str() {
-                    Some(value) => PathBuf::from(value),
-                    None => default.path
-                },
+            path: match value.get("path").and_then(|path| path.as_str()).map(PathBuf::from) {
+                Some(path) => path,
                 None => default.path
-            },
-
-            servers: match value.get("servers") {
-                Some(value) => match value.as_array() {
-                    Some(values) => {
-                        let mut servers = Vec::new();
-
-                        for value in values {
-                            if let Some(server) = value.as_str() {
-                                servers.push(server.to_string());
-                            }
-                        }
-
-                        servers
-                    },
-                    None => default.servers
-                },
-                None => default.servers
-            },
-
-            root: match value.get("root") {
-                Some(value) => value.as_bool().unwrap_or(default.root),
-                None => default.root
             }
         }
     }
