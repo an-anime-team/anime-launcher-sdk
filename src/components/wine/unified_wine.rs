@@ -231,10 +231,10 @@ impl WineFontsExt for UnifiedWine {
     }
 
     #[inline]
-    fn install_corefont(&self, corefont: Corefont) -> anyhow::Result<()> {
+    fn install_font(&self, font: Font) -> anyhow::Result<()> {
         match self {
-            Self::Default(wine) => wine.install_corefont(corefont),
-            Self::Proton(proton) => proton.install_corefont(corefont)
+            Self::Default(wine) => wine.install_font(font),
+            Self::Proton(proton) => proton.install_font(font)
         }
     }
 }
