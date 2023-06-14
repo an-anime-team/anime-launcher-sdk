@@ -1,12 +1,11 @@
 use std::path::PathBuf;
 
-use wincompatlib::wine::ext::Corefont;
+use wincompatlib::wine::ext::Font;
 
 use anime_game_core::prelude::*;
 use anime_game_core::pgr::prelude::*;
 
 use crate::config::ConfigExt;
-use crate::components::mfc140;
 
 #[derive(Debug, Clone)]
 pub enum LauncherState {
@@ -18,7 +17,7 @@ pub enum LauncherState {
     PrefixNotExists,
 
     Mfc140NotInstalled,
-    CorefontsNotInstalled(Vec<Corefont>),
+    FontsNotInstalled(Vec<Font>),
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
@@ -57,16 +56,33 @@ impl LauncherState {
             return Ok(Self::Mfc140NotInstalled);
         }
 
-        let mut corefonts = Vec::new();
+        let mut fonts = Vec::new();
 
-        for font in Corefont::iterator() {
+        // In future, wincompatlib's Font might contain fonts that won't be actually needed
+        // That's why I listed only needed fonts here
+        const COREFONTS: &[Font] = &[
+            Font::Andale,
+            Font::Arial,
+            Font::Courier,
+            Font::Georgia,
+            Font::Impact,
+            Font::Times,
+            Font::Trebuchet,
+            Font::Verdana,
+            Font::Webdings,
+
+            // Who even needs it?
+            Font::ComicSans
+        ];
+
+        for font in COREFONTS.iter().copied() {
             if !font.is_installed(&params.wine_prefix) {
-                corefonts.push(font);
+                fonts.push(font);
             }
         }
 
-        if !corefonts.is_empty() {
-            return Ok(Self::CorefontsNotInstalled(corefonts));
+        if !fonts.is_empty() {
+            return Ok(Self::FontsNotInstalled(fonts));
         }
 
         // Check game installation status
