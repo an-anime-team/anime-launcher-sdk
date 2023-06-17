@@ -22,8 +22,10 @@ pub enum LauncherState {
         cleanup_folder: Option<PathBuf>
     },
 
-    UnityPlayerPatchAvailable(UnityPlayerPatch),
-    XluaPatchAvailable(XluaPatch),
+    PlayerPatchAvailable {
+        patch: PlayerPatch,
+        disable_mhypbase: bool
+    },
 
     #[cfg(feature = "components")]
     WineNotInstalled,
@@ -66,8 +68,8 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
 
     pub patch_servers: Vec<String>,
     pub patch_folder: PathBuf,
-    pub use_main_patch: bool,
-    pub use_xlua_patch: bool,
+    pub use_patch: bool,
+    pub disable_mhypbase: bool,
 
     pub status_updater: F
 }
@@ -151,20 +153,14 @@ impl LauncherState {
                 }
 
                 // Check UnityPlayer patch
-                if params.use_main_patch {
-                    let player_patch = patch.unity_player_patch()?;
+                if params.use_patch {
+                    let player_patch = patch.player_patch()?;
 
                     if !player_patch.is_applied(&params.game_path)? {
-                        return Ok(Self::UnityPlayerPatchAvailable(player_patch));
-                    }
-                }
-
-                // Check xlua patch
-                if params.use_xlua_patch {
-                    let xlua_patch = patch.xlua_patch()?;
-
-                    if !xlua_patch.is_applied(&params.game_path)? {
-                        return Ok(Self::XluaPatchAvailable(xlua_patch));
+                        return Ok(Self::PlayerPatchAvailable {
+                            patch: player_patch,
+                            disable_mhypbase: params.disable_mhypbase
+                        });
                     }
                 }
 
@@ -222,8 +218,8 @@ impl LauncherState {
 
             patch_servers: config.patch.servers,
             patch_folder: config.patch.path,
-            use_main_patch: config.patch.apply_main,
-            use_xlua_patch: config.patch.apply_xlua,
+            use_patch: config.patch.apply,
+            disable_mhypbase: config.patch.disable_mhypbase,
 
             status_updater
         })

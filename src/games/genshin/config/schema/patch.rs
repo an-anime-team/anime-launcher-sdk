@@ -9,9 +9,9 @@ use crate::genshin::consts::launcher_dir;
 pub struct Patch {
     pub path: PathBuf,
     pub servers: Vec<String>,
-    pub apply_main: bool,
-    pub apply_xlua: bool,
-    pub root: bool
+    pub apply: bool,
+    pub root: bool,
+    pub disable_mhypbase: bool
 }
 
 impl Default for Patch {
@@ -27,11 +27,12 @@ impl Default for Patch {
                 String::from("https://notabug.org/Krock/dawn")
             ],
 
-            apply_main: true,
-            apply_xlua: false,
+            apply: true,
 
             // Disable root requirement for patching if we're running launcher in flatpak
-            root: !PathBuf::from("/.flatpak-info").exists()
+            root: !PathBuf::from("/.flatpak-info").exists(),
+
+            disable_mhypbase: false
         }
     }
 }
@@ -67,19 +68,26 @@ impl From<&JsonValue> for Patch {
                 None => default.servers
             },
 
-            apply_main: match value.get("apply_main") {
-                Some(value) => value.as_bool().unwrap_or(default.apply_main),
-                None => default.apply_main
-            },
+            apply: match value.get("apply") {
+                Some(value) => value.as_bool().unwrap_or(default.apply),
 
-            apply_xlua: match value.get("apply_xlua") {
-                Some(value) => value.as_bool().unwrap_or(default.apply_xlua),
-                None => default.apply_xlua
+                // Migration from 1.7.8 to 1.8.0
+                // Xlua patch doesn't exist now so there's only one patch
+                // and thus it's main, and doesn't need this suffix here
+                None => match value.get("apply_main") {
+                    Some(value) => value.as_bool().unwrap_or(default.apply),
+                    None => default.apply
+                }
             },
 
             root: match value.get("root") {
                 Some(value) => value.as_bool().unwrap_or(default.root),
                 None => default.root
+            },
+
+            disable_mhypbase: match value.get("disable_mhypbase") {
+                Some(value) => value.as_bool().unwrap_or(default.disable_mhypbase),
+                None => default.disable_mhypbase
             }
         }
     }
