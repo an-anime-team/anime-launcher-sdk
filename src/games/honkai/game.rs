@@ -94,7 +94,7 @@ pub fn run() -> anyhow::Result<()> {
         windows_command += " ";
     }
 
-    windows_command += &format!("'{}/jadeite.exe' 'Z:\\{}/BH3.exe' ", folders.patch.to_string_lossy(), folders.game.to_string_lossy());
+    windows_command += &format!("'{}/jadeite.exe' 'Z:\\{}/BH3.exe' -- ", folders.patch.to_string_lossy(), folders.game.to_string_lossy());
 
     if config.game.wine.borderless {
         windows_command += "-screen-fullscreen 0 -popupwindow ";
