@@ -27,6 +27,8 @@ pub enum LauncherState {
         disable_mhypbase: bool
     },
 
+    TelemetryNotDisabled,
+
     #[cfg(feature = "components")]
     WineNotInstalled,
 
@@ -145,6 +147,11 @@ impl LauncherState {
                             disable_mhypbase: params.disable_mhypbase
                         });
                     }
+                }
+
+                // Check telemetry servers
+                if telemetry::is_disabled(params.game_edition)?.is_some() {
+                    return Ok(Self::TelemetryNotDisabled);
                 }
 
                 // Check if update predownload available

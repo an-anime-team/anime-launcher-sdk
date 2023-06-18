@@ -18,6 +18,8 @@ pub enum LauncherState {
     PatchNotInstalled,
     PatchUpdateAvailable,
 
+    TelemetryNotDisabled,
+
     #[cfg(feature = "components")]
     WineNotInstalled,
 
@@ -73,6 +75,7 @@ impl LauncherState {
                     return Ok(Self::MfplatPatchAvailable);
                 }
 
+                // Check jadeite patch status
                 if !jadeite::is_installed(&params.patch_folder) {
                     return Ok(Self::PatchNotInstalled);
                 }
@@ -81,7 +84,12 @@ impl LauncherState {
                     return Ok(Self::PatchUpdateAvailable);
                 }
 
-                match jadeite::get_metadata()?.hsr.global.get_status(version) {
+                // Check telemetry servers
+                if telemetry::is_disabled()?.is_some() {
+                    return Ok(Self::TelemetryNotDisabled);
+                }
+
+                match jadeite::get_metadata()?.hi3rd.global.get_status(version) {
                     JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
                     JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
                     JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),

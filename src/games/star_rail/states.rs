@@ -17,6 +17,8 @@ pub enum LauncherState {
     PatchNotInstalled,
     PatchUpdateAvailable,
 
+    TelemetryNotDisabled,
+
     #[cfg(feature = "components")]
     WineNotInstalled,
 
@@ -72,12 +74,18 @@ impl LauncherState {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
+                // Check jadeite patch status
                 if !jadeite::is_installed(&params.patch_folder) {
                     return Ok(Self::PatchNotInstalled);
                 }
 
                 if jadeite::get_latest()?.version > jadeite::get_version(params.patch_folder)? {
                     return Ok(Self::PatchUpdateAvailable);
+                }
+
+                // Check telemetry servers
+                if telemetry::is_disabled(params.game_edition)?.is_some() {
+                    return Ok(Self::TelemetryNotDisabled);
                 }
 
                 match jadeite::get_metadata()?.hsr.global.get_status(version) {
