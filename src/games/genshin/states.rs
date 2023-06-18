@@ -88,23 +88,6 @@ impl LauncherState {
 
         let game = Game::new(&params.game_path, params.game_edition);
 
-        // Check if game is installed
-        if game.is_installed() {
-            let data_folder = params.game_path.join(params.game_edition.data_folder());
-
-            let old_audio_folder_base = data_folder.join("StreamingAssets/Audio");
-            let old_audio_folder = old_audio_folder_base.join("GeneratedSoundBanks/Windows");
-
-            // Migrate pre-3.6 voiceovers format to post-3.6
-            if old_audio_folder.exists() {
-                return Ok(Self::FolderMigrationRequired {
-                    from: old_audio_folder,
-                    to: data_folder.join("StreamingAssets/AudioAssets"),
-                    cleanup_folder: Some(old_audio_folder_base)
-                });
-            }
-        }
-
         let diff = game.try_get_diff()?;
 
         match diff {
