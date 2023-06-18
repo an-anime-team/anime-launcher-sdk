@@ -84,7 +84,20 @@ impl LauncherState {
                 }
 
                 // Check telemetry servers
-                if telemetry::is_disabled(params.game_edition)?.is_some() {
+                let disabled = telemetry::is_disabled(params.game_edition)
+
+                    // Return true if there's no domain name resolved, or false otherwise
+                    .map(|result| result.is_none())
+
+                    // And return true if there's an error happened during domain name resolving
+                    // FIXME: might not be a good idea? Idk
+                    .unwrap_or_else(|err| {
+                        tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
+
+                        true
+                    });
+
+                if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
                 }
 
