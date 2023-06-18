@@ -85,7 +85,7 @@ impl LauncherState {
                 }
 
                 // Check telemetry servers
-                let disabled = telemetry::is_disabled(params.game_edition)
+                let disabled = telemetry::is_disabled()
 
                     // Return true if there's no domain name resolved, or false otherwise
                     .map(|result| result.is_none())
