@@ -88,7 +88,7 @@ impl LauncherState {
                     return Ok(Self::TelemetryNotDisabled);
                 }
 
-                match jadeite::get_metadata()?.hsr.global.get_status(version) {
+                match jadeite::get_metadata()?.hsr.for_edition(params.game_edition).get_status(version) {
                     JadeitePatchStatusVariant::Verified => {
                         // Check if update predownload available
                         if let VersionDiff::Predownload { .. } = diff {
