@@ -25,7 +25,10 @@ pub enum LauncherState {
     PrefixNotExists,
 
     /// Always contains `VersionDiff::Predownload`
-    PredownloadAvailable(VersionDiff),
+    PredownloadAvailable {
+        diff: VersionDiff,
+        patch: JadeitePatchStatusVariant
+    },
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
@@ -101,22 +104,27 @@ impl LauncherState {
                     return Ok(Self::TelemetryNotDisabled);
                 }
 
-                match jadeite::get_metadata()?.hsr.for_edition(params.game_edition).get_status(version) {
-                    JadeitePatchStatusVariant::Verified => {
-                        // Check if update predownload available
-                        if let VersionDiff::Predownload { .. } = diff {
-                            Ok(Self::PredownloadAvailable(diff))
-                        }
+                // Request current patch status from the metadata file
+                let patch = jadeite::get_metadata()?.games.hsr
+                    .for_edition(params.game_edition)
+                    .get_status(version);
 
-                        // Otherwise we can launch the game
-                        else {
-                            Ok(Self::Launch)
-                        }
+                // Check if update predownload available
+                if let VersionDiff::Predownload { .. } = diff {
+                    Ok(Self::PredownloadAvailable {
+                        diff,
+                        patch
+                    })
+                }
+
+                // Otherwise we can launch the game or say that the patch is unstable
+                else {
+                    match patch {
+                        JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
+                        JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
+                        JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
+                        JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe)
                     }
-
-                    JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
-                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
-                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe)
                 }
             }
 
