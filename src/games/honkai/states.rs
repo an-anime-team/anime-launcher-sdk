@@ -80,7 +80,10 @@ impl LauncherState {
                     return Ok(Self::PatchNotInstalled);
                 }
 
-                if jadeite::get_latest()?.version > jadeite::get_version(params.patch_folder)? {
+                // Fetch patch metadata
+                let metadata = jadeite::get_metadata()?;
+
+                if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
                     return Ok(Self::PatchUpdateAvailable);
                 }
 
@@ -102,7 +105,7 @@ impl LauncherState {
                     return Ok(Self::TelemetryNotDisabled);
                 }
 
-                match jadeite::get_metadata()?.hi3rd.global.get_status(version) {
+                match metadata.games.hi3rd.global.get_status(version) {
                     JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
                     JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
                     JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
