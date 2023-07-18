@@ -82,7 +82,10 @@ impl LauncherState {
                     return Ok(Self::PatchNotInstalled);
                 }
 
-                if jadeite::get_latest()?.version > jadeite::get_version(params.patch_folder)? {
+                // Fetch patch metadata
+                let metadata = jadeite::get_metadata()?;
+
+                if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
                     return Ok(Self::PatchUpdateAvailable);
                 }
 
@@ -103,9 +106,9 @@ impl LauncherState {
                 if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
                 }
-
+                
                 // Request current patch status from the metadata file
-                let patch = jadeite::get_metadata()?.games.hsr
+                let patch = metadata.games.hsr
                     .for_edition(params.game_edition)
                     .get_status(version);
 
