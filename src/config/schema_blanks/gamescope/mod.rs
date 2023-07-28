@@ -1,17 +1,20 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
 use std::process::Command;
 
-pub mod framerate;
 pub mod size;
+
+pub mod framerate;
+
 pub mod window_type;
 
 pub mod prelude {
-    pub use super::framerate::Framerate;
-    pub use super::size::Size;
-    pub use super::window_type::WindowType;
     pub use super::Gamescope;
+    pub use super::size::Size;
+    pub use super::framerate::Framerate;
+
+    pub use super::window_type::WindowType;
 }
 
 use prelude::*;
@@ -98,7 +101,7 @@ impl Gamescope {
         match Command::new("/usr/bin/gamescope").arg("--help").output() {
             Err(_) => false,
             Ok(output) => String::from_utf8(output.stderr)
-                .unwrap()
+                .unwrap_or_default()
                 .lines()
                 .find(|s| s.contains("-F, --filter"))
                 .is_none() // if no --filter, then it's old version
