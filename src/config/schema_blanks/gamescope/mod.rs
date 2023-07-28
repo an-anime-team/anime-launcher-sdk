@@ -1,15 +1,17 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-pub mod size;
+use std::process::Command;
+
 pub mod framerate;
+pub mod size;
 pub mod window_type;
 
 pub mod prelude {
-    pub use super::Gamescope;
-    pub use super::size::Size;
     pub use super::framerate::Framerate;
+    pub use super::size::Size;
     pub use super::window_type::WindowType;
+    pub use super::Gamescope;
 }
 
 use prelude::*;
@@ -91,6 +93,18 @@ impl From<&JsonValue> for Gamescope {
 }
 
 impl Gamescope {
+    fn is_legacy_version() -> bool {
+        // gamescope doesn't have --version, so parsing --help 
+        match Command::new("/usr/bin/gamescope").arg("--help").output() {
+            Err(_) => false,
+            Ok(output) => String::from_utf8(output.stderr)
+                .unwrap()
+                .lines()
+                .find(|s| s.contains("-F, --filter"))
+                .is_none() // if no --filter, then it's old version
+        }
+    }
+
     pub fn get_command(&self) -> Option<String> {
         // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
         if self.enabled {
@@ -134,17 +148,29 @@ impl Gamescope {
 
             // Set integer scaling
             if self.integer_scaling {
-                gamescope += " -n";
+                if Gamescope::is_legacy_version() {
+                    gamescope += " -n";
+                } else {
+                    gamescope += " -F integer"
+                }
             }
 
             // Set FSR support
             if self.fsr {
-                gamescope += " -U";
+                if Gamescope::is_legacy_version() {
+                    gamescope += " -U";
+                } else {
+                    gamescope += " -F fsr"
+                }
             }
 
             // Set NIS (Nvidia Image Scaling) support
             if self.nis {
-                gamescope += " -Y";
+                if Gamescope::is_legacy_version() {
+                    gamescope += " -Y";
+                } else {
+                    gamescope += " -F nis"
+                }
             }
 
             Some(gamescope)
