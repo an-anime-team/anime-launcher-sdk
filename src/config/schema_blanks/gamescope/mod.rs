@@ -97,14 +97,14 @@ impl From<&JsonValue> for Gamescope {
 
 impl Gamescope {
     fn is_legacy_version() -> bool {
-        // gamescope doesn't have --version, so parsing --help 
+        // gamescope doesn't have --version, so parsing --help instead
         match Command::new("/usr/bin/gamescope").arg("--help").output() {
-            Err(_) => false,
+            Err(_) => true,
             Ok(output) => String::from_utf8(output.stderr)
                 .unwrap_or_default()
                 .lines()
                 .find(|s| s.contains("-F, --filter"))
-                .is_none() // if no --filter, then it's old version
+                .is_none() // if no --filter, then it's legacy version
         }
     }
 
