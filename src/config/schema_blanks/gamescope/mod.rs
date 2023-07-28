@@ -151,28 +151,28 @@ impl Gamescope {
 
             // Set integer scaling
             if self.integer_scaling {
-                if Gamescope::is_legacy_version() {
-                    gamescope += " -n";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -n"
                 } else {
-                    gamescope += " -F integer"
+                    " -F integer"
                 }
             }
 
             // Set FSR support
             if self.fsr {
-                if Gamescope::is_legacy_version() {
-                    gamescope += " -U";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -U"
                 } else {
-                    gamescope += " -F fsr"
+                    " -F fsr"
                 }
             }
 
             // Set NIS (Nvidia Image Scaling) support
             if self.nis {
-                if Gamescope::is_legacy_version() {
-                    gamescope += " -Y";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -Y"
                 } else {
-                    gamescope += " -F nis"
+                    " -F nis"
                 }
             }
 
