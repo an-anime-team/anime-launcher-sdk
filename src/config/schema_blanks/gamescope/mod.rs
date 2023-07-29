@@ -1,14 +1,19 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
+use std::process::Command;
+
 pub mod size;
+
 pub mod framerate;
+
 pub mod window_type;
 
 pub mod prelude {
     pub use super::Gamescope;
     pub use super::size::Size;
     pub use super::framerate::Framerate;
+
     pub use super::window_type::WindowType;
 }
 
@@ -91,6 +96,18 @@ impl From<&JsonValue> for Gamescope {
 }
 
 impl Gamescope {
+    fn is_legacy_version() -> bool {
+        // gamescope doesn't have --version, so parsing --help instead
+        match Command::new("/usr/bin/gamescope").arg("--help").output() {
+            Err(_) => true,
+            Ok(output) => String::from_utf8(output.stderr)
+                .unwrap_or_default()
+                .lines()
+                .find(|s| s.contains("-F, --filter"))
+                .is_none() // if no --filter, then it's legacy version
+        }
+    }
+
     pub fn get_command(&self) -> Option<String> {
         // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
         if self.enabled {
@@ -134,17 +151,29 @@ impl Gamescope {
 
             // Set integer scaling
             if self.integer_scaling {
-                gamescope += " -n";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -n"
+                } else {
+                    " -F integer"
+                }
             }
 
             // Set FSR support
             if self.fsr {
-                gamescope += " -U";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -U"
+                } else {
+                    " -F fsr"
+                }
             }
 
             // Set NIS (Nvidia Image Scaling) support
             if self.nis {
-                gamescope += " -Y";
+                gamescope += if Gamescope::is_legacy_version() {
+                    " -Y"
+                } else {
+                    " -F nis"
+                }
             }
 
             Some(gamescope)
