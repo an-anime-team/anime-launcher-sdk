@@ -1,19 +1,16 @@
+use std::process::Command;
+
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use std::process::Command;
-
 pub mod size;
-
 pub mod framerate;
-
 pub mod window_type;
 
 pub mod prelude {
     pub use super::Gamescope;
     pub use super::size::Size;
     pub use super::framerate::Framerate;
-
     pub use super::window_type::WindowType;
 }
 
@@ -98,18 +95,15 @@ impl From<&JsonValue> for Gamescope {
 impl Gamescope {
     fn is_legacy_version() -> bool {
         // gamescope doesn't have --version, so parsing --help instead
-        match Command::new("/usr/bin/gamescope").arg("--help").output() {
-            Err(_) => true,
-            Ok(output) => String::from_utf8(output.stderr)
-                .unwrap_or_default()
-                .lines()
-                .find(|s| s.contains("-F, --filter"))
-                .is_none() // if no --filter, then it's legacy version
-        }
+        Command::new("gamescope").arg("--help").output()
+            // if no --filter, then it's legacy version
+            .map(|help| !String::from_utf8_lossy(&help.stderr).contains("-F, --filter"))
+            .unwrap_or(true)
     }
 
     pub fn get_command(&self) -> Option<String> {
         // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
+        // https://github.com/ValveSoftware/gamescope#options
         if self.enabled {
             let mut gamescope = String::from("gamescope");
 
