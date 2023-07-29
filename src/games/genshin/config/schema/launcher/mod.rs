@@ -53,7 +53,9 @@ pub struct Launcher {
     pub discord_rpc: DiscordRpc,
 
     #[cfg(feature = "environment-emulation")]
-    pub environment: Environment
+    pub environment: Environment,
+
+    pub auto_close: bool
 }
 
 impl Default for Launcher {
@@ -70,7 +72,9 @@ impl Default for Launcher {
             discord_rpc: DiscordRpc::default(),
 
             #[cfg(feature = "environment-emulation")]
-            environment: Environment::default()
+            environment: Environment::default(),
+
+            auto_close: false
         }
     }
 }
@@ -124,6 +128,11 @@ impl From<&JsonValue> for Launcher {
             environment: match value.get("environment") {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.environment),
                 None => default.environment
+            },
+
+            auto_close: match value.get("auto_close") {
+                Some(value) => value.as_bool().unwrap_or(default.auto_close),
+                None => default.auto_close
             }
         }
     }

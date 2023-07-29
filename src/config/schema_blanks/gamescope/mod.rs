@@ -93,6 +93,7 @@ impl From<&JsonValue> for Gamescope {
 }
 
 impl Gamescope {
+    // TODO: temporary workaround for transition period, will be removed in future
     fn is_legacy_version() -> bool {
         // gamescope doesn't have --version, so parsing --help instead
         Command::new("gamescope").arg("--help").output()
@@ -148,7 +149,7 @@ impl Gamescope {
                 gamescope += if Gamescope::is_legacy_version() {
                     " -n"
                 } else {
-                    " -F integer"
+                    " -S integer"
                 }
             }
 

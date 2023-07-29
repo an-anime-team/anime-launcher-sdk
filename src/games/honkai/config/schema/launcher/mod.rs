@@ -41,7 +41,9 @@ pub struct Launcher {
     pub repairer: Repairer,
 
     #[cfg(feature = "discord-rpc")]
-    pub discord_rpc: DiscordRpc
+    pub discord_rpc: DiscordRpc,
+
+    pub auto_close: bool
 }
 
 impl Default for Launcher {
@@ -54,7 +56,9 @@ impl Default for Launcher {
             repairer: Repairer::default(),
 
             #[cfg(feature = "discord-rpc")]
-            discord_rpc: DiscordRpc::default()
+            discord_rpc: DiscordRpc::default(),
+
+            auto_close: false
         }
     }
 }
@@ -98,6 +102,11 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => DiscordRpc::from(value),
                 None => default.discord_rpc
             },
+
+            auto_close: match value.get("auto_close") {
+                Some(value) => value.as_bool().unwrap_or(default.auto_close),
+                None => default.auto_close
+            }
         }
     }
 }
