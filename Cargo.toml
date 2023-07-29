@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.8.8"
+version = "1.8.9"
 authors = ["Nikita Podvirnyy <suimin.tu.mu.ga.mi@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.13.4"
+tag = "1.13.5"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
