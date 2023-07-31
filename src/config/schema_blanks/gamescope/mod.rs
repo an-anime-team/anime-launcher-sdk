@@ -92,14 +92,23 @@ impl From<&JsonValue> for Gamescope {
     }
 }
 
+// TODO: temporary workaround for transition period, will be removed in future
+#[cached::proc_macro::cached]
+fn is_legacy_version() -> bool {
+    // gamescope doesn't have --version, so parsing --help instead
+    Command::new("gamescope").arg("--help").output()
+
+        // if no --filter, then it's legacy version
+        .map(|help| !String::from_utf8_lossy(&help.stderr).contains("-F, --filter"))
+
+        // If failed to launch gamescope, then yes, it's legacy (it's not but meh)
+        .unwrap_or(true)
+}
+
 impl Gamescope {
-    // TODO: temporary workaround for transition period, will be removed in future
-    fn is_legacy_version() -> bool {
-        // gamescope doesn't have --version, so parsing --help instead
-        Command::new("gamescope").arg("--help").output()
-            // if no --filter, then it's legacy version
-            .map(|help| !String::from_utf8_lossy(&help.stderr).contains("-F, --filter"))
-            .unwrap_or(true)
+    /// Check if available gamescope version is legacy (<3.12.0)
+    pub fn is_legacy_version() -> bool {
+        is_legacy_version()
     }
 
     pub fn get_command(&self) -> Option<String> {
@@ -146,7 +155,7 @@ impl Gamescope {
 
             // Set integer scaling
             if self.integer_scaling {
-                gamescope += if Gamescope::is_legacy_version() {
+                gamescope += if Self::is_legacy_version() {
                     " -n"
                 } else {
                     " -S integer"
@@ -155,7 +164,7 @@ impl Gamescope {
 
             // Set FSR support
             if self.fsr {
-                gamescope += if Gamescope::is_legacy_version() {
+                gamescope += if Self::is_legacy_version() {
                     " -U"
                 } else {
                     " -F fsr"
@@ -164,7 +173,7 @@ impl Gamescope {
 
             // Set NIS (Nvidia Image Scaling) support
             if self.nis {
-                gamescope += if Gamescope::is_legacy_version() {
+                gamescope += if Self::is_legacy_version() {
                     " -Y"
                 } else {
                     " -F nis"
