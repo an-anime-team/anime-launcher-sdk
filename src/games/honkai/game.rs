@@ -257,9 +257,5 @@ pub fn run() -> anyhow::Result<()> {
         Sessions::update(current, config.get_wine_prefix_path())?;
     }
 
-    if config.launcher.auto_close {
-        std::process::exit(0);
-    }
-
     Ok(())
 }

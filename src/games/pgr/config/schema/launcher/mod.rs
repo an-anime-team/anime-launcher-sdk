@@ -12,7 +12,11 @@ use crate::config::schema_blanks::prelude::*;
 use crate::pgr::consts::launcher_dir;
 
 pub mod prelude {
-    pub use super::{Launcher, LauncherStyle};
+    pub use super::{
+        Launcher,
+        LauncherStyle,
+        LauncherBehavior
+    };
 
     #[cfg(feature = "discord-rpc")]
     pub use super::discord_rpc::DiscordRpc;
@@ -33,6 +37,20 @@ impl Default for LauncherStyle {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
+pub enum LauncherBehavior {
+    Nothing,
+    Hide,
+    Close
+}
+
+impl Default for LauncherBehavior {
+    #[inline]
+    fn default() -> Self {
+        Self::Hide
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
@@ -43,7 +61,7 @@ pub struct Launcher {
     #[cfg(feature = "discord-rpc")]
     pub discord_rpc: DiscordRpc,
 
-    pub auto_close: bool
+    pub behavior: LauncherBehavior
 }
 
 impl Default for Launcher {
@@ -58,7 +76,7 @@ impl Default for Launcher {
             #[cfg(feature = "discord-rpc")]
             discord_rpc: DiscordRpc::default(),
 
-            auto_close: false
+            behavior: LauncherBehavior::default()
         }
     }
 }
@@ -103,9 +121,9 @@ impl From<&JsonValue> for Launcher {
                 None => default.discord_rpc
             },
 
-            auto_close: match value.get("auto_close") {
-                Some(value) => value.as_bool().unwrap_or(default.auto_close),
-                None => default.auto_close
+            behavior: match value.get("behavior") {
+                Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.behavior),
+                None => default.behavior
             }
         }
     }

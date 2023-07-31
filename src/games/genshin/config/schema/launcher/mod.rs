@@ -19,7 +19,8 @@ pub mod discord_rpc;
 pub mod prelude {
     pub use super::{
         Launcher,
-        LauncherStyle
+        LauncherStyle,
+        LauncherBehavior
     };
 
     #[cfg(feature = "discord-rpc")]
@@ -41,6 +42,20 @@ impl Default for LauncherStyle {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
+pub enum LauncherBehavior {
+    Nothing,
+    Hide,
+    Close
+}
+
+impl Default for LauncherBehavior {
+    #[inline]
+    fn default() -> Self {
+        Self::Hide
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
@@ -55,7 +70,7 @@ pub struct Launcher {
     #[cfg(feature = "environment-emulation")]
     pub environment: Environment,
 
-    pub auto_close: bool
+    pub behavior: LauncherBehavior
 }
 
 impl Default for Launcher {
@@ -74,7 +89,7 @@ impl Default for Launcher {
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
 
-            auto_close: false
+            behavior: LauncherBehavior::default()
         }
     }
 }
@@ -130,9 +145,9 @@ impl From<&JsonValue> for Launcher {
                 None => default.environment
             },
 
-            auto_close: match value.get("auto_close") {
-                Some(value) => value.as_bool().unwrap_or(default.auto_close),
-                None => default.auto_close
+            behavior: match value.get("behavior") {
+                Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.behavior),
+                None => default.behavior
             }
         }
     }
