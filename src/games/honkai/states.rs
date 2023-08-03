@@ -4,6 +4,7 @@ use anime_game_core::prelude::*;
 use anime_game_core::honkai::prelude::*;
 
 use crate::config::ConfigExt;
+use crate::honkai::config::Config;
 
 #[derive(Debug, Clone)]
 pub enum LauncherState {
@@ -42,6 +43,7 @@ pub enum StateUpdating {
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
+    pub game_edition: GameEdition,
 
     pub patch_folder: PathBuf,
     pub apply_mfplat: bool,
@@ -61,7 +63,7 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path, ());
+        let game = Game::new(&params.game_path, params.game_edition);
 
         let diff = game.try_get_diff()?;
 
@@ -88,7 +90,7 @@ impl LauncherState {
                 }
 
                 // Check telemetry servers
-                let disabled = telemetry::is_disabled()
+                let disabled = telemetry::is_disabled(params.game_edition)
 
                     // Return true if there's no domain name resolved, or false otherwise
                     .map(|result| result.is_none())
@@ -123,7 +125,7 @@ impl LauncherState {
     pub fn get_from_config<T: Fn(StateUpdating)>(status_updater: T) -> anyhow::Result<Self> {
         tracing::debug!("Trying to get launcher state");
 
-        let config = crate::honkai::config::Config::get()?;
+        let config = Config::get()?;
 
         match &config.game.wine.selected {
             #[cfg(feature = "components")]
@@ -137,6 +139,7 @@ impl LauncherState {
         Self::get(LauncherStateParams {
             wine_prefix: config.get_wine_prefix_path(),
             game_path: config.game.path,
+            game_edition: config.launcher.edition,
 
             patch_folder: config.patch.path,
             apply_mfplat: config.patch.apply_mfplat,
