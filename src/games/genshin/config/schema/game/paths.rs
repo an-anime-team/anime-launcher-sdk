@@ -39,38 +39,16 @@ impl From<&JsonValue> for Paths {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
-        // SDK 0.5.11 (launcher 3.3.0) and earlier
-        if value.is_string() {
-            let path = PathBuf::from(value.as_str().unwrap());
+        Self {
+            global: value.get("global")
+                .and_then(JsonValue::as_str)
+                .map(PathBuf::from)
+                .unwrap_or(default.global),
 
-            Self {
-                china: match path.parent() {
-                    Some(parent) => parent.join(concat!("Yu", "anS", "hen")),
-                    None => default.china
-                },
-                global: path
-            }
-        }
-
-        // SDK 0.5.12 and later
-        else {
-            Self {
-                global: match value.get("global") {
-                    Some(value) => match value.as_str() {
-                        Some(value) => PathBuf::from(value),
-                        None => default.global
-                    },
-                    None => default.global
-                },
-    
-                china: match value.get("china") {
-                    Some(value) => match value.as_str() {
-                        Some(value) => PathBuf::from(value),
-                        None => default.china
-                    },
-                    None => default.china
-                }
-            }
+            china: value.get("china")
+                .and_then(JsonValue::as_str)
+                .map(PathBuf::from)
+                .unwrap_or(default.china),
         }
     }
 }

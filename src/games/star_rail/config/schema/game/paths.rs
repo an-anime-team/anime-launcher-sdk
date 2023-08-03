@@ -19,7 +19,7 @@ impl Paths {
     pub fn for_edition(&self, edition: impl Into<GameEdition>) -> &Path {
         match edition.into() {
             GameEdition::Global => self.global.as_path(),
-            GameEdition::China => self.china.as_path()
+            GameEdition::China  => self.china.as_path()
         }
     }
 }
@@ -30,7 +30,7 @@ impl Default for Paths {
 
         Self {
             global: launcher_dir.join("HSR"),
-            china: launcher_dir.join("HSR China")
+            china:  launcher_dir.join("HSR China")
         }
     }
 }

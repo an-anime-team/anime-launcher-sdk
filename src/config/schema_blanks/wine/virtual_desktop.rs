@@ -26,20 +26,17 @@ impl From<&JsonValue> for VirtualDesktop {
         let default = Self::default();
 
         Self {
-            enabled: match value.get("enabled") {
-                Some(value) => value.as_bool().unwrap_or(default.enabled),
-                None => default.enabled
-            },
+            enabled: value.get("enabled")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.enabled),
 
-            width: match value.get("width") {
-                Some(value) => value.as_u64().unwrap_or(default.width),
-                None => default.width
-            },
+            width: value.get("width")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(default.width),
 
-            height: match value.get("height") {
-                Some(value) => value.as_u64().unwrap_or(default.height),
-                None => default.height
-            }
+            height: value.get("height")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(default.height)
         }
     }
 }

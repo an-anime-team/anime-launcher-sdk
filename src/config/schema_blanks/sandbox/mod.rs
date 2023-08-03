@@ -47,15 +47,13 @@ impl From<&JsonValue> for Sandbox {
         let default = Self::default();
 
         Self {
-            enabled: match value.get("enabled") {
-                Some(value) => value.as_bool().unwrap_or(default.enabled),
-                None => default.enabled
-            },
+            enabled: value.get("enabled")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.enabled),
 
-            isolate_home: match value.get("isolate_home") {
-                Some(value) => value.as_bool().unwrap_or(default.isolate_home),
-                None => default.isolate_home
-            },
+            isolate_home: value.get("isolate_home")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.isolate_home),
 
             hostname: match value.get("hostname") {
                 Some(value) => {
@@ -88,25 +86,19 @@ impl From<&JsonValue> for Sandbox {
             private: match value.get("private") {
                 Some(value) => match value.as_array() {
                     Some(values) => {
-                        let mut private = Vec::new();
-
-                        for value in values {
-                            if let Some(server) = value.as_str() {
-                                private.push(server.to_string());
-                            }
-                        }
-
-                        private
+                        values.iter()
+                            .flat_map(|value| value.as_str())
+                            .map(|value| value.to_string())
+                            .collect()
                     },
                     None => default.private
                 },
                 None => default.private
             },
 
-            mounts: match value.get("mounts") {
-                Some(value) => Mounts::from(value),
-                None => default.mounts
-            }
+            mounts: value.get("mounts")
+                .map(Mounts::from)
+                .unwrap_or(default.mounts)
         }
     }
 }

@@ -22,13 +22,10 @@ macro_rules! config_impl_dxvk_schema {
                 let default = Self::default();
 
                 Self {
-                    builds: match value.get("builds") {
-                        Some(value) => match value.as_str() {
-                            Some(value) => PathBuf::from(value),
-                            None => default.builds
-                        },
-                        None => default.builds
-                    }
+                    builds: value.get("builds")
+                        .and_then(|value| value.as_str())
+                        .map(PathBuf::from)
+                        .unwrap_or(default.builds),
                 }
             }
         }

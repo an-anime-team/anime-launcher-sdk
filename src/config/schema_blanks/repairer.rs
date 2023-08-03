@@ -22,15 +22,13 @@ impl From<&JsonValue> for Repairer {
         let default = Self::default();
 
         Self {
-            threads: match value.get("threads") {
-                Some(value) => value.as_u64().unwrap_or(default.threads),
-                None => default.threads
-            },
+            threads: value.get("threads")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(default.threads),
 
-            fast: match value.get("fast") {
-                Some(value) => value.as_bool().unwrap_or(default.fast),
-                None => default.fast
-            }
+            fast: value.get("fast")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.fast)
         }
     }
 }

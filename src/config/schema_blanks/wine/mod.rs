@@ -48,21 +48,15 @@ macro_rules! config_impl_wine_schema {
                 let default = Self::default();
 
                 Self {
-                    prefix: match value.get("prefix") {
-                        Some(value) => match value.as_str() {
-                            Some(value) => PathBuf::from(value),
-                            None => default.prefix
-                        },
-                        None => default.prefix
-                    },
+                    prefix: value.get("prefix")
+                        .and_then(|value| value.as_str())
+                        .map(PathBuf::from)
+                        .unwrap_or(default.prefix),
 
-                    builds: match value.get("builds") {
-                        Some(value) => match value.as_str() {
-                            Some(value) => PathBuf::from(value),
-                            None => default.builds
-                        },
-                        None => default.builds
-                    },
+                    builds: value.get("builds")
+                        .and_then(|value| value.as_str())
+                        .map(PathBuf::from)
+                        .unwrap_or(default.builds),
 
                     selected: match value.get("selected") {
                         Some(value) => {
@@ -78,30 +72,25 @@ macro_rules! config_impl_wine_schema {
                         None => default.selected
                     },
 
-                    sync: match value.get("sync") {
-                        Some(value) => WineSync::from(value),
-                        None => default.sync
-                    },
+                    sync: value.get("sync")
+                        .map(WineSync::from)
+                        .unwrap_or(default.sync),
 
-                    language: match value.get("language") {
-                        Some(value) => WineLang::from(value),
-                        None => default.language
-                    },
+                    language: value.get("language")
+                        .map(WineLang::from)
+                        .unwrap_or(default.language),
 
-                    borderless: match value.get("borderless") {
-                        Some(value) => value.as_bool().unwrap_or(default.borderless),
-                        None => default.borderless
-                    },
+                    borderless: value.get("borderless")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(default.borderless),
 
-                    virtual_desktop: match value.get("virtual_desktop") {
-                        Some(value) => VirtualDesktop::from(value),
-                        None => default.virtual_desktop
-                    },
+                    virtual_desktop: value.get("virtual_desktop")
+                        .map(VirtualDesktop::from)
+                        .unwrap_or(default.virtual_desktop),
 
-                    shared_libraries: match value.get("shared_libraries") {
-                        Some(value) => SharedLibraries::from(value),
-                        None => default.shared_libraries
-                    },
+                    shared_libraries: value.get("shared_libraries")
+                        .map(SharedLibraries::from)
+                        .unwrap_or(default.shared_libraries),
                 }
             }
         }

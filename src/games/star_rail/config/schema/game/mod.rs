@@ -52,25 +52,21 @@ impl From<&JsonValue> for Game {
         let default = Self::default();
 
         Self {
-            path: match value.get("path") {
-                Some(value) => Paths::from(value),
-                None => default.path
-            },
+            path: value.get("path")
+                .map(Paths::from)
+                .unwrap_or(default.path),
 
-            wine: match value.get("wine") {
-                Some(value) => Wine::from(value),
-                None => default.wine
-            },
+            wine: value.get("wine")
+                .map(Wine::from)
+                .unwrap_or(default.wine),
 
-            dxvk: match value.get("dxvk") {
-                Some(value) => Dxvk::from(value),
-                None => default.dxvk
-            },
+            dxvk: value.get("dxvk")
+                .map(Dxvk::from)
+                .unwrap_or(default.dxvk),
 
-            enhancements: match value.get("enhancements") {
-                Some(value) => Enhancements::from(value),
-                None => default.enhancements
-            },
+            enhancements: value.get("enhancements")
+                .map(Enhancements::from)
+                .unwrap_or(default.enhancements),
 
             environment: match value.get("environment") {
                 Some(value) => match value.as_object() {

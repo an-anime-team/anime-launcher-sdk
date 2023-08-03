@@ -12,15 +12,13 @@ impl From<&JsonValue> for Framerate {
         let default = Self::default();
 
         Self {
-            focused: match value.get("focused") {
-                Some(value) => value.as_u64().unwrap_or(default.focused),
-                None => default.focused
-            },
+            focused: value.get("focused")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(default.focused),
 
-            unfocused: match value.get("unfocused") {
-                Some(value) => value.as_u64().unwrap_or(default.unfocused),
-                None => default.unfocused
-            }
+            unfocused: value.get("unfocused")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(default.unfocused)
         }
     }
 }

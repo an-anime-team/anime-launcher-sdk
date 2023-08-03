@@ -49,45 +49,37 @@ impl From<&JsonValue> for Gamescope {
         let default = Self::default();
 
         Self {
-            enabled: match value.get("enabled") {
-                Some(value) => value.as_bool().unwrap_or(default.enabled),
-                None => default.enabled
-            },
+            enabled: value.get("enabled")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.enabled),
 
-            game: match value.get("game") {
-                Some(value) => Size::from(value),
-                None => default.game
-            },
+            game: value.get("game")
+                .map(Size::from)
+                .unwrap_or(default.game),
 
-            gamescope: match value.get("gamescope") {
-                Some(value) => Size::from(value),
-                None => default.gamescope
-            },
+            gamescope: value.get("gamescope")
+                .map(Size::from)
+                .unwrap_or(default.gamescope),
 
-            framerate: match value.get("framerate") {
-                Some(value) => Framerate::from(value),
-                None => default.framerate
-            },
+            framerate: value.get("framerate")
+                .map(Framerate::from)
+                .unwrap_or(default.framerate),
 
-            integer_scaling: match value.get("integer_scaling") {
-                Some(value) => value.as_bool().unwrap_or(default.integer_scaling),
-                None => default.integer_scaling
-            },
+            integer_scaling: value.get("integer_scaling")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.integer_scaling),
 
-            fsr: match value.get("fsr") {
-                Some(value) => value.as_bool().unwrap_or(default.fsr),
-                None => default.fsr
-            },
+            fsr: value.get("fsr")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.fsr),
 
-            nis: match value.get("nis") {
-                Some(value) => value.as_bool().unwrap_or(default.nis),
-                None => default.nis
-            },
+            nis: value.get("nis")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.nis),
 
-            window_type: match value.get("window_type") {
-                Some(value) => WindowType::from(value),
-                None => default.window_type
-            }
+            window_type: value.get("window_type")
+                .map(WindowType::from)
+                .unwrap_or(default.window_type)
         }
     }
 }
@@ -99,6 +91,7 @@ fn is_legacy_version() -> bool {
     Command::new("gamescope").arg("--help").output()
 
         // if no --filter, then it's legacy version
+        // also for whatever reason --help is printed to stderr
         .map(|help| !String::from_utf8_lossy(&help.stderr).contains("-F, --filter"))
 
         // If failed to launch gamescope, then yes, it's legacy (it's not but meh)

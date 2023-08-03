@@ -16,25 +16,21 @@ impl From<&JsonValue> for Enhancements {
         let default = Self::default();
 
         Self {
-            fsr: match value.get("fsr") {
-                Some(value) => Fsr::from(value),
-                None => default.fsr
-            },
+            fsr: value.get("fsr")
+                .map(Fsr::from)
+                .unwrap_or(default.fsr),
 
-            gamemode: match value.get("gamemode") {
-                Some(value) => value.as_bool().unwrap_or(default.gamemode),
-                None => default.gamemode
-            },
+            gamemode: value.get("gamemode")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.gamemode),
 
-            hud: match value.get("hud") {
-                Some(value) => HUD::from(value),
-                None => default.hud
-            },
+            hud: value.get("hud")
+                .map(HUD::from)
+                .unwrap_or(default.hud),
 
-            gamescope: match value.get("gamescope") {
-                Some(value) => Gamescope::from(value),
-                None => default.gamescope
-            }
+            gamescope: value.get("gamescope")
+                .map(Gamescope::from)
+                .unwrap_or(default.gamescope)
         }
     }
 }

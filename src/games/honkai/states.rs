@@ -42,6 +42,7 @@ pub enum StateUpdating {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
+
     pub game_path: PathBuf,
     pub game_edition: GameEdition,
 
@@ -138,7 +139,8 @@ impl LauncherState {
 
         Self::get(LauncherStateParams {
             wine_prefix: config.get_wine_prefix_path(),
-            game_path: config.game.path,
+
+            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
 
             patch_folder: config.patch.path,
