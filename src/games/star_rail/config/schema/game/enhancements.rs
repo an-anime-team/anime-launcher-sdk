@@ -3,12 +3,18 @@ use serde_json::Value as JsonValue;
 
 use crate::config::schema_blanks::prelude::*;
 
+#[cfg(feature = "fps-unlocker")]
+use super::FpsUnlocker;
+
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Enhancements {
     pub fsr: Fsr,
     pub gamemode: bool,
     pub hud: HUD,
-    pub gamescope: Gamescope
+    pub gamescope: Gamescope,
+
+    #[cfg(feature = "fps-unlocker")]
+    pub fps_unlocker: FpsUnlocker
 }
 
 impl From<&JsonValue> for Enhancements {
@@ -30,7 +36,12 @@ impl From<&JsonValue> for Enhancements {
 
             gamescope: value.get("gamescope")
                 .map(Gamescope::from)
-                .unwrap_or(default.gamescope)
+                .unwrap_or(default.gamescope),
+
+            #[cfg(feature = "fps-unlocker")]
+            fps_unlocker: value.get("fps_unlocker")
+                .map(FpsUnlocker::from)
+                .unwrap_or(default.fps_unlocker)
         }
     }
 }

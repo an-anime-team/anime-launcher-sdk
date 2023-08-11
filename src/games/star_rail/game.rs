@@ -19,6 +19,9 @@ use crate::{
     star_rail::sessions::Sessions
 };
 
+#[cfg(feature = "fps-unlocker")]
+use super::fps_unlocker::FpsUnlocker;
+
 #[derive(Debug, Clone)]
 struct Folders {
     pub wine: PathBuf,
@@ -72,6 +75,54 @@ pub fn run() -> anyhow::Result<()> {
 
     if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
+    }
+
+    // Prepare fps unlocker
+        // Because we are editing the registry instead of a wrapper exec like genshin, the "enabled" flag doesn't really have a meaning
+    //  the flag is just there in case there's a better way in the future
+    #[cfg(feature = "fps-unlocker")]
+    {
+        tracing::info!("Preparing FPS unlocker");
+
+        let unlocker = match FpsUnlocker::from_dir(&config.game.enhancements.fps_unlocker.path) {
+            Ok(Some(unlocker)) => unlocker,
+            other => {
+                if let Ok(None) = other {
+                    std::fs::remove_file(FpsUnlocker::get_script_in(&config.game.enhancements.fps_unlocker.path))?;
+                }
+
+                tracing::info!("Unlocker is not downloaded. Downloading");
+
+                match FpsUnlocker::download(&config.game.enhancements.fps_unlocker.path) {
+                    Ok(unlocker) => unlocker,
+                    Err(err) => return Err(anyhow::anyhow!("Failed to download FPS unlocker: {err}"))
+                }
+            }
+        };
+
+        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config) {
+            return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
+        }
+
+        // give script exec perm
+        Command::new("bash")
+            .current_dir(&config.game.enhancements.fps_unlocker.path)
+            .arg("-c")
+            .arg("chmod +x ./fps_unlocker.sh")
+            .spawn()?
+            .wait()
+            .expect("Failed to set permission to fps unlocker");
+
+        // run the regedit
+        Command::new("bash")
+            .current_dir(&config.game.enhancements.fps_unlocker.path)
+            .env("WINEPREFIX", &folders.prefix)
+            .arg("./fps_unlocker.sh")
+            .arg("-f")
+            .arg(&config.game.enhancements.fps_unlocker.config.fps.to_string())
+            .spawn()?
+            .wait()
+            .expect("Failed to run fps unlocker");
     }
 
     // Prepare bash -c '<command>'

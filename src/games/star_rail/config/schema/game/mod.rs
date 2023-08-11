@@ -13,12 +13,21 @@ crate::config_impl_dxvk_schema!(launcher_dir);
 pub mod enhancements;
 pub mod paths;
 
+#[cfg(feature = "fps-unlocker")]
+pub mod fps_unlocker;
+
 pub mod prelude {
     pub use super::Wine;
     pub use super::Dxvk;
 
+    #[cfg(feature = "fps-unlocker")]
+    pub use super::fps_unlocker::prelude::*;
+
     pub use super::enhancements::Enhancements;
     pub use super::paths::Paths;
+
+    #[cfg(feature = "fps-unlocker")]
+    pub use super::fps_unlocker::FpsUnlocker;
 }
 
 use prelude::*;

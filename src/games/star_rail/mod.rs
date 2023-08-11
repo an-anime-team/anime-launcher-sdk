@@ -11,3 +11,4 @@ pub mod game;
 
 #[cfg(feature = "sessions")]
 pub mod sessions;
+mod fps_unlocker;

@@ -12,6 +12,9 @@ pub mod gamescope;
 #[cfg(feature = "sandbox")]
 pub mod sandbox;
 
+#[cfg(feature = "fps-unlocker")]
+pub mod fps_star_rail;
+
 pub mod prelude {
     pub use super::resolution::Resolution;
     pub use super::repairer::Repairer;
