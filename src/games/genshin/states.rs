@@ -22,11 +22,6 @@ pub enum LauncherState {
         cleanup_folder: Option<PathBuf>
     },
 
-    PlayerPatchAvailable {
-        patch: PlayerPatch,
-        disable_mhypbase: bool
-    },
-
     TelemetryNotDisabled,
 
     #[cfg(feature = "components")]
@@ -56,8 +51,7 @@ pub enum LauncherState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
     Game,
-    Voice(VoiceLocale),
-    Patch
+    Voice(VoiceLocale)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,11 +61,6 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
 
     pub wine_prefix: PathBuf,
     pub selected_voices: Vec<VoiceLocale>,
-
-    pub patch_servers: Vec<String>,
-    pub patch_folder: PathBuf,
-    pub use_patch: bool,
-    pub disable_mhypbase: bool,
 
     pub status_updater: F
 }
@@ -119,33 +108,6 @@ impl LauncherState {
                         VersionDiff::Diff { .. } => return Ok(Self::VoiceUpdateAvailable(diff)),
                         VersionDiff::Outdated { .. } => return Ok(Self::VoiceOutdated(diff)),
                         VersionDiff::NotInstalled { .. } => return Ok(Self::VoiceNotInstalled(diff))
-                    }
-                }
-
-                // Check game patch status
-                (params.status_updater)(StateUpdating::Patch);
-
-                let patch = Patch::new(&params.patch_folder, params.game_edition);
-
-                // Sync local patch folder with remote if needed
-                // TODO: maybe I shouldn't do it here?
-                if patch.is_sync(&params.patch_servers)?.is_none() {
-                    for server in &params.patch_servers {
-                        if patch.sync(server).is_ok() {
-                            break;
-                        }
-                    }
-                }
-
-                // Check UnityPlayer patch
-                if params.use_patch {
-                    let player_patch = patch.player_patch()?;
-
-                    if !player_patch.is_applied(&params.game_path)? {
-                        return Ok(Self::PlayerPatchAvailable {
-                            patch: player_patch,
-                            disable_mhypbase: params.disable_mhypbase
-                        });
                     }
                 }
 
@@ -218,11 +180,6 @@ impl LauncherState {
 
             wine_prefix: config.get_wine_prefix_path(),
             selected_voices: voices,
-
-            patch_servers: config.patch.servers,
-            patch_folder: config.patch.path,
-            use_patch: config.patch.apply,
-            disable_mhypbase: config.patch.disable_mhypbase,
 
             status_updater
         })

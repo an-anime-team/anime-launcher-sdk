@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.14.0"
+tag = "1.15.0"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -35,7 +35,6 @@ star-rail = ["anime-game-core/star-rail"]
 honkai = ["anime-game-core/honkai"]
 pgr = ["anime-game-core/pgr"]
 
-genshin-patch = ["anime-game-core/patch-dawn"]
 star-rail-patch = ["anime-game-core/patch-jadeite"]
 honkai-patch = [
     "anime-game-core/patch-jadeite",

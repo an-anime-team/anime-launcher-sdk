@@ -50,12 +50,10 @@ pub fn run() -> anyhow::Result<()> {
 
     let config = Config::get()?;
 
-    let game_executable = config.patch.apply
-        .then_some("launcher.bat")
-        .unwrap_or_else(|| match config.launcher.edition {
-            genshin::GameEdition::Global => "GenshinImpact.exe",
-            genshin::GameEdition::China => "YuanShen.exe"
-        });
+    let game_executable = match config.launcher.edition {
+        genshin::GameEdition::Global => "GenshinImpact.exe",
+        genshin::GameEdition::China  => "YuanShen.exe"
+    };
 
     let game_path = config.game.path.for_edition(config.launcher.edition);
 
@@ -117,21 +115,10 @@ pub fn run() -> anyhow::Result<()> {
             return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
         }
 
-        let launcher_bat = game_path.join("launcher.bat");
-        let fps_unlocker_bat = game_path.join("fps_unlocker.bat");
 
-        // Generate fps_unlocker.bat
-        if config.patch.apply {
-            std::fs::write(fps_unlocker_bat, std::fs::read_to_string(launcher_bat)?
-                .replace("start GenshinImpact.exe %*", &format!("start GenshinImpact.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))
-                .replace("start YuanShen.exe %*", &format!("start YuanShen.exe %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy())))?;
-        }
-
-        else {
-            // If patch applying is disabled, then game_executable is either GenshinImpact.exe or YuanShen.exe
-            // so we don't need to check it here
-            std::fs::write(fps_unlocker_bat, format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))?;
-        }
+        // If patch applying is disabled, then game_executable is either GenshinImpact.exe or YuanShen.exe
+        // so we don't need to check it here
+        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))?;
     }
 
     // Generate `config.ini` if environment emulation feature is presented
