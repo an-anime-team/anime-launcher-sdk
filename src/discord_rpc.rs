@@ -50,6 +50,9 @@ pub enum RpcUpdates {
         icon: String
     },
 
+    /// Update RPC connection with already set activity params
+    Update,
+
     /// Clear RPC activity
     ClearActivity
 }
@@ -96,6 +99,13 @@ impl DiscordRpc {
                             params.subtitle = subtitle;
                             params.icon = icon;
 
+                            if connected {
+                                client.set_activity(Self::get_activity(&params))
+                                    .expect("Failed to update discord rpc activity");
+                            }
+                        }
+
+                        RpcUpdates::Update => {
                             if connected {
                                 client.set_activity(Self::get_activity(&params))
                                     .expect("Failed to update discord rpc activity");

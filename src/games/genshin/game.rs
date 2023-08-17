@@ -302,6 +302,11 @@ pub fn run() -> anyhow::Result<()> {
         if !output.contains("GenshinImpact.e") && !output.contains("YuanShen.exe") && !output.contains("unlocker.exe") {
             break;
         }
+
+        #[cfg(feature = "discord-rpc")]
+        if let Some(rpc) = &rpc {
+            rpc.update(RpcUpdates::Update)?;
+        }
     }
 
     #[cfg(feature = "discord-rpc")]

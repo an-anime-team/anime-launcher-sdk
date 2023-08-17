@@ -228,8 +228,13 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("BH3.exe") {
+        if !output.contains("PGR.exe") {
             break;
+        }
+
+        #[cfg(feature = "discord-rpc")]
+        if let Some(rpc) = &rpc {
+            rpc.update(RpcUpdates::Update)?;
         }
     }
 
