@@ -75,9 +75,11 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     // Prepare bash -c '<command>'
+    // %command% = %bash_command% %windows_command% %launch_args%
 
     let mut bash_command = String::new();
     let mut windows_command = String::new();
+    let mut launch_args = String::new();
 
     if config.game.enhancements.gamemode {
         bash_command += "gamemoderun ";
@@ -98,12 +100,12 @@ pub fn run() -> anyhow::Result<()> {
     windows_command += &format!("'{}/jadeite.exe' 'Z:\\{}/StarRail.exe' -- ", folders.patch.to_string_lossy(), folders.game.to_string_lossy());
 
     if config.game.wine.borderless {
-        windows_command += "-screen-fullscreen 0 -popupwindow ";
+        launch_args += "-screen-fullscreen 0 -popupwindow ";
     }
 
     // https://notabug.org/Krock/dawn/src/master/TWEAKS.md
     if config.game.enhancements.fsr.enabled {
-        windows_command += "-window-mode exclusive ";
+        launch_args += "-window-mode exclusive ";
     }
 
     // gamescope <params> -- <command to run>
@@ -113,9 +115,10 @@ pub fn run() -> anyhow::Result<()> {
 
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command}\nexit"))?;
+        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command} {launch_args}\nexit"))?;
 
         windows_command = String::from("compact_launch.bat");
+        launch_args = String::new();
     }
 
     // bwrap <params> -- <command to run>
@@ -161,10 +164,11 @@ pub fn run() -> anyhow::Result<()> {
         Some(command) => replace_keywords(command, &folders)
             .replace("%command%", &format!("{bash_command} {windows_command}"))
             .replace("%bash_command%", &bash_command)
-            .replace("%windows_command%", &windows_command),
+            .replace("%windows_command%", &windows_command)
+            .replace("%launch_args%", &launch_args),
 
         // Combine bash and windows parts of the command
-        None => format!("{bash_command} {windows_command}")
+        None => format!("{bash_command} {windows_command} {launch_args}")
     };
 
     let mut command = Command::new("bash");
