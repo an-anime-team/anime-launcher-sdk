@@ -8,6 +8,11 @@ use crate::components::wine::Bundle as WineBundle;
 use crate::config::ConfigExt;
 use crate::pgr::config::Config;
 
+use crate::config::schema_blanks::prelude::{
+    WineDrives,
+    AllowedDrives
+};
+
 use crate::pgr::consts;
 
 #[cfg(feature = "discord-rpc")]
@@ -68,6 +73,16 @@ pub fn run() -> anyhow::Result<()> {
 
     if let Ok(Some(server)) = telemetry::is_disabled() {
         return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
+    }
+
+    // Prepare wine prefix drives
+
+    config.game.wine.drives.map_folders(&folders.game, &folders.prefix)?;
+
+    // Workaround for sandboxing feature
+    if config.sandbox.enabled {
+        WineDrives::map_folder(&folders.prefix, AllowedDrives::C, "../drive_c")?;
+        WineDrives::map_folder(&folders.prefix, AllowedDrives::Z, "/")?;
     }
 
     // Prepare bash -c '<command>'

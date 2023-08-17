@@ -1,9 +1,12 @@
 pub mod wine_lang;
 pub mod wine_sync;
+pub mod wine_drives;
 pub mod virtual_desktop;
 pub mod shared_libraries;
 
 pub mod prelude {
+    pub use super::wine_drives::*;
+
     pub use super::wine_lang::WineLang;
     pub use super::wine_sync::WineSync;
     pub use super::virtual_desktop::VirtualDesktop;
@@ -21,6 +24,7 @@ macro_rules! config_impl_wine_schema {
             pub sync: WineSync,
             pub language: WineLang,
             pub borderless: bool,
+            pub drives: WineDrives,
             pub virtual_desktop: VirtualDesktop,
             pub shared_libraries: SharedLibraries
         }
@@ -37,6 +41,7 @@ macro_rules! config_impl_wine_schema {
                     sync: WineSync::default(),
                     language: WineLang::default(),
                     borderless: false,
+                    drives: WineDrives::default(),
                     virtual_desktop: VirtualDesktop::default(),
                     shared_libraries: SharedLibraries::default()
                 }
@@ -83,6 +88,10 @@ macro_rules! config_impl_wine_schema {
                     borderless: value.get("borderless")
                         .and_then(|value| value.as_bool())
                         .unwrap_or(default.borderless),
+
+                    drives: value.get("drives")
+                        .map(WineDrives::from)
+                        .unwrap_or(default.drives),
 
                     virtual_desktop: value.get("virtual_desktop")
                         .map(VirtualDesktop::from)

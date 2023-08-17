@@ -10,6 +10,11 @@ use crate::components::wine::Bundle as WineBundle;
 use crate::config::ConfigExt;
 use crate::genshin::config::Config;
 
+use crate::config::schema_blanks::prelude::{
+    WineDrives,
+    AllowedDrives
+};
+
 use crate::genshin::consts;
 
 #[cfg(feature = "fps-unlocker")]
@@ -129,6 +134,16 @@ pub fn run() -> anyhow::Result<()> {
             game_path.join("config.ini"),
             config.launcher.environment.generate_config(game.get_version()?.to_string())
         )?;
+    }
+
+    // Prepare wine prefix drives
+
+    config.game.wine.drives.map_folders(&folders.game, &folders.prefix)?;
+
+    // Workaround for sandboxing feature
+    if config.sandbox.enabled {
+        WineDrives::map_folder(&folders.prefix, AllowedDrives::C, "../drive_c")?;
+        WineDrives::map_folder(&folders.prefix, AllowedDrives::Z, "/")?;
     }
 
     // Prepare bash -c '<command>'
