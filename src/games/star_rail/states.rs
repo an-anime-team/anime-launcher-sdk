@@ -26,9 +26,19 @@ pub enum LauncherState {
 
     /// Always contains `VersionDiff::Predownload`
     PredownloadAvailable {
-        diff: VersionDiff,
+        game: VersionDiff,
+        voices: Vec<VersionDiff>,
         patch: JadeitePatchStatusVariant
     },
+
+    // Always contains `VersionDiff::Diff`
+    VoiceUpdateAvailable(VersionDiff),
+
+    /// Always contains `VersionDiff::Outdated`
+    VoiceOutdated(VersionDiff),
+
+    /// Always contains `VersionDiff::NotInstalled`
+    VoiceNotInstalled(VersionDiff),
 
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
@@ -43,6 +53,7 @@ pub enum LauncherState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
     Game,
+    Voice(VoiceLocale),
     Patch
 }
 
@@ -54,6 +65,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub patch_folder: PathBuf,
 
+    pub selected_voices: Vec<VoiceLocale>,
     pub status_updater: F
 }
 
@@ -74,6 +86,34 @@ impl LauncherState {
 
         match diff {
             VersionDiff::Latest { version, .. } | VersionDiff::Predownload { current: version, .. } => {
+                let mut predownload_voice = Vec::new();
+
+                for locale in params.selected_voices {
+                    let mut voice_package = VoicePackage::with_locale(locale, params.game_edition)?;
+
+                    (params.status_updater)(StateUpdating::Voice(voice_package.locale()));
+
+                    // Replace voice package struct with the one constructed in the game's folder
+                    // so it'll properly calculate its difference instead of saying "not installed"
+                    if voice_package.is_installed_in(&params.game_path) {
+                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, params.game_edition, voice_package.locale()), params.game_edition) {
+                            Some(locale) => locale,
+                            None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
+                        };
+                    }
+
+                    let diff = voice_package.try_get_diff()?;
+
+                    match diff {
+                        VersionDiff::Latest { .. } => (),
+                        VersionDiff::Predownload { .. } => predownload_voice.push(diff),
+
+                        VersionDiff::Diff { .. } => return Ok(Self::VoiceUpdateAvailable(diff)),
+                        VersionDiff::Outdated { .. } => return Ok(Self::VoiceOutdated(diff)),
+                        VersionDiff::NotInstalled { .. } => return Ok(Self::VoiceNotInstalled(diff))
+                    }
+                }
+
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
@@ -115,7 +155,8 @@ impl LauncherState {
                 // Check if update predownload available
                 if let VersionDiff::Predownload { .. } = diff {
                     Ok(Self::PredownloadAvailable {
-                        diff,
+                        game: diff,
+                        voices: predownload_voice,
                         patch
                     })
                 }
@@ -153,6 +194,15 @@ impl LauncherState {
             _ => ()
         }
 
+        let mut voices = Vec::with_capacity(config.game.voices.len());
+
+        for voice in &config.game.voices {
+            voices.push(match VoiceLocale::from_str(voice) {
+                Some(locale) => locale,
+                None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice))
+            });
+        }
+
         Self::get(LauncherStateParams {
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
@@ -160,6 +210,7 @@ impl LauncherState {
             wine_prefix: config.get_wine_prefix_path(),
             patch_folder: config.patch.path,
 
+            selected_voices: voices,
             status_updater
         })
     }
