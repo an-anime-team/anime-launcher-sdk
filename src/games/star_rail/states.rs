@@ -13,6 +13,7 @@ pub enum LauncherState {
     PatchNotVerified,
     PatchBroken,
     PatchUnsafe,
+    PatchConcerning,
 
     PatchNotInstalled,
     PatchUpdateAvailable,
@@ -167,7 +168,8 @@ impl LauncherState {
                         JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
                         JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
                         JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
-                        JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe)
+                        JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe),
+                        JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
                     }
                 }
             }
