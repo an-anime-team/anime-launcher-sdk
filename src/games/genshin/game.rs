@@ -117,8 +117,7 @@ pub fn run() -> anyhow::Result<()> {
         // If patch applying is disabled, then game_executable is either GenshinImpact.exe or YuanShen.exe
         // so we don't need to check it here
         let unlocker_config = &config.game.enhancements.fps_unlocker.config;
-        let unlocker_interval = if unlocker_config.periodic_writes { unlocker_config.interval as i64 } else { -1 };
-        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {unlocker_interval}", unlocker.dir().to_string_lossy(), unlocker_config.fps))?;
+        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {}", unlocker.dir().to_string_lossy(), unlocker_config.fps, unlocker_config.interval))?;
     }
 
     // Generate `config.ini` if environment emulation feature is presented
