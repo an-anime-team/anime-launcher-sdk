@@ -4,13 +4,9 @@ use md5::{Md5, Digest};
 
 use anime_game_core::installer::downloader::Downloader;
 
-use super::config::schema::prelude::FpsUnlockerConfig;
-
-pub mod config_schema;
-
 const LATEST_INFO: (&str, &str) = (
-    "cff81830eebd3566d51b73ffaa444035",
-    "https://github.com/34736384/genshin-fps-unlock/releases/download/v2.2.0/unlockfps_clr.exe"
+    "53cb34d292d6b1dd1d8310318fe49bad",
+    "https://codeberg.org/mkrsym1/fpsunlock/releases/download/v1.0.2/fpsunlock.exe"
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,13 +18,13 @@ impl FpsUnlocker {
     /// Get FpsUnlocker from its containment directory
     /// 
     /// Returns
-    /// - `Err(..)` if failed to read `unlocker.exe` file
+    /// - `Err(..)` if failed to read `fpsunlock.exe` file
     /// - `Ok(None)` if version is not latest
     /// - `Ok(..)` if version is latest
     pub fn from_dir<T: Into<PathBuf> + std::fmt::Debug>(dir: T) -> anyhow::Result<Option<Self>> {
         let dir = dir.into();
 
-        let hash = format!("{:x}", Md5::digest(std::fs::read(dir.join("unlocker.exe"))?));
+        let hash = format!("{:x}", Md5::digest(std::fs::read(dir.join("fpsunlock.exe"))?));
 
         Ok(if hash == LATEST_INFO.0 {
             Some(Self { dir })
@@ -51,7 +47,7 @@ impl FpsUnlocker {
             std::fs::create_dir_all(&dir)?;
         }
 
-        match downloader.download(dir.join("unlocker.exe"), |_, _| {}) {
+        match downloader.download(dir.join("fpsunlock.exe"), |_, _| {}) {
             Ok(_) => Ok(Self { dir }),
             Err(err) => {
                 tracing::error!("Downloading failed: {err}");
@@ -68,24 +64,11 @@ impl FpsUnlocker {
 
     #[inline]
     pub fn get_binary_in<T: Into<PathBuf>>(dir: T) -> PathBuf {
-        dir.into().join("unlocker.exe")
+        dir.into().join("fpsunlock.exe")
     }
 
     #[inline]
     pub fn dir(&self) -> &PathBuf {
         &self.dir
-    }
-
-    /// Generate and save FPS unlocker config file to the game's directory
-    #[tracing::instrument(level = "debug", ret)]
-    pub fn update_config(&self, config: FpsUnlockerConfig) -> anyhow::Result<()> {
-        tracing::debug!("Updating FPS unlocker config");
-
-        let config = config_schema::ConfigSchema::from_config(config);
-
-        Ok(std::fs::write(
-            self.dir.join("fps_config.json"),
-            config.json()?
-        )?)
     }
 }
