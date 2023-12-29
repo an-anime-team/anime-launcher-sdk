@@ -1,15 +1,10 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-use crate::config::schema_blanks::prelude::*;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
     pub fps: u64, // TODO: Fps enum
-    pub power_saving: bool,
-    pub monitor: u64,
-    pub window_mode: WindowMode,
-    pub priority: u64
+    pub interval: u64
 }
 
 impl Default for Config {
@@ -17,10 +12,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             fps: 120,
-            power_saving: false,
-            monitor: 1,
-            window_mode: WindowMode::default(),
-            priority: 3
+            interval: 5000
         }
     }
 }
@@ -35,24 +27,9 @@ impl From<&JsonValue> for Config {
                 None => default.fps
             },
 
-            power_saving: match value.get("power_saving") {
-                Some(value) => value.as_bool().unwrap_or(default.power_saving),
-                None => default.power_saving
-            },
-
-            monitor: match value.get("monitor") {
-                Some(value) => value.as_u64().unwrap_or(default.monitor),
-                None => default.monitor
-            },
-
-            window_mode: match value.get("window_mode") {
-                Some(value) => WindowMode::from(value),
-                None => default.window_mode
-            },
-
-            priority: match value.get("priority") {
-                Some(value) => value.as_u64().unwrap_or(default.priority),
-                None => default.priority
+            interval: match value.get("interval") {
+                Some(value) => value.as_u64().unwrap_or(default.interval),
+                None => default.interval
             }
         }
     }

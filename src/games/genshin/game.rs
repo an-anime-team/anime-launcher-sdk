@@ -89,8 +89,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Prepare fps unlocker
     // 1) Download if needed
-    // 2) Generate config file
-    // 3) Generate fpsunlocker.bat from launcher.bat
+    // 2) Generate fps_unlocker.bat
 
     #[cfg(feature = "fps-unlocker")]
     if config.game.enhancements.fps_unlocker.enabled {
@@ -115,14 +114,10 @@ pub fn run() -> anyhow::Result<()> {
             }
         };
 
-        // Generate FPS unlocker config file
-        if let Err(err) = unlocker.update_config(config.game.enhancements.fps_unlocker.config) {
-            return Err(anyhow::anyhow!("Failed to update FPS unlocker config: {err}"));
-        }
-
         // If patch applying is disabled, then game_executable is either GenshinImpact.exe or YuanShen.exe
         // so we don't need to check it here
-        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart unlocker.exe", unlocker.dir().to_string_lossy()))?;
+        let unlocker_config = &config.game.enhancements.fps_unlocker.config;
+        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {}", unlocker.dir().to_string_lossy(), unlocker_config.fps, unlocker_config.interval))?;
     }
 
     // Generate `config.ini` if environment emulation feature is presented
@@ -314,7 +309,7 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("GenshinImpact.e") && !output.contains("YuanShen.exe") && !output.contains("unlocker.exe") {
+        if !output.contains("GenshinImpact.e") && !output.contains("YuanShen.exe") && !output.contains("fpsunlock.exe") {
             break;
         }
 
