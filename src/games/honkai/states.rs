@@ -15,6 +15,7 @@ pub enum LauncherState {
     PatchNotVerified,
     PatchBroken,
     PatchUnsafe,
+    PatchConcerning,
 
     PatchNotInstalled,
     PatchUpdateAvailable,
@@ -109,10 +110,11 @@ impl LauncherState {
                 }
 
                 match metadata.games.hi3rd.global.get_status(version) {
-                    JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
+                    JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
                     JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
-                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
-                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe)
+                    JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
+                    JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe),
+                    JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
                 }
             }
 
