@@ -277,6 +277,19 @@ pub fn run() -> anyhow::Result<()> {
         Sessions::apply(current, config.get_wine_prefix_path())?;
     }
 
+    // Start Discord RPC just before the game
+    #[cfg(feature = "discord-rpc")]
+    let rpc = if config.launcher.discord_rpc.enabled {
+        Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
+    } else {
+        None
+    };
+
+    #[cfg(feature = "discord-rpc")]
+    if let Some(rpc) = &rpc {
+        rpc.update(RpcUpdates::Connect)?;
+    }
+    
     // Run command
 
     let variables = command
@@ -290,19 +303,7 @@ pub fn run() -> anyhow::Result<()> {
     // obviously doesn't exist
     command.current_dir(config.game.path.for_edition(config.launcher.edition))
         .spawn()?.wait_with_output()?;
-
-    #[cfg(feature = "discord-rpc")]
-    let rpc = if config.launcher.discord_rpc.enabled {
-        Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
-    } else {
-        None
-    };
-
-    #[cfg(feature = "discord-rpc")]
-    if let Some(rpc) = &rpc {
-        rpc.update(RpcUpdates::Connect)?;
-    }
-
+    
     loop {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
