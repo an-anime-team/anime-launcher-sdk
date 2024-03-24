@@ -25,7 +25,8 @@ pub struct Gamescope {
     pub integer_scaling: bool,
     pub fsr: bool,
     pub nis: bool,
-    pub window_type: WindowType
+    pub window_type: WindowType,
+    pub force_grab_cursor: bool,
 }
 
 impl Default for Gamescope {
@@ -39,7 +40,8 @@ impl Default for Gamescope {
             integer_scaling: true,
             fsr: false,
             nis: false,
-            window_type: WindowType::default()
+            window_type: WindowType::default(),
+            force_grab_cursor: false
         }
     }
 }
@@ -79,7 +81,11 @@ impl From<&JsonValue> for Gamescope {
 
             window_type: value.get("window_type")
                 .map(WindowType::from)
-                .unwrap_or(default.window_type)
+                .unwrap_or(default.window_type),
+
+                force_grab_cursor: value.get("force_grab_cursor")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(default.force_grab_cursor),
         }
     }
 }
@@ -171,6 +177,10 @@ impl Gamescope {
                 } else {
                     " -F nis"
                 }
+            }
+
+            if self.force_grab_cursor {
+                gamescope += " --force-grab-cursor"
             }
 
             Some(gamescope)
