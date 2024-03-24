@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
@@ -83,33 +81,14 @@ impl From<&JsonValue> for Gamescope {
                 .map(WindowType::from)
                 .unwrap_or(default.window_type),
 
-                force_grab_cursor: value.get("force_grab_cursor")
+            force_grab_cursor: value.get("force_grab_cursor")
                 .and_then(JsonValue::as_bool)
-                .unwrap_or(default.force_grab_cursor),
+                .unwrap_or(default.force_grab_cursor)
         }
     }
 }
 
-// TODO: temporary workaround for transition period, will be removed in future
-#[cached::proc_macro::cached]
-fn is_legacy_version() -> bool {
-    // gamescope doesn't have --version, so parsing --help instead
-    Command::new("gamescope").arg("--help").output()
-
-        // if no --filter, then it's legacy version
-        // also for whatever reason --help is printed to stderr
-        .map(|help| !String::from_utf8_lossy(&help.stderr).contains("-F, --filter"))
-
-        // If failed to launch gamescope, then yes, it's legacy (it's not but meh)
-        .unwrap_or(true)
-}
-
 impl Gamescope {
-    /// Check if available gamescope version is legacy (<3.12.0)
-    pub fn is_legacy_version() -> bool {
-        is_legacy_version()
-    }
-
     pub fn get_command(&self) -> Option<String> {
         // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
         // https://github.com/ValveSoftware/gamescope#options
@@ -154,33 +133,21 @@ impl Gamescope {
 
             // Set integer scaling
             if self.integer_scaling {
-                gamescope += if Self::is_legacy_version() {
-                    " -n"
-                } else {
-                    " -S integer"
-                }
+                gamescope += " -S integer";
             }
 
             // Set FSR support
             if self.fsr {
-                gamescope += if Self::is_legacy_version() {
-                    " -U"
-                } else {
-                    " -F fsr"
-                }
+                gamescope += " -F fsr";
             }
 
             // Set NIS (Nvidia Image Scaling) support
             if self.nis {
-                gamescope += if Self::is_legacy_version() {
-                    " -Y"
-                } else {
-                    " -F nis"
-                }
+                gamescope += " -F nis";
             }
 
             if self.force_grab_cursor {
-                gamescope += " --force-grab-cursor"
+                gamescope += " --force-grab-cursor";
             }
 
             Some(gamescope)
