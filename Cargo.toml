@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.17.9"
+tag = "1.18.0"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -34,13 +34,12 @@ genshin = ["anime-game-core/genshin"]
 star-rail = ["anime-game-core/star-rail"]
 honkai = ["anime-game-core/honkai"]
 pgr = ["anime-game-core/pgr"]
+wuwa = ["anime-game-core/wuwa"]
 
 star-rail-patch = ["anime-game-core/patch-jadeite"]
-honkai-patch = [
-    "anime-game-core/patch-jadeite",
-    "anime-game-core/patch-mfplat"
-]
+honkai-patch = ["anime-game-core/patch-jadeite"]
 pgr-patch = ["anime-game-core/patch-mfc140"]
+wuwa-patch = ["anime-game-core/patch-mfc140"]
 
 # Common features
 states = []
