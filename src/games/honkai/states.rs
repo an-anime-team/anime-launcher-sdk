@@ -10,8 +10,6 @@ use crate::honkai::config::Config;
 pub enum LauncherState {
     Launch,
 
-    MfplatPatchAvailable,
-
     PatchNotVerified,
     PatchBroken,
     PatchUnsafe,
@@ -48,7 +46,6 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_edition: GameEdition,
 
     pub patch_folder: PathBuf,
-    pub apply_mfplat: bool,
 
     pub status_updater: F
 }
@@ -73,11 +70,6 @@ impl LauncherState {
             VersionDiff::Latest(version) => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
-
-                // Check if mfplat patch is needed
-                if params.apply_mfplat && !mfplat::is_applied(&params.wine_prefix)? {
-                    return Ok(Self::MfplatPatchAvailable);
-                }
 
                 // Check jadeite patch status
                 if !jadeite::is_installed(&params.patch_folder) {
@@ -146,7 +138,6 @@ impl LauncherState {
             game_edition: config.launcher.edition,
 
             patch_folder: config.patch.path,
-            apply_mfplat: config.patch.apply_mfplat,
 
             status_updater
         })

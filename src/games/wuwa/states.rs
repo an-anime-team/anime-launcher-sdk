@@ -35,8 +35,11 @@ pub enum StateUpdating {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherStateParams<F: Fn(StateUpdating)> {
-    pub wine_prefix: PathBuf,
     pub game_path: PathBuf,
+    pub game_edition: GameEdition,
+
+    pub wine_prefix: PathBuf,
+
     pub fast_verify: bool,
     pub status_updater: F
 }
@@ -83,7 +86,7 @@ impl LauncherState {
         }
 
         // Check telemetry servers
-        let disabled = telemetry::is_disabled()
+        let disabled = telemetry::is_disabled(params.game_edition)
 
             // Return true if there's no domain name resolved, or false otherwise
             .map(|result| result.is_none())
@@ -103,7 +106,7 @@ impl LauncherState {
         // Check game installation status
         (params.status_updater)(StateUpdating::Game);
 
-        let game = Game::new(&params.game_path, ())
+        let game = Game::new(&params.game_path, params.game_edition)
             .with_fast_verify(params.fast_verify);
 
         let diff = game.try_get_diff()?;
@@ -131,8 +134,10 @@ impl LauncherState {
         }
 
         Self::get(LauncherStateParams {
+            game_path: config.game.path.clone(),
+            game_edition: config.launcher.edition,
+
             wine_prefix: config.get_wine_prefix_path(),
-            game_path: config.game.path,
             fast_verify: config.launcher.repairer.fast,
 
             status_updater
