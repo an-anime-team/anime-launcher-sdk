@@ -29,11 +29,11 @@ impl Default for DiscordRpc {
     #[inline]
     fn default() -> Self {
         Self {
-            app_id: 1116308640945688677,
+            app_id: 1256293983831720039,
             enabled: false,
 
-            title: String::from("Commanding the"),
-            subtitle: String::from("Grey Raven unit"),
+            title: String::from("Wuthering"),
+            subtitle: String::from("the Waves"),
             icon: String::from("launcher")
         }
     }
