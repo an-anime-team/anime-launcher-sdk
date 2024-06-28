@@ -108,7 +108,7 @@ pub fn run() -> anyhow::Result<()> {
         windows_command += " ";
     }
 
-    windows_command += "PGR.exe ";
+    windows_command += "Client/Binaries/Win64/Client-Win64-Shipping.exe ";
 
     if config.game.wine.borderless {
         launch_args += "-screen-fullscreen 0 -popupwindow ";
@@ -253,7 +253,7 @@ pub fn run() -> anyhow::Result<()> {
         let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("PGR.exe") {
+        if !output.contains("Client-Win64-Sh") {
             break;
         }
 
