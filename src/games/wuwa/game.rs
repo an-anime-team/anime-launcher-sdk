@@ -50,7 +50,7 @@ pub fn run() -> anyhow::Result<()> {
 
     let config = Config::get()?;
 
-    if !config.game.path.exists() {
+    if !config.game.path.for_edition(config.launcher.edition).exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -63,7 +63,7 @@ pub fn run() -> anyhow::Result<()> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.clone(),
+        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -232,7 +232,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    command.current_dir(&config.game.path)
+    command.current_dir(&config.game.path.for_edition(config.launcher.edition))
         .spawn()?.wait_with_output()?;
 
     #[cfg(feature = "discord-rpc")]

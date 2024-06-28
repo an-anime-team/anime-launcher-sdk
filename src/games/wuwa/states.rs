@@ -134,7 +134,7 @@ impl LauncherState {
         }
 
         Self::get(LauncherStateParams {
-            game_path: config.game.path.clone(),
+            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
 
             wine_prefix: config.get_wine_prefix_path(),
