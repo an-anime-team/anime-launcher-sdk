@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use wincompatlib::wine::ext::Font;
-
 use anime_game_core::prelude::*;
 use anime_game_core::wuwa::prelude::*;
 
@@ -15,8 +13,6 @@ pub enum LauncherState {
     WineNotInstalled,
 
     PrefixNotExists,
-
-    FontsNotInstalled(Vec<Font>),
 
     TelemetryNotDisabled,
 
@@ -48,41 +44,12 @@ impl LauncherState {
     pub fn get<F: Fn(StateUpdating)>(params: LauncherStateParams<F>) -> anyhow::Result<Self> {
         tracing::debug!("Trying to get launcher state");
 
-        // Check prefix existence
-        if !params.wine_prefix.join("drive_c").exists() {
-            return Ok(Self::PrefixNotExists);
-        }
-
         // Check wine components installation status
         (params.status_updater)(StateUpdating::Components);
 
-        let mut fonts = Vec::new();
-
-        // In future, wincompatlib's Font might contain fonts that won't be actually needed
-        // That's why I listed only needed fonts here
-        const COREFONTS: &[Font] = &[
-            Font::Andale,
-            Font::Arial,
-            Font::Courier,
-            Font::Georgia,
-            Font::Impact,
-            Font::Times,
-            Font::Trebuchet,
-            Font::Verdana,
-            Font::Webdings,
-
-            // Who even needs it?
-            Font::ComicSans
-        ];
-
-        for font in COREFONTS.iter().copied() {
-            if !font.is_installed(&params.wine_prefix) {
-                fonts.push(font);
-            }
-        }
-
-        if !fonts.is_empty() {
-            return Ok(Self::FontsNotInstalled(fonts));
+        // Check prefix existence
+        if !params.wine_prefix.join("drive_c").exists() {
+            return Ok(Self::PrefixNotExists);
         }
 
         // Check telemetry servers
