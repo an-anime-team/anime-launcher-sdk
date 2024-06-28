@@ -14,6 +14,8 @@ pub enum LauncherState {
 
     PrefixNotExists,
 
+    Vcrun2015NotInstalled,
+
     TelemetryNotDisabled,
 
     // Always contains `VersionDiff::Diff`
@@ -50,6 +52,11 @@ impl LauncherState {
         // Check prefix existence
         if !params.wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
+        }
+
+        // Check vcrun2015 installation
+        if !vcrun2015::is_installed(&params.wine_prefix) {
+            return Ok(Self::Vcrun2015NotInstalled);
         }
 
         // Check telemetry servers

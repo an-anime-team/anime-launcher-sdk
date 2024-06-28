@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.15.0"
+version = "1.15.1"
 authors = ["Nikita Podvirnyi <krypt0nn@vk.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.20.0"
+tag = "1.20.1"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
@@ -39,7 +39,7 @@ wuwa = ["anime-game-core/wuwa"]
 star-rail-patch = ["anime-game-core/patch-jadeite"]
 honkai-patch = ["anime-game-core/patch-jadeite"]
 pgr-patch = ["anime-game-core/patch-mfc140"]
-wuwa-patch = ["anime-game-core/patch-mfc140"]
+wuwa-patch = ["anime-game-core/patch-vcrun2015"]
 
 # Common features
 states = []
