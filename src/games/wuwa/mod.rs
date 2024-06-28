@@ -8,6 +8,3 @@ pub mod states;
 
 #[cfg(feature = "game")]
 pub mod game;
-
-#[cfg(feature = "sessions")]
-pub mod sessions;

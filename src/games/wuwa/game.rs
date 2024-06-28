@@ -18,12 +18,6 @@ use crate::wuwa::consts;
 #[cfg(feature = "discord-rpc")]
 use crate::discord_rpc::*;
 
-#[cfg(feature = "sessions")]
-use crate::{
-    sessions::SessionsExt,
-    wuwa::sessions::Sessions
-};
-
 #[derive(Debug, Clone)]
 struct Folders {
     pub wine: PathBuf,
@@ -216,11 +210,6 @@ pub fn run() -> anyhow::Result<()> {
 
     command.envs(&config.game.environment);
 
-    #[cfg(feature = "sessions")]
-    if let Some(current) = Sessions::get_current()? {
-        Sessions::apply(current, config.get_wine_prefix_path())?;
-    }
-
     // Run command
 
     let variables = command
@@ -266,11 +255,6 @@ pub fn run() -> anyhow::Result<()> {
     #[cfg(feature = "discord-rpc")]
     if let Some(rpc) = &rpc {
         rpc.update(RpcUpdates::Disconnect)?;
-    }
-
-    #[cfg(feature = "sessions")]
-    if let Some(current) = Sessions::get_current()? {
-        Sessions::update(current, config.get_wine_prefix_path())?;
     }
 
     Ok(())
