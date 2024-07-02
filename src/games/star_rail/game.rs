@@ -80,15 +80,15 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     // Prepare wine prefix drives
-
-    config.game.wine.drives.map_folders(&folders.game, &folders.prefix)?;
+    let prefix_folder = config.get_wine_prefix_path();
+    config.game.wine.drives.map_folders(&folders.game, &prefix_folder)?;
 
     // Workaround for the jadeite patch (we run it from Z: drive)
-    WineDrives::map_folder(&folders.prefix, AllowedDrives::Z, "/")?;
+    WineDrives::map_folder(&prefix_folder, AllowedDrives::Z, "/")?;
 
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
-        WineDrives::map_folder(&folders.prefix, AllowedDrives::C, "../drive_c")?;
+        WineDrives::map_folder(&prefix_folder, AllowedDrives::C, "../drive_c")?;
     }
 
     // Prepare bash -c '<command>'
