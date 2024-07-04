@@ -28,6 +28,7 @@ SDK based on [anime-game-core](https://github.com/an-anime-team/anime-game-core)
 |----------------------------------------------------------------------------------|---------------------------|
 | [An Anime Game](https://github.com/an-anime-team/an-anime-game-launcher)         | `gen-shin` (without dash) |
 | [Honkers Railway](https://github.com/an-anime-team/the-honkers-railway-launcher) | `star-rail`               |
+| [Sleepy](https://github.com/an-anime-team/sleepy-launcher)                       | `zzz`                     |
 | [Honkers](https://github.com/an-anime-team/honkers-launcher)                     | `hon-kai` (without dash)  |
 | [An Anime Borb](https://github.com/an-anime-team/an-anime-borb-launcher)         | `pgr`                     |
 | [Waves](https://github.com/an-anime-team/wavey-launcher)                         | `wuwa`                    |
