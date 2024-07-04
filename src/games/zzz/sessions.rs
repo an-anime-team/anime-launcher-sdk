@@ -11,7 +11,7 @@ use super::consts::launcher_dir;
 
 /// Get default sessions file path
 /// 
-/// `$HOME/.local/share/anime-game-launcher/sessions.json`
+/// `$HOME/.local/share/sleepy-launcher/sessions.json`
 #[inline]
 pub fn sessions_file() -> anyhow::Result<PathBuf> {
     launcher_dir().map(|dir| dir.join("sessions.json"))
@@ -19,7 +19,7 @@ pub fn sessions_file() -> anyhow::Result<PathBuf> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionData {
-    // [Software\\miHoYo\\Zenless Zone Zero]
+    // [Software\\miHoYo\\ZenlessZoneZero]
     pub game_reg: String,
 
     // [Software\\miHoYoSDK]
@@ -58,7 +58,7 @@ impl SessionsExt for Sessions {
         };
 
         for entry in std::fs::read_to_string(prefix.as_ref().join("user.reg"))?.split("\n\n") {
-            if entry.starts_with("[Software\\\\miHoYo\\\\Zenless Zone Zero]") {
+            if entry.starts_with("[Software\\\\miHoYo\\\\ZenlessZoneZero]") {
                 new_session.game_reg = entry.to_owned();
             }
 
@@ -84,7 +84,7 @@ impl SessionsExt for Sessions {
         let entries: String = std::fs::read_to_string(prefix.as_ref().join("user.reg"))?
             .split("\n\n")
             .map(|entry| {
-                let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\Zenless Zone Zero]") {
+                let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\ZenlessZoneZero]") {
                     session.game_reg.clone()
                 }
     
