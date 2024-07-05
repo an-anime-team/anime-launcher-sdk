@@ -11,6 +11,9 @@ pub use games::genshin;
 #[cfg(feature = "star-rail")]
 pub use games::star_rail;
 
+#[cfg(feature = "zzz")]
+pub use games::zzz;
+
 #[cfg(feature = "honkai")]
 pub use games::honkai;
 
