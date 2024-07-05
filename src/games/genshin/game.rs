@@ -133,6 +133,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Prepare wine prefix drives
     let prefix_folder = config.get_wine_prefix_path();
+
     config.game.wine.drives.map_folders(&folders.game, &prefix_folder)?;
 
     // Workaround for sandboxing feature
