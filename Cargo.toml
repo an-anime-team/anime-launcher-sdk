@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.21.1"
+tag = "1.21.2"
 features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
