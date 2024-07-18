@@ -5,8 +5,8 @@ use md5::{Md5, Digest};
 use anime_game_core::installer::downloader::Downloader;
 
 const LATEST_INFO: (&str, &str) = (
-    "53cb34d292d6b1dd1d8310318fe49bad",
-    "https://codeberg.org/mkrsym1/fpsunlock/releases/download/v1.0.2/fpsunlock.exe"
+    "c7c35331dd6d33f04847b7aabd1c0196",
+    "https://codeberg.org/mkrsym1/fpsunlock/releases/download/v1.2.0/fpsunlock.exe"
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
