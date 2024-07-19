@@ -254,36 +254,50 @@ pub fn run() -> anyhow::Result<()> {
     // Create new game.log file to log all the game output
     let mut game_output = std::fs::File::create(consts::launcher_dir()?.join("game.log"))?;
 
+    // Limit max amount of log data in a file
+    // This is needed to stop wine from flushing
+    // tons of debug info there
+    const LOG_FILE_LIMIT: usize = 8 * 1024 * 1024; // 8 MiB
+
+    let mut written = 0;
+
     // Log process output while it's running
     while child.try_wait()?.is_none() {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
-        // Redirect stdout to the game.log file
-        if let Some(stdout) = &mut child.stdout {
-            let mut buf = Vec::new();
+        // Check if we've written less than a limit amount of data
+        if written < LOG_FILE_LIMIT {
+            // Redirect stdout to the game.log file
+            if let Some(stdout) = &mut child.stdout {
+                let mut buf = Vec::new();
 
-            stdout.read_to_end(&mut buf)?;
+                stdout.read_to_end(&mut buf)?;
 
-            if !buf.is_empty() {
-                for line in buf.split(|c| c == &b'\n') {
-                    game_output.write_all(b"    [stdout] ")?;
-                    game_output.write_all(line)?;
-                    game_output.write_all(b"\n")?;
+                if !buf.is_empty() {
+                    for line in buf.split(|c| c == &b'\n') {
+                        game_output.write_all(b"    [stdout] ")?;
+                        game_output.write_all(line)?;
+                        game_output.write_all(b"\n")?;
+
+                        written += line.len() + 14;
+                    }
                 }
             }
-        }
 
-        // Redirect stdout to the game.log file
-        if let Some(stderr) = &mut child.stderr {
-            let mut buf = Vec::new();
+            // Redirect stdout to the game.log file
+            if let Some(stderr) = &mut child.stderr {
+                let mut buf = Vec::new();
 
-            stderr.read_to_end(&mut buf)?;
+                stderr.read_to_end(&mut buf)?;
 
-            if !buf.is_empty() {
-                for line in buf.split(|c| c == &b'\n') {
-                    game_output.write_all(b"[!] [stderr] ")?;
-                    game_output.write_all(line)?;
-                    game_output.write_all(b"\n")?;
+                if !buf.is_empty() {
+                    for line in buf.split(|c| c == &b'\n') {
+                        game_output.write_all(b"[!] [stderr] ")?;
+                        game_output.write_all(line)?;
+                        game_output.write_all(b"\n")?;
+
+                        written += line.len() + 14;
+                    }
                 }
             }
         }
