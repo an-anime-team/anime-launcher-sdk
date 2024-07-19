@@ -274,10 +274,12 @@ pub fn run() -> anyhow::Result<()> {
 
             stdout.read_to_end(&mut buf)?;
 
-            for line in buf.split(|c| c == &b'\n') {
-                game_output.write_all(b"    [stdout] ")?;
-                game_output.write_all(line)?;
-                game_output.write_all(b"\n")?;
+            if !buf.is_empty() {
+                for line in buf.split(|c| c == &b'\n') {
+                    game_output.write_all(b"    [stdout] ")?;
+                    game_output.write_all(line)?;
+                    game_output.write_all(b"\n")?;
+                }
             }
         }
 
@@ -287,10 +289,12 @@ pub fn run() -> anyhow::Result<()> {
 
             stderr.read_to_end(&mut buf)?;
 
-            for line in buf.split(|c| c == &b'\n') {
-                game_output.write_all(b"[!] [stderr] ")?;
-                game_output.write_all(line)?;
-                game_output.write_all(b"\n")?;
+            if !buf.is_empty() {
+                for line in buf.split(|c| c == &b'\n') {
+                    game_output.write_all(b"[!] [stderr] ")?;
+                    game_output.write_all(line)?;
+                    game_output.write_all(b"\n")?;
+                }
             }
         }
 
