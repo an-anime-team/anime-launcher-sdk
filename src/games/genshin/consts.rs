@@ -2,6 +2,16 @@ use std::path::PathBuf;
 
 pub const FOLDER_NAME: &str = "anime-game-launcher";
 
+lazy_static::lazy_static! {
+    // Limit max amount of log data in a file
+    // This is needed to stop wine from flushing
+    // tons of debug info there
+    pub static ref GAME_LOG_FILE_LIMIT: usize = std::env::var("LAUNCHER_GAME_LOG_FILE_LIMIT")
+        .ok()
+        .and_then(|limit| limit.parse::<usize>().ok())
+        .unwrap_or(8 * 1024 * 1024); // 8 MiB
+}
+
 /// Get default launcher dir path
 /// 
 /// If `LAUNCHER_FOLDER` variable is set, then its value will be returned. Otherwise return `$HOME/.local/share/anime-game-launcher`

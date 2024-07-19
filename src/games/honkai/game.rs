@@ -263,12 +263,6 @@ pub fn run() -> anyhow::Result<()> {
 
     // Create new game.log file to log all the game output
     let mut game_output = std::fs::File::create(consts::launcher_dir()?.join("game.log"))?;
-
-    // Limit max amount of log data in a file
-    // This is needed to stop wine from flushing
-    // tons of debug info there
-    const LOG_FILE_LIMIT: usize = 8 * 1024 * 1024; // 8 MiB
-
     let mut written = 0;
 
     // Log process output while it's running
@@ -276,7 +270,7 @@ pub fn run() -> anyhow::Result<()> {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
         // Check if we've written less than a limit amount of data
-        if written < LOG_FILE_LIMIT {
+        if written < *consts::GAME_LOG_FILE_LIMIT {
             // Redirect stdout to the game.log file
             if let Some(stdout) = &mut child.stdout {
                 let mut buf = Vec::new();
