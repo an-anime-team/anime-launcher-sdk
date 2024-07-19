@@ -222,20 +222,7 @@ pub fn run() -> anyhow::Result<()> {
         Sessions::apply(current, config.get_wine_prefix_path())?;
     }
 
-    // Run command
-
-    let variables = command
-        .get_envs()
-        .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
-        .fold(String::new(), |acc, env| acc + " " + &env);
-
-    tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
-
-    // We use real current dir here because sandboxed one
-    // obviously doesn't exist
-    command.current_dir(&config.game.path)
-        .spawn()?.wait_with_output()?;
-
+    // Start Discord RPC just before the game
     #[cfg(feature = "discord-rpc")]
     let rpc = if config.launcher.discord_rpc.enabled {
         Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
@@ -248,6 +235,62 @@ pub fn run() -> anyhow::Result<()> {
         rpc.update(RpcUpdates::Connect)?;
     }
 
+    // Run command
+
+    let variables = command
+        .get_envs()
+        .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
+        .fold(String::new(), |acc, env| acc + " " + &env);
+
+    tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
+
+    // We use real current dir here because sandboxed one
+    // obviously doesn't exist
+    let mut child = command.current_dir(config.game.path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    // Create new game.log file to log all the game output
+    let mut game_output = std::fs::File::create(consts::launcher_dir()?.join("game.log"))?;
+
+    // Log process output while it's running
+    while child.try_wait()?.is_none() {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+
+        // Redirect stdout to the game.log file
+        if let Some(stdout) = &mut child.stdout {
+            let mut buf = Vec::new();
+
+            stdout.read_to_end(&mut buf)?;
+
+            for line in buf.split(|c| c == &b'\n') {
+                game_output.write_all(b"    [stdout] ")?;
+                game_output.write_all(line)?;
+                game_output.write_all(b"\n")?;
+            }
+        }
+
+        // Redirect stdout to the game.log file
+        if let Some(stderr) = &mut child.stderr {
+            let mut buf = Vec::new();
+
+            stderr.read_to_end(&mut buf)?;
+
+            for line in buf.split(|c| c == &b'\n') {
+                game_output.write_all(b"[!] [stderr] ")?;
+                game_output.write_all(line)?;
+                game_output.write_all(b"\n")?;
+            }
+        }
+
+        #[cfg(feature = "discord-rpc")]
+        if let Some(rpc) = &rpc {
+            rpc.update(RpcUpdates::Update)?;
+        }
+    }
+
+    // Workaround for fast process closing (is it still a thing?)
     loop {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
