@@ -17,7 +17,8 @@ pub enum WineLang {
     Spanish,
     Chinese,
     Japanese,
-    Korean
+    Korean,
+    Indonesian
 }
 
 impl Default for WineLang {
@@ -30,7 +31,8 @@ impl Default for WineLang {
 impl From<&JsonValue> for WineLang {
     #[inline]
     fn from(value: &JsonValue) -> Self {
-        serde_json::from_value(value.clone()).unwrap_or_default()
+        serde_json::from_value(value.clone())
+            .unwrap_or_default()
     }
 }
 
@@ -49,12 +51,15 @@ impl WineLang {
             Self::Spanish    => "es_ES.UTF-8",
             Self::Chinese    => "zh_CN.UTF-8",
             Self::Japanese   => "ja_JP.UTF-8",
-            Self::Korean     => "ko_KR.UTF-8"
+            Self::Korean     => "ko_KR.UTF-8",
+            Self::Indonesian => "id_ID.UTF-8"
         };
 
         HashMap::from([
             ("LANG", lang),
-            ("LC_ALL", lang)
+            ("LC_ALL", lang),
+            ("HOST_LANG", lang),
+            ("HOST_LC_ALL", lang)
         ])
     }
 }
