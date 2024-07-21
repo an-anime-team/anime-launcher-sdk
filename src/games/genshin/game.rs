@@ -1,6 +1,9 @@
 use std::io::{Read, Write};
 use std::process::{Command, Stdio};
 use std::path::PathBuf;
+use std::fs::File;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use anime_game_core::prelude::*;
 use anime_game_core::genshin::telemetry;
@@ -309,82 +312,107 @@ pub fn run() -> anyhow::Result<()> {
         .spawn()?;
 
     // Create new game.log file to log all the game output
-    let mut game_output = std::fs::File::create(consts::launcher_dir()?.join("game.log"))?;
-    let mut written = 0;
+    let game_output = Arc::new(Mutex::new(
+        File::create(consts::launcher_dir()?.join("game.log"))?
+    ));
 
-    // Log process output while it's running
+    let written = Arc::new(AtomicUsize::new(0));
+
+    let mut stdout_join = None;
+    let mut stderr_join = None;
+
+    // Redirect stdout to the game.log file
+    if let Some(mut stdout) = child.stdout.take() {
+        let game_output = game_output.clone();
+        let written = written.clone();
+
+        stdout_join = Some(std::thread::spawn(move || -> std::io::Result<()> {
+            let mut buf = [0; 1024];
+
+            while let Ok(read) = stdout.read(&mut buf) {
+                if read == 0 {
+                    break;
+                }
+
+                let Ok(mut game_output) = game_output.lock() else {
+                    break;
+                };
+
+                for line in buf[..read].split(|c| c == &b'\n') {
+                    game_output.write_all(b"    [stdout] ")?;
+                    game_output.write_all(line)?;
+                    game_output.write_all(b"\n")?;
+
+                    written.fetch_add(line.len() + 14, Ordering::Relaxed);
+                }
+
+                if written.load(Ordering::Relaxed) > *consts::GAME_LOG_FILE_LIMIT {
+                    break;
+                }
+            }
+
+            Ok(())
+        }));
+    }
+
+    // Redirect stderr to the game.log file
+    if let Some(mut stderr) = child.stderr.take() {
+        let game_output = game_output.clone();
+        let written = written.clone();
+
+        stderr_join = Some(std::thread::spawn(move || -> std::io::Result<()> {
+            let mut buf = [0; 1024];
+
+            while let Ok(read) = stderr.read(&mut buf) {
+                if read == 0 {
+                    break;
+                }
+
+                let Ok(mut game_output) = game_output.lock() else {
+                    break;
+                };
+
+                for line in buf[..read].split(|c| c == &b'\n') {
+                    game_output.write_all(b"[!] [stderr] ")?;
+                    game_output.write_all(line)?;
+                    game_output.write_all(b"\n")?;
+
+                    written.fetch_add(line.len() + 14, Ordering::Relaxed);
+                }
+
+                if written.load(Ordering::Relaxed) > *consts::GAME_LOG_FILE_LIMIT {
+                    break;
+                }
+            }
+
+            Ok(())
+        }));
+    }
+
+    // Update discord RPC until the game process is closed
     while child.try_wait()?.is_none() {
-        // Check if we've written less than a limit amount of data
-        if written < *consts::GAME_LOG_FILE_LIMIT {
-            // Redirect stdout to the game.log file
-            if let Some(stdout) = &mut child.stdout {
-                let mut buf = Vec::new();
-
-                stdout.read_to_end(&mut buf)?;
-
-                if !buf.is_empty() {
-                    for line in buf.split(|c| c == &b'\n') {
-                        game_output.write_all(b"    [stdout] ")?;
-                        game_output.write_all(line)?;
-                        game_output.write_all(b"\n")?;
-
-                        written += line.len() + 14;
-
-                        // buf can contain more data than the limit
-                        if written > *consts::GAME_LOG_FILE_LIMIT {
-                            break;
-                        }
-                    }
-
-                    // Flush written lines
-                    game_output.flush()?;
-                }
-            }
-
-            // Redirect stderr to the game.log file
-            if let Some(stderr) = &mut child.stderr {
-                let mut buf = Vec::new();
-
-                stderr.read_to_end(&mut buf)?;
-
-                if !buf.is_empty() {
-                    for line in buf.split(|c| c == &b'\n') {
-                        game_output.write_all(b"[!] [stderr] ")?;
-                        game_output.write_all(line)?;
-                        game_output.write_all(b"\n")?;
-
-                        written += line.len() + 14;
-
-                        // buf can contain more data than the limit
-                        if written > *consts::GAME_LOG_FILE_LIMIT {
-                            break;
-                        }
-                    }
-
-                    // Flush written lines
-                    game_output.flush()?;
-                }
-            }
-
-            // Drop stdio bufs if the limit was reached
-            if written >= *consts::GAME_LOG_FILE_LIMIT {
-                drop(child.stdout.take());
-                drop(child.stderr.take());
-            }
-        }
+        std::thread::sleep(std::time::Duration::from_secs(3));
 
         #[cfg(feature = "discord-rpc")]
         if let Some(rpc) = &rpc {
             rpc.update(RpcUpdates::Update)?;
         }
-
-        std::thread::sleep(std::time::Duration::from_secs(3));
     }
 
     // Flush and close the game log file
-    game_output.flush()?;
+    if let Ok(mut file) = game_output.lock() {
+        file.flush()?;
+    }
 
     drop(game_output);
+
+    if let Some(join) = stdout_join {
+        join.join().map_err(|err| anyhow::anyhow!("Failed to join stdout reader thread: {err:?}"))??;
+    }
+
+    if let Some(join) = stderr_join {
+        join.join().map_err(|err| anyhow::anyhow!("Failed to join stderr reader thread: {err:?}"))??;
+    }
 
     // Workaround for fast process closing (is it still a thing?)
     loop {
