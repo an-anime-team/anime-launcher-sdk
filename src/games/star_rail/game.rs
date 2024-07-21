@@ -289,6 +289,9 @@ pub fn run() -> anyhow::Result<()> {
                             break;
                         }
                     }
+
+                    // Flush written lines
+                    game_output.flush()?;
                 }
             }
 
@@ -311,6 +314,9 @@ pub fn run() -> anyhow::Result<()> {
                             break;
                         }
                     }
+
+                    // Flush written lines
+                    game_output.flush()?;
                 }
             }
 
