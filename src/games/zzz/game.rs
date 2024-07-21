@@ -266,8 +266,6 @@ pub fn run() -> anyhow::Result<()> {
 
     // Log process output while it's running
     while child.try_wait()?.is_none() {
-        std::thread::sleep(std::time::Duration::from_secs(3));
-
         // Check if we've written less than a limit amount of data
         if written < *consts::GAME_LOG_FILE_LIMIT {
             // Redirect stdout to the game.log file
@@ -283,11 +281,16 @@ pub fn run() -> anyhow::Result<()> {
                         game_output.write_all(b"\n")?;
 
                         written += line.len() + 14;
+
+                        // buf can contain more data than the limit
+                        if written > *consts::GAME_LOG_FILE_LIMIT {
+                            break;
+                        }
                     }
                 }
             }
 
-            // Redirect stdout to the game.log file
+            // Redirect stderr to the game.log file
             if let Some(stderr) = &mut child.stderr {
                 let mut buf = Vec::new();
 
@@ -300,8 +303,19 @@ pub fn run() -> anyhow::Result<()> {
                         game_output.write_all(b"\n")?;
 
                         written += line.len() + 14;
+
+                        // buf can contain more data than the limit
+                        if written > *consts::GAME_LOG_FILE_LIMIT {
+                            break;
+                        }
                     }
                 }
+            }
+
+            // Drop stdio bufs if the limit was reached
+            if written >= *consts::GAME_LOG_FILE_LIMIT {
+                drop(child.stdout.take());
+                drop(child.stderr.take());
             }
         }
 
@@ -309,7 +323,14 @@ pub fn run() -> anyhow::Result<()> {
         if let Some(rpc) = &rpc {
             rpc.update(RpcUpdates::Update)?;
         }
+
+        std::thread::sleep(std::time::Duration::from_secs(3));
     }
+
+    // Flush and close the game log file
+    game_output.flush()?;
+
+    drop(game_output);
 
     // Workaround for fast process closing (is it still a thing?)
     loop {
