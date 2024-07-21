@@ -51,17 +51,21 @@ impl FpsUnlocker {
             Ok(_) => {
                 match Self::from_dir(dir) {
                     Ok(Some(me)) => Ok(me),
+
                     Ok(None) => {
                         tracing::error!("Invalid hash");
-                        Err(anyhow::anyhow!("Downloading failed: Invalid hash"))
-                    },
+
+                        anyhow::bail!("Downloading failed: invalid fps unlocker hash");
+                    }
+
                     Err(err) => {
                         tracing::error!("Downloading failed: {err}");
 
                         Err(err.into())
                     }
                 }
-            },
+            }
+
             Err(err) => {
                 tracing::error!("Downloading failed: {err}");
 
