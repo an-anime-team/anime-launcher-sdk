@@ -26,10 +26,6 @@ pub mod components;
 pub mod prelude {
     pub use super::launcher::prelude::*;
     pub use super::game::prelude::*;
-
-    #[allow(unused_imports)]
-    pub use super::launcher::prelude::*;
-
     pub use super::game::*;
 
     #[cfg(feature = "components")]
