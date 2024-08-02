@@ -7,8 +7,7 @@ use crate::honkai::consts::launcher_dir;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Patch {
-    pub path: PathBuf,
-    pub apply_mfplat: bool
+    pub path: PathBuf
 }
 
 impl Default for Patch {
@@ -17,12 +16,7 @@ impl Default for Patch {
         let launcher_dir = launcher_dir().expect("Failed to get launcher dir");
 
         Self {
-            path: launcher_dir.join("patch"),
-
-            // Seems to not be needed with wine 8+
-            // which is recommended by default, so will work
-            // for most of users
-            apply_mfplat: false
+            path: launcher_dir.join("patch")
         }
     }
 }
@@ -35,11 +29,6 @@ impl From<&JsonValue> for Patch {
             path: match value.get("path").and_then(|path| path.as_str()).map(PathBuf::from) {
                 Some(path) => path,
                 None => default.path
-            },
-
-            apply_mfplat: match value.get("apply_mfplat") {
-                Some(value) => value.as_bool().unwrap_or(default.apply_mfplat),
-                None => default.apply_mfplat
             }
         }
     }
