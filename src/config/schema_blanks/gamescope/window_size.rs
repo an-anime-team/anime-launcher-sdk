@@ -2,45 +2,34 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GamescopeFramerate {
-    /// Focused framerate limit.
-    ///
-    /// ```text
-    /// --nested-refresh
-    /// ```
-    pub focused: Option<u64>,
-
-    /// Unfocused framerate limit.
-    ///
-    /// ```text
-    /// --nested-unfocused-refresh
-    /// ```
-    pub unfocused: Option<u64>
+pub struct GamescopeWindowSize {
+    pub width: Option<u64>,
+    pub height: Option<u64>
 }
 
-impl GamescopeFramerate {
+impl GamescopeWindowSize {
     #[inline]
-    pub fn get_command(&self) -> String {
+    pub fn get_command(&self, prefix: &str) -> String {
         let mut flags = Vec::with_capacity(2);
 
-        if let Some(focused) = &self.focused {
-            flags.push(format!("--nested-refresh {focused}"));
+        if let Some(width) = &self.width {
+            flags.push(format!("--{prefix}-width {width}"));
         }
 
-        if let Some(unfocused) = &self.unfocused {
-            flags.push(format!("--nested-unfocused-refresh {unfocused}"));
+        if let Some(height) = &self.height {
+            flags.push(format!("--{prefix}-height {height}"));
         }
 
         flags.join(" ")
     }
 }
 
-impl From<&JsonValue> for GamescopeFramerate {
+impl From<&JsonValue> for GamescopeWindowSize {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
         Self {
-            focused: value.get("focused")
+            width: value.get("width")
                 .and_then(|value| {
                     if value.is_null() {
                         Some(None)
@@ -48,9 +37,9 @@ impl From<&JsonValue> for GamescopeFramerate {
                         value.as_u64().map(Some)
                     }
                 })
-                .unwrap_or(default.focused),
+                .unwrap_or(default.width),
 
-            unfocused: value.get("unfocused")
+            height: value.get("height")
                 .and_then(|value| {
                     if value.is_null() {
                         Some(None)
@@ -58,7 +47,7 @@ impl From<&JsonValue> for GamescopeFramerate {
                         value.as_u64().map(Some)
                     }
                 })
-                .unwrap_or(default.unfocused)
+                .unwrap_or(default.height)
         }
     }
 }

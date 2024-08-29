@@ -1,30 +1,58 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
-pub mod size;
+pub mod window_mode;
+pub mod window_size;
 pub mod framerate;
-pub mod window_type;
+pub mod upscaling;
+pub mod options;
 
 pub mod prelude {
     pub use super::Gamescope;
-    pub use super::size::Size;
-    pub use super::framerate::Framerate;
-    pub use super::window_type::WindowType;
+    pub use super::window_mode::GamescopeWindowMode;
+    pub use super::window_size::GamescopeWindowSize;
+    pub use super::framerate::GamescopeFramerate;
+    pub use super::upscaling::*;
+    pub use super::options::GamescopeOptions;
 }
 
 use prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Gamescope {
+    /// Enable gamescope.
     pub enabled: bool,
-    pub game: Size,
-    pub gamescope: Size,
-    pub framerate: Framerate,
-    pub integer_scaling: bool,
-    pub fsr: bool,
-    pub nis: bool,
-    pub window_type: WindowType,
-    pub force_grab_cursor: bool,
+
+    /// Game window mode.
+    pub window_mode: GamescopeWindowMode,
+
+    /// Size of the game window.
+    ///
+    /// ```text
+    /// --nested-width
+    /// --nested-height
+    /// ```
+    pub game_window: GamescopeWindowSize,
+
+    /// Size of the gamescope window.
+    ///
+    /// ```text
+    /// --output-width
+    /// --output-height
+    /// ```
+    pub gamescope_window: GamescopeWindowSize,
+
+    /// Game refresh rate (frames per second).
+    pub framerate: GamescopeFramerate,
+
+    /// Upscaling settings.
+    pub upscaling: GamescopeUpscaling,
+
+    /// Extra gamescope options.
+    pub options: GamescopeOptions,
+
+    /// List of extra gamescope arguments.
+    pub extra_args: String
 }
 
 impl Default for Gamescope {
@@ -32,14 +60,13 @@ impl Default for Gamescope {
     fn default() -> Self {
         Self {
             enabled: false,
-            game: Size::default(),
-            gamescope: Size::default(),
-            framerate: Framerate::default(),
-            integer_scaling: true,
-            fsr: false,
-            nis: false,
-            window_type: WindowType::default(),
-            force_grab_cursor: false
+            window_mode: GamescopeWindowMode::default(),
+            game_window: GamescopeWindowSize::default(),
+            gamescope_window: GamescopeWindowSize::default(),
+            framerate: GamescopeFramerate::default(),
+            upscaling: GamescopeUpscaling::default(),
+            options: GamescopeOptions::default(),
+            extra_args: String::new()
         }
     }
 }
@@ -53,108 +80,59 @@ impl From<&JsonValue> for Gamescope {
                 .and_then(JsonValue::as_bool)
                 .unwrap_or(default.enabled),
 
-            game: value.get("game")
-                .map(Size::from)
-                .unwrap_or(default.game),
+            game_window: value.get("game")
+                .map(GamescopeWindowSize::from)
+                .unwrap_or(default.game_window),
 
-            gamescope: value.get("gamescope")
-                .map(Size::from)
-                .unwrap_or(default.gamescope),
+            gamescope_window: value.get("gamescope")
+                .map(GamescopeWindowSize::from)
+                .unwrap_or(default.gamescope_window),
+
+            window_mode: value.get("window_mode")
+                .map(GamescopeWindowMode::from)
+                .unwrap_or(default.window_mode),
 
             framerate: value.get("framerate")
-                .map(Framerate::from)
+                .map(GamescopeFramerate::from)
                 .unwrap_or(default.framerate),
 
-            integer_scaling: value.get("integer_scaling")
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(default.integer_scaling),
+            upscaling: value.get("upscaling")
+                .map(GamescopeUpscaling::from)
+                .unwrap_or(default.upscaling),
 
-            fsr: value.get("fsr")
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(default.fsr),
+            options: value.get("options")
+                .map(GamescopeOptions::from)
+                .unwrap_or(default.options),
 
-            nis: value.get("nis")
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(default.nis),
-
-            window_type: value.get("window_type")
-                .map(WindowType::from)
-                .unwrap_or(default.window_type),
-
-            force_grab_cursor: value.get("force_grab_cursor")
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(default.force_grab_cursor)
+            extra_args: value.get("extra_args")
+                .and_then(JsonValue::as_str)
+                .map(String::from)
+                .unwrap_or(default.extra_args)
         }
     }
 }
 
 impl Gamescope {
     pub fn get_command(&self) -> Option<String> {
-        // https://github.com/bottlesdevs/Bottles/blob/b908311348ed1184ead23dd76f9d8af41ff24082/src/backend/wine/winecommand.py#L478
-        // https://github.com/ValveSoftware/gamescope#options
-        if self.enabled {
-            let mut gamescope = String::from("gamescope");
-
-            // Set window type
-            match self.window_type {
-                WindowType::Borderless => gamescope += " -b",
-                WindowType::Fullscreen => gamescope += " -f"
-            }
-
-            // Set game width
-            if self.game.width > 0 {
-                gamescope += &format!(" -w {}", self.game.width);
-            }
-
-            // Set game height
-            if self.game.height > 0 {
-                gamescope += &format!(" -h {}", self.game.height);
-            }
-
-            // Set gamescope width
-            if self.gamescope.width > 0 {
-                gamescope += &format!(" -W {}", self.gamescope.width);
-            }
-
-            // Set gamescope height
-            if self.gamescope.height > 0 {
-                gamescope += &format!(" -H {}", self.gamescope.height);
-            }
-
-            // Set focused framerate limit
-            if self.framerate.focused > 0 {
-                gamescope += &format!(" -r {}", self.framerate.focused);
-            }
-
-            // Set unfocused framerate limit
-            if self.framerate.unfocused > 0 {
-                gamescope += &format!(" -o {}", self.framerate.unfocused);
-            }
-
-            // Set integer scaling
-            if self.integer_scaling {
-                gamescope += " -S integer";
-            }
-
-            // Set FSR support
-            if self.fsr {
-                gamescope += " -F fsr";
-            }
-
-            // Set NIS (Nvidia Image Scaling) support
-            if self.nis {
-                gamescope += " -F nis";
-            }
-
-            if self.force_grab_cursor {
-                gamescope += " --force-grab-cursor";
-            }
-
-            Some(gamescope)
+        if !self.enabled {
+            return None;
         }
 
-        else {
-            None
-        }
+        let flags = [
+            String::from("gamescope"),
+            self.game_window.get_command("nested"),
+            self.gamescope_window.get_command("output"),
+            self.window_mode.get_flag().to_string(),
+            self.framerate.get_command(),
+            self.upscaling.get_command(),
+            self.options.get_command(),
+            self.extra_args.clone()
+        ];
+
+        let flags = flags.into_iter()
+            .filter(|flag| !flag.is_empty())
+            .collect::<Vec<_>>();
+
+        Some(flags.join(" "))
     }
 }
