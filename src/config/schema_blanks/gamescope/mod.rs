@@ -80,11 +80,11 @@ impl From<&JsonValue> for Gamescope {
                 .and_then(JsonValue::as_bool)
                 .unwrap_or(default.enabled),
 
-            game_window: value.get("game")
+            game_window: value.get("game_window")
                 .map(GamescopeWindowSize::from)
                 .unwrap_or(default.game_window),
 
-            gamescope_window: value.get("gamescope")
+            gamescope_window: value.get("gamescope_window")
                 .map(GamescopeWindowSize::from)
                 .unwrap_or(default.gamescope_window),
 
