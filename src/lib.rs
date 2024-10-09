@@ -29,9 +29,6 @@ pub mod config;
 #[cfg(feature = "components")]
 pub mod components;
 
-#[cfg(feature = "discord-rpc")]
-pub mod discord_rpc;
-
 #[cfg(feature = "sessions")]
 pub mod sessions;
 

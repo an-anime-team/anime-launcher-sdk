@@ -24,9 +24,6 @@ use crate::genshin::consts;
 #[cfg(feature = "fps-unlocker")]
 use super::fps_unlocker::FpsUnlocker;
 
-#[cfg(feature = "discord-rpc")]
-use crate::discord_rpc::*;
-
 #[cfg(feature = "sessions")]
 use crate::{
     sessions::SessionsExt,
@@ -282,19 +279,6 @@ pub fn run() -> anyhow::Result<()> {
         Sessions::apply(current, config.get_wine_prefix_path())?;
     }
 
-    // Start Discord RPC just before the game
-    #[cfg(feature = "discord-rpc")]
-    let rpc = if config.launcher.discord_rpc.enabled {
-        Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
-    } else {
-        None
-    };
-
-    #[cfg(feature = "discord-rpc")]
-    if let Some(rpc) = &rpc {
-        rpc.update(RpcUpdates::Connect)?;
-    }
-    
     // Run command
 
     let variables = command
@@ -389,15 +373,7 @@ pub fn run() -> anyhow::Result<()> {
         }));
     }
 
-    // Update discord RPC until the game process is closed
-    while child.try_wait()?.is_none() {
-        std::thread::sleep(std::time::Duration::from_secs(3));
-
-        #[cfg(feature = "discord-rpc")]
-        if let Some(rpc) = &rpc {
-            rpc.update(RpcUpdates::Update)?;
-        }
-    }
+    child.wait()?;
 
     // Flush and close the game log file
     if let Ok(mut file) = game_output.lock() {
@@ -424,16 +400,6 @@ pub fn run() -> anyhow::Result<()> {
         if !output.contains("GenshinImpact.e") && !output.contains("YuanShen.exe") && !output.contains("fpsunlock.exe") {
             break;
         }
-
-        #[cfg(feature = "discord-rpc")]
-        if let Some(rpc) = &rpc {
-            rpc.update(RpcUpdates::Update)?;
-        }
-    }
-
-    #[cfg(feature = "discord-rpc")]
-    if let Some(rpc) = &rpc {
-        rpc.update(RpcUpdates::Disconnect)?;
     }
 
     #[cfg(feature = "sessions")]
