@@ -22,7 +22,7 @@ pub fn launcher_dir() -> anyhow::Result<PathBuf> {
 
     Ok(std::env::var("XDG_DATA_HOME")
         .or_else(|_| std::env::var("HOME").map(|home| home + "/.local/share"))
-        .map(|home| PathBuf::from(home).join(FOLDER_NAME))?)
+        .map(|home| PathBuf::from(home).join(FOLDER_NAME).canonicalize())??)
 }
 
 /// Get launcher's cache dir path
@@ -35,7 +35,7 @@ pub fn cache_dir() -> anyhow::Result<PathBuf> {
 
     Ok(std::env::var("XDG_CACHE_HOME")
         .or_else(|_| std::env::var("HOME").map(|home| home + "/.cache"))
-        .map(|home| PathBuf::from(home).join(FOLDER_NAME))?)
+        .map(|home| PathBuf::from(home).join(FOLDER_NAME).canonicalize())??)
 }
 
 /// Get config file path
