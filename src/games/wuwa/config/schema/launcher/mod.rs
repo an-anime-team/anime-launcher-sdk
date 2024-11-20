@@ -7,6 +7,9 @@ use enum_ordinalize::Ordinalize;
 
 use anime_game_core::wuwa::consts::GameEdition;
 
+#[cfg(feature = "discord-rpc")]
+pub mod discord_rpc;
+
 use crate::config::schema_blanks::prelude::*;
 use crate::wuwa::consts::launcher_dir;
 
@@ -16,7 +19,12 @@ pub mod prelude {
         LauncherStyle,
         LauncherBehavior
     };
+
+    #[cfg(feature = "discord-rpc")]
+    pub use super::discord_rpc::DiscordRpc;
 }
+
+use prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
 pub enum LauncherStyle {
@@ -52,6 +60,10 @@ pub struct Launcher {
     pub style: LauncherStyle,
     pub temp: Option<PathBuf>,
     pub repairer: Repairer,
+
+    #[cfg(feature = "discord-rpc")]
+    pub discord_rpc: DiscordRpc,
+
     pub behavior: LauncherBehavior
 }
 
@@ -64,6 +76,10 @@ impl Default for Launcher {
             style: LauncherStyle::default(),
             temp: launcher_dir().ok(),
             repairer: Repairer::default(),
+
+            #[cfg(feature = "discord-rpc")]
+            discord_rpc: DiscordRpc::default(),
+
             behavior: LauncherBehavior::default()
         }
     }
@@ -106,6 +122,12 @@ impl From<&JsonValue> for Launcher {
             repairer: match value.get("repairer") {
                 Some(value) => Repairer::from(value),
                 None => default.repairer
+            },
+
+            #[cfg(feature = "discord-rpc")]
+            discord_rpc: match value.get("discord_rpc") {
+                Some(value) => DiscordRpc::from(value),
+                None => default.discord_rpc
             },
 
             behavior: match value.get("behavior") {

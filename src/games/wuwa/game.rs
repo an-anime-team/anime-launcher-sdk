@@ -19,6 +19,9 @@ use crate::config::schema_blanks::prelude::{
 
 use crate::wuwa::consts;
 
+#[cfg(feature = "discord-rpc")]
+use crate::discord_rpc::*;
+
 #[derive(Debug, Clone)]
 struct Folders {
     pub wine: PathBuf,
@@ -215,6 +218,18 @@ pub fn run() -> anyhow::Result<()> {
 
     command.envs(&config.game.environment);
 
+    #[cfg(feature = "discord-rpc")]
+    let rpc = if config.launcher.discord_rpc.enabled {
+        Some(DiscordRpc::new(config.launcher.discord_rpc.clone().into()))
+    } else {
+        None
+    };
+
+    #[cfg(feature = "discord-rpc")]
+    if let Some(rpc) = &rpc {
+        rpc.update(RpcUpdates::Connect)?;
+    }
+
     // Run command
 
     let variables = command
@@ -309,7 +324,15 @@ pub fn run() -> anyhow::Result<()> {
         }));
     }
 
-    child.wait()?;
+    // Update discord RPC until the game process is closed
+    while child.try_wait()?.is_none() {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+
+        #[cfg(feature = "discord-rpc")]
+        if let Some(rpc) = &rpc {
+            rpc.update(RpcUpdates::Update)?;
+        }
+    }
 
     // Flush and close the game log file
     if let Ok(mut file) = game_output.lock() {
@@ -336,6 +359,16 @@ pub fn run() -> anyhow::Result<()> {
         if !output.contains("Client-Win64-Sh") {
             break;
         }
+
+        #[cfg(feature = "discord-rpc")]
+        if let Some(rpc) = &rpc {
+            rpc.update(RpcUpdates::Update)?;
+        }
+    }
+
+    #[cfg(feature = "discord-rpc")]
+    if let Some(rpc) = &rpc {
+        rpc.update(RpcUpdates::Disconnect)?;
     }
 
     Ok(())
