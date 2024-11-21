@@ -32,7 +32,9 @@ pub struct DiscordRpcParams {
     pub enabled: bool,
     pub title: String,
     pub subtitle: String,
-    pub icon: String
+    pub icon: String,
+    pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +49,9 @@ pub enum RpcUpdates {
     UpdateActivity {
         title: String,
         subtitle: String,
-        icon: String
+        icon: String,
+        start_timestamp: Option<i64>,
+        end_timestamp: Option<i64>
     },
 
     /// Update RPC connection with already set activity params
@@ -94,10 +98,12 @@ impl DiscordRpc {
                             }
                         }
 
-                        RpcUpdates::UpdateActivity { title, subtitle, icon } => {
+                        RpcUpdates::UpdateActivity { title, subtitle, icon, start_timestamp, end_timestamp } => {
                             params.title = title;
                             params.subtitle = subtitle;
                             params.icon = icon;
+                            params.start_timestamp = start_timestamp;
+                            params.end_timestamp = end_timestamp;
 
                             if connected {
                                 client.set_activity(Self::get_activity(&params))
@@ -125,10 +131,20 @@ impl DiscordRpc {
     }
 
     pub fn get_activity(config: &DiscordRpcParams) -> Activity {
-        Activity::new()
+        let mut activity = Activity::new()
             .details(&config.title)
             .state(&config.subtitle)
-            .assets(Assets::new().large_image(&config.icon))
+            .assets(Assets::new().large_image(&config.icon));
+
+        if let Some(start) = config.start_timestamp {
+            activity = activity.timestamps(Timestamps::new().start(start));
+        }
+
+        if let Some(end) = config.end_timestamp {
+            activity = activity.timestamps(Timestamps::new().end(end));
+        }
+
+        activity
     }
 
     #[inline]
