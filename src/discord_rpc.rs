@@ -58,7 +58,10 @@ pub enum RpcUpdates {
     Update,
 
     /// Clear RPC activity
-    ClearActivity
+    ClearActivity,
+
+    /// Reconnect RPC connection
+    Reconnect
 }
 
 pub struct DiscordRpc {
@@ -69,6 +72,7 @@ pub struct DiscordRpc {
 impl DiscordRpc {
     pub fn new(mut params: DiscordRpcParams) -> Self {
         let (sender, receiver) = mpsc::channel();
+        let sender_clone = sender.clone();
 
         Self {
             _thread: std::thread::spawn(move || {
@@ -83,10 +87,15 @@ impl DiscordRpc {
                             if !connected {
                                 connected = true;
 
-                                client.connect().expect("Failed to connect to discord");
+                                if let Err(err) = client.connect() {
+                                    eprintln!("Failed to connect to discord: {:?}", err);
+                                    continue;
+                                }
 
-                                client.set_activity(Self::get_activity(&params))
-                                    .expect("Failed to update discord rpc activity");
+                                if let Err(err) = client.set_activity(Self::get_activity(&params)) {
+                                    eprintln!("Failed to update discord rpc activity: {:?}", err);
+                                    continue;
+                                }
                             }
                         }
 
@@ -94,7 +103,9 @@ impl DiscordRpc {
                             if connected {
                                 connected = false;
 
-                                client.close().expect("Failed to disconnect from discord");
+                                if let Err(err) = client.close() {
+                                    eprintln!("Failed to disconnect from discord: {:?}", err);
+                                }
                             }
                         }
 
@@ -106,22 +117,67 @@ impl DiscordRpc {
                             params.end_timestamp = end_timestamp;
 
                             if connected {
-                                client.set_activity(Self::get_activity(&params))
-                                    .expect("Failed to update discord rpc activity");
+                                if let Err(err) = client.set_activity(Self::get_activity(&params)) {
+                                    eprintln!("Failed to update discord rpc activity: {:?}", err);
+                                    if let Some(io_err) = err.downcast_ref::<std::io::Error>() {
+                                        if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                                            if let Err(err) = sender_clone.send(RpcUpdates::Reconnect) {
+                                                eprintln!("Failed to send reconnect message: {:?}", err);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         RpcUpdates::Update => {
                             if connected {
-                                client.set_activity(Self::get_activity(&params))
-                                    .expect("Failed to update discord rpc activity");
+                                if let Err(err) = client.set_activity(Self::get_activity(&params)) {
+                                    eprintln!("Failed to update discord rpc activity: {:?}", err);
+                                    if let Some(io_err) = err.downcast_ref::<std::io::Error>() {
+                                        if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                                            if let Err(err) = sender_clone.send(RpcUpdates::Reconnect) {
+                                                eprintln!("Failed to send reconnect message: {:?}", err);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         RpcUpdates::ClearActivity => {
                             if connected {
-                                client.clear_activity().expect("Failed to clear discord rpc activity");
+                                if let Err(err) = client.clear_activity() {
+                                    eprintln!("Failed to clear discord rpc activity: {:?}", err);
+                                    if let Some(io_err) = err.downcast_ref::<std::io::Error>() {
+                                        if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                                            if let Err(err) = sender_clone.send(RpcUpdates::Reconnect) {
+                                                eprintln!("Failed to send reconnect message: {:?}", err);
+                                            }
+                                        }
+                                    }
+                                }
                             }
+                        }
+
+                        RpcUpdates::Reconnect => {
+                            if connected {
+                                if let Err(err) = client.close() {
+                                    eprintln!("Failed to disconnect from discord: {:?}", err);
+                                }
+                            }
+
+                            if let Err(err) = client.connect() {
+                                eprintln!("Failed to reconnect to discord: {:?}", err);
+                                continue;
+                            }
+
+                            if let Err(err) = client.set_activity(Self::get_activity(&params)) {
+                                eprintln!("Failed to update discord rpc activity: {:?}", err);
+                                continue;
+                            }
+
+                            connected = true;
                         }
                     }
                 }
@@ -150,6 +206,10 @@ impl DiscordRpc {
     #[inline]
     pub fn update(&self, update: RpcUpdates) -> Result<(), SendError<RpcUpdates>> {
         self.sender.send(update)
+    }
+
+    pub fn reconnect(&self) -> Result<(), SendError<RpcUpdates>> {
+        self.sender.send(RpcUpdates::Reconnect)
     }
 
     pub fn get_assets(app_id: u64) -> anyhow::Result<Vec<DiscordRpcAsset>> {
