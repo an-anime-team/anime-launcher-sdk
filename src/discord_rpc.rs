@@ -234,3 +234,4 @@ impl Drop for DiscordRpc {
         self.update(RpcUpdates::Disconnect);
     }
 }
+// ihate this
