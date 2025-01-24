@@ -20,7 +20,9 @@ impl From<DiscordRpc> for DiscordRpcParams {
             enabled: config.enabled,
             title: config.title,
             subtitle: config.subtitle,
-            icon: config.icon
+            icon: config.icon,
+            start_timestamp: config.start_timestamp,
+            end_timestamp: config.end_timestamp
         }
     }
 }
