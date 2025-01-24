@@ -13,7 +13,7 @@ pub struct DiscordRpc {
     pub start_timestamp: Option<i64>,
     pub end_timestamp: Option<i64>
 }
-
+// cargo is fucking weird bro wtf
 impl From<DiscordRpc> for DiscordRpcParams {
     #[inline]
     fn from(config: DiscordRpc) -> Self {

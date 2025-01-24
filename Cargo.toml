@@ -1,10 +1,10 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.26.0"
+version = "1.26.3"
 authors = ["Nikita Podvirnyi <krypt0nn@vk.com>"]
 license = "GPL-3.0"
 readme = "README.md"
-repository = "https://github.com/an-anime-team/anime-launcher-sdk"
+repository = "https://github.com/shinyPy/anime-launcher-sdk"
 edition = "2021"
 
 [dependencies.anime-game-core]
