@@ -9,7 +9,9 @@ pub struct DiscordRpc {
     pub enabled: bool,
     pub title: String,
     pub subtitle: String,
-    pub icon: String
+    pub icon: String,
+    pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>
 }
 
 impl From<DiscordRpc> for DiscordRpcParams {
@@ -33,10 +35,11 @@ impl Default for DiscordRpc {
         Self {
             app_id: 1102997693040701481,
             enabled: false,
-
             title: String::from("Trailblazing"),
             subtitle: String::from("The Galaxy"),
-            icon: String::from("launcher")
+            icon: String::from("launcher"),
+            start_timestamp: None,
+            end_timestamp: None
         }
     }
 }
@@ -44,9 +47,6 @@ impl Default for DiscordRpc {
 impl From<&JsonValue> for DiscordRpc {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
-
-        // Migration: Update old Discord RPC values
-        // This will be removed in future updates
 
         let mut app_id = match value.get("app_id") {
             Some(value) => value.as_u64().unwrap_or(default.app_id),
@@ -63,7 +63,7 @@ impl From<&JsonValue> for DiscordRpc {
             None => default.subtitle.clone()
         };
 
-        // If old values are detected - replace them by new
+        // Migration for old Discord RPC values
         if app_id == 901534333360304168 {
             app_id = default.app_id;
             title = default.title;
@@ -72,27 +72,23 @@ impl From<&JsonValue> for DiscordRpc {
 
         Self {
             app_id,
-
             enabled: match value.get("enabled") {
                 Some(value) => value.as_bool().unwrap_or(default.enabled),
                 None => default.enabled
             },
-
             title,
             subtitle,
-
             icon: match value.get("icon") {
                 Some(value) => value.as_str().unwrap_or(&default.icon).to_string(),
                 None => default.icon
             },
             start_timestamp: match value.get("start_timestamp") {
                 Some(value) => value.as_i64(),
-                None => default.start_timestamp
+                None => None
             },
-
             end_timestamp: match value.get("end_timestamp") {
                 Some(value) => value.as_i64(),
-                None => default.end_timestamp
+                None => None
             }
         }
     }

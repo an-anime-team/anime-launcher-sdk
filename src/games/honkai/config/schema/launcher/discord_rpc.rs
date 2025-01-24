@@ -9,7 +9,9 @@ pub struct DiscordRpc {
     pub enabled: bool,
     pub title: String,
     pub subtitle: String,
-    pub icon: String
+    pub icon: String,
+    pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>
 }
 
 impl From<DiscordRpc> for DiscordRpcParams {

@@ -11,6 +11,8 @@ pub struct DiscordRpc {
     pub subtitle: String,
     pub icon: String,
     pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>,
+    pub start_timestamp: Option<i64>,
     pub end_timestamp: Option<i64>
 }
 // cargo is fucking weird bro wtf

@@ -9,7 +9,9 @@ pub struct DiscordRpc {
     pub enabled: bool,
     pub title: String,
     pub subtitle: String,
-    pub icon: String
+    pub icon: String,
+    pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>
 }
 
 impl From<DiscordRpc> for DiscordRpcParams {
@@ -31,12 +33,13 @@ impl Default for DiscordRpc {
     #[inline]
     fn default() -> Self {
         Self {
-            app_id: 1258318006392590336,
+            app_id: 1102997693040701481,
             enabled: false,
-
-            title: String::from("Exploring"),
-            subtitle: String::from("New Eridu"),
-            icon: String::from("launcher")
+            title: String::from("Trailblazing"),
+            subtitle: String::from("The Galaxy"),
+            icon: String::from("launcher"),
+            start_timestamp: None,
+            end_timestamp: None
         }
     }
 }
@@ -45,39 +48,47 @@ impl From<&JsonValue> for DiscordRpc {
     fn from(value: &JsonValue) -> Self {
         let default = Self::default();
 
-        Self {
-            app_id: match value.get("app_id") {
-                Some(value) => value.as_u64().unwrap_or(default.app_id),
-                None => default.app_id
-            },
+        let mut app_id = match value.get("app_id") {
+            Some(value) => value.as_u64().unwrap_or(default.app_id),
+            None => default.app_id
+        };
 
+        let mut title = match value.get("title") {
+            Some(value) => value.as_str().unwrap_or(&default.title).to_string(),
+            None => default.title.clone()
+        };
+
+        let mut subtitle = match value.get("subtitle") {
+            Some(value) => value.as_str().unwrap_or(&default.subtitle).to_string(),
+            None => default.subtitle.clone()
+        };
+
+        // Migration for old Discord RPC values
+        if app_id == 901534333360304168 {
+            app_id = default.app_id;
+            title = default.title;
+            subtitle = default.subtitle;
+        }
+
+        Self {
+            app_id,
             enabled: match value.get("enabled") {
                 Some(value) => value.as_bool().unwrap_or(default.enabled),
                 None => default.enabled
             },
-
-            title: match value.get("title") {
-                Some(value) => value.as_str().unwrap_or(&default.title).to_string(),
-                None => default.title
-            },
-
-            subtitle: match value.get("subtitle") {
-                Some(value) => value.as_str().unwrap_or(&default.subtitle).to_string(),
-                None => default.subtitle
-            },
-
+            title,
+            subtitle,
             icon: match value.get("icon") {
                 Some(value) => value.as_str().unwrap_or(&default.icon).to_string(),
                 None => default.icon
             },
             start_timestamp: match value.get("start_timestamp") {
                 Some(value) => value.as_i64(),
-                None => default.start_timestamp
+                None => None
             },
-
             end_timestamp: match value.get("end_timestamp") {
                 Some(value) => value.as_i64(),
-                None => default.end_timestamp
+                None => None
             }
         }
     }
