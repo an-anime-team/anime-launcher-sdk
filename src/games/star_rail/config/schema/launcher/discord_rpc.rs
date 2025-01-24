@@ -84,6 +84,15 @@ impl From<&JsonValue> for DiscordRpc {
             icon: match value.get("icon") {
                 Some(value) => value.as_str().unwrap_or(&default.icon).to_string(),
                 None => default.icon
+            },
+            start_timestamp: match value.get("start_timestamp") {
+                Some(value) => value.as_i64(),
+                None => default.start_timestamp
+            },
+
+            end_timestamp: match value.get("end_timestamp") {
+                Some(value) => value.as_i64(),
+                None => default.end_timestamp
             }
         }
     }
