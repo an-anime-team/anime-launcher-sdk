@@ -1,6 +1,6 @@
 [package]
 name = "anime-launcher-sdk"
-version = "1.26.9"
+version = "1.26.8"
 authors = ["Nikita Podvirnyi <krypt0nn@vk.com>"]
 license = "GPL-3.0"
 readme = "README.md"

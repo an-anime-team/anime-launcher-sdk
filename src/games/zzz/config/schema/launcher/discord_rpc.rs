@@ -35,10 +35,11 @@ impl Default for DiscordRpc {
         Self {
             app_id: 1258318006392590336,
             enabled: false,
-
             title: String::from("Exploring"),
             subtitle: String::from("New Eridu"),
-            icon: String::from("launcher")
+            icon: String::from("launcher"),
+            start_timestamp: None,
+            end_timestamp: None
         }
     }
 }
