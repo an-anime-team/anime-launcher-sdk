@@ -9,12 +9,18 @@ use crate::config::ConfigExt;
 pub enum LauncherState {
     Launch,
 
+    PatchNotVerified,
+    PatchBroken,
+    PatchUnsafe,
+    PatchConcerning,
+
+    PatchNotInstalled,
+    PatchUpdateAvailable,
+
     #[cfg(feature = "components")]
     WineNotInstalled,
 
     PrefixNotExists,
-
-    Vcrun2015NotInstalled,
 
     TelemetryNotDisabled,
 
@@ -28,7 +34,8 @@ pub enum LauncherState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
     Components,
-    Game
+    Game,
+    Patch
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,6 +44,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_edition: GameEdition,
 
     pub wine_prefix: PathBuf,
+    pub patch_folder: PathBuf,
 
     pub fast_verify: bool,
     pub status_updater: F
@@ -54,9 +62,19 @@ impl LauncherState {
             return Ok(Self::PrefixNotExists);
         }
 
-        // Check vcrun2015 installation
-        if !vcrun2015::is_installed(&params.wine_prefix) {
-            return Ok(Self::Vcrun2015NotInstalled);
+        // Check game patch status
+        (params.status_updater)(StateUpdating::Patch);
+
+        // Check jadeite patch status
+        if !jadeite::is_installed(&params.patch_folder) {
+            return Ok(Self::PatchNotInstalled);
+        }
+
+        // Fetch patch metadata
+        let metadata = jadeite::get_metadata()?;
+
+        if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
+            return Ok(Self::PatchUpdateAvailable);
         }
 
         // Check telemetry servers
@@ -86,7 +104,20 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(_) => Ok(Self::Launch),
+            VersionDiff::Latest( version, .. ) => {
+                // Request current patch status from the metadata file
+                let patch = metadata.games.wuwa
+                    .for_edition(params.game_edition)
+                    .get_status(version);
+
+                match patch {
+                    JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
+                    JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
+                    JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
+                    JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe),
+                    JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
+                }
+            },
             VersionDiff::Outdated { .. } => Ok(Self::GameUpdateAvailable(diff)),
             VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
         }
@@ -112,6 +143,8 @@ impl LauncherState {
             game_edition: config.launcher.edition,
 
             wine_prefix: config.get_wine_prefix_path(),
+            patch_folder: config.patch.path,
+
             fast_verify: config.launcher.repairer.fast,
 
             status_updater
