@@ -197,9 +197,6 @@ pub fn run() -> anyhow::Result<()> {
     command.env("WINEARCH", "win64");
     command.env("WINEPREFIX", &folders.prefix);
 
-    // Special wuwa fix
-    command.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=");
-
     // Add environment flags for selected wine
     for (key, value) in features.env.into_iter() {
         command.env(key, replace_keywords(value, &folders));
