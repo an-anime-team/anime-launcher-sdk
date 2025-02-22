@@ -125,6 +125,10 @@ pub fn run() -> anyhow::Result<()> {
         bash_command = format!("{gamescope} -- {bash_command}");
     }
 
+    if config.game.enhancements.dx11 {
+        launch_args += "-dx11 ";
+    }
+
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
         std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command} {launch_args}\nexit"))?;
