@@ -8,7 +8,9 @@ pub struct Enhancements {
     pub fsr: Fsr,
     pub gamemode: bool,
     pub hud: HUD,
-    pub gamescope: Gamescope
+    pub gamescope: Gamescope,
+    pub dx11: bool,
+    pub fix_launch_dialog: bool
 }
 
 impl From<&JsonValue> for Enhancements {
@@ -30,7 +32,15 @@ impl From<&JsonValue> for Enhancements {
 
             gamescope: value.get("gamescope")
                 .map(Gamescope::from)
-                .unwrap_or(default.gamescope)
+                .unwrap_or(default.gamescope),
+
+            dx11: value.get("dx11")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(true),
+
+            fix_launch_dialog: value.get("fix_launch_dialog")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(true),
         }
     }
 }

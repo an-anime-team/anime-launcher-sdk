@@ -24,6 +24,7 @@ struct Folders {
     pub wine: PathBuf,
     pub prefix: PathBuf,
     pub game: PathBuf,
+    pub patch: PathBuf,
     pub temp: PathBuf
 }
 
@@ -44,8 +45,9 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
 
     let config = Config::get()?;
+    let game_path = config.game.path.for_edition(config.launcher.edition).to_path_buf();
 
-    if !config.game.path.for_edition(config.launcher.edition).exists() {
+    if !game_path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
@@ -58,7 +60,8 @@ pub fn run() -> anyhow::Result<()> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+        game: game_path.clone(),
+        patch: config.patch.path.clone(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -75,10 +78,12 @@ pub fn run() -> anyhow::Result<()> {
 
     config.game.wine.drives.map_folders(&folders.game, &prefix_folder)?;
 
+    // Workaround for the jadeite patch (we run it from Z: drive)
+    WineDrives::map_folder(&prefix_folder, AllowedDrives::Z, "/")?;
+
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
         WineDrives::map_folder(&prefix_folder, AllowedDrives::C, "../drive_c")?;
-        WineDrives::map_folder(&prefix_folder, AllowedDrives::Z, "/")?;
     }
 
     // Prepare bash -c '<command>'
@@ -99,12 +104,12 @@ pub fn run() -> anyhow::Result<()> {
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("pgr") {
+    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("wuwa") {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
 
-    windows_command += "Client/Binaries/Win64/Client-Win64-Shipping.exe ";
+    windows_command += &format!("'{}/jadeite.exe' 'Z:\\{}/Client/Binaries/Win64/Client-Win64-Shipping.exe' -- ", folders.patch.to_string_lossy(), folders.game.to_string_lossy());
 
     if config.game.wine.borderless {
         launch_args += "-screen-fullscreen 0 -popupwindow ";
@@ -118,6 +123,10 @@ pub fn run() -> anyhow::Result<()> {
     // gamescope <params> -- <command to run>
     if let Some(gamescope) = config.game.enhancements.gamescope.get_command() {
         bash_command = format!("{gamescope} -- {bash_command}");
+    }
+
+    if config.game.enhancements.dx11 {
+        launch_args += "-dx11 ";
     }
 
     // Bundle all windows arguments used to run the game into a single file
@@ -137,10 +146,13 @@ pub fn run() -> anyhow::Result<()> {
             folders.game.to_str().unwrap()
         );
 
+        let bwrap = format!("{bwrap} --bind '{}' /tmp/sandbox/patch", folders.patch.to_string_lossy());
+
         let sandboxed_folders = Folders {
             wine: PathBuf::from("/tmp/sandbox/wine"),
             prefix: PathBuf::from("/tmp/sandbox/prefix"),
             game: PathBuf::from("/tmp/sandbox/game"),
+            patch: PathBuf::from("/tmp/sandbox/patch"),
             temp: PathBuf::from("/tmp")
         };
 
@@ -148,12 +160,14 @@ pub fn run() -> anyhow::Result<()> {
             .replace(folders.wine.to_str().unwrap(), sandboxed_folders.wine.to_str().unwrap())
             .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
             .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
+            .replace(folders.patch.to_str().unwrap(), sandboxed_folders.patch.to_str().unwrap())
             .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
 
         windows_command = windows_command
             .replace(folders.wine.to_str().unwrap(), sandboxed_folders.wine.to_str().unwrap())
             .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
             .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
+            .replace(folders.patch.to_str().unwrap(), sandboxed_folders.patch.to_str().unwrap())
             .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
 
         bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
@@ -182,9 +196,6 @@ pub fn run() -> anyhow::Result<()> {
 
     command.env("WINEARCH", "win64");
     command.env("WINEPREFIX", &folders.prefix);
-
-    // Special wuwa fix
-    command.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=");
 
     // Add environment flags for selected wine
     for (key, value) in features.env.into_iter() {
