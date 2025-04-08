@@ -22,7 +22,7 @@ pub struct Group {
 
 impl Group {
     /// Find wine group with given name in components index
-    /// 
+    ///
     /// This method will also check all version names within this group, so both `wine-ge-proton` and `lutris-GE-Proton7-37-x86_64` will work
     pub fn find_in<T: Into<PathBuf>, F: AsRef<str>>(components: T, name: F) -> anyhow::Result<Option<Self>> {
         let name = name.as_ref();
@@ -39,18 +39,21 @@ impl Group {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Features {
+    /// Wine architecture.
+    pub arch: Option<WineArch>,
+
     pub bundle: Option<Bundle>,
 
     /// Whether this wine group needs DXVK
     pub need_dxvk: bool,
 
     /// Create temp bat file with `launcher.bat` call and its flags
-    /// 
+    ///
     /// Extremely helpful when your custom `command` feature can't handle multiline arguments (e.g. in GE-Proton)
     pub compact_launch: bool,
 
     /// Command used to launch the game
-    /// 
+    ///
     /// Available keywords:
     /// - `%build%` - path to wine build
     /// - `%prefix%` - path to wine prefix
@@ -60,7 +63,7 @@ pub struct Features {
     pub command: Option<String>,
 
     /// Standard environment variables that are applied when you launch the game
-    /// 
+    ///
     /// Available keywords:
     /// - `%build%` - path to wine build
     /// - `%prefix%` - path to wine prefix
@@ -76,6 +79,7 @@ impl Default for Features {
     #[inline]
     fn default() -> Self {
         Self {
+            arch: None,
             bundle: None,
             need_dxvk: true,
             compact_launch: false,
@@ -96,6 +100,11 @@ impl From<&JsonValue> for Features {
         let mut default = Self::default();
 
         Self {
+            arch: value.get("arch")
+                .and_then(JsonValue::as_str)
+                .map(WineArch::from_str)
+                .unwrap_or(default.arch),
+
             bundle: match value.get("bundle") {
                 Some(value) => serde_json::from_value(value.to_owned()).unwrap_or(default.bundle),
                 None => default.bundle
@@ -225,12 +234,12 @@ impl Version {
     }
 
     /// Convert current wine struct to one from `wincompatlib`
-    /// 
+    ///
     /// `wine_folder` should point to the folder with wine binaries, so e.g. `/path/to/runners/wine-proton-ge-7.11`
     pub fn to_wine<T: Into<PathBuf>>(&self, components: T, wine_folder: Option<T>) -> UnifiedWine {
         let wine_folder = wine_folder.map(|folder| folder.into()).unwrap_or_default();
 
-        let (wine, arch) = match self.files.wine64.as_ref() {
+        let (wine, mut arch) = match self.files.wine64.as_ref() {
             Some(wine) => (wine, WineArch::Win64),
             None => (&self.files.wine, WineArch::Win32)
         };
@@ -250,8 +259,13 @@ impl Version {
         let wineserver = self.files.wineserver.as_ref().map(|wineserver| wine_folder.join(wineserver));
 
         if let Ok(Some(features)) = self.features(components) {
+            if let Some(feature_arch) = features.arch {
+                arch = feature_arch;
+            }
+
             if let Some(Bundle::Proton) = features.bundle {
-                let mut proton = Proton::new(wine_folder, None);
+                let mut proton = Proton::new(wine_folder, None)
+                    .with_arch(arch);
 
                 // Small workaround. Most of stuff will work with just this
                 proton.steam_client_path = Some(PathBuf::from(""));

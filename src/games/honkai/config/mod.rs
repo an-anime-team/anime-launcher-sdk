@@ -42,6 +42,7 @@ impl ConfigExt for Config {
     #[inline]
     fn get() -> anyhow::Result<Self::Schema> {
         unsafe {
+            #[allow(static_mut_refs)]
             match CONFIG.as_ref() {
                 Some(config) => Ok(config.clone()),
                 None => Self::get_raw()
