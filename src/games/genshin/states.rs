@@ -79,8 +79,15 @@ impl LauncherState {
 
         let game = Game::new(&params.game_path, params.game_edition);
 
-        let diff = game.try_get_diff()?;
+        let try_diff = game.try_get_diff();
 
+        if try_diff.is_err() {
+            // Cannot check game state(e.g. internet is disconnected), assume it's latest.
+            tracing::warn!("Failed to check game state: {}. Assuming the game is the latest", try_diff.unwrap_err());
+            return Ok(Self::Launch);
+        }
+
+        let diff = try_diff.unwrap();
         match diff {
             VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
                 let mut predownload_voice = Vec::new();
