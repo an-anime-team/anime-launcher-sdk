@@ -48,6 +48,12 @@ impl Default for LauncherBehavior {
     }
 }
 
+const DEFAULT_INSTALL_THREADS: usize = 4;
+
+const fn default_install_update_threads() -> usize {
+    DEFAULT_INSTALL_THREADS
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
@@ -55,6 +61,8 @@ pub struct Launcher {
     pub style: LauncherStyle,
     pub temp: Option<PathBuf>,
     pub repairer: Repairer,
+    #[serde(default = "default_install_update_threads")]
+    pub install_update_threads: usize,
 
     #[cfg(feature = "environment-emulation")]
     pub environment: Environment,
@@ -71,6 +79,7 @@ impl Default for Launcher {
             style: LauncherStyle::default(),
             temp: launcher_dir().ok(),
             repairer: Repairer::default(),
+            install_update_threads: DEFAULT_INSTALL_THREADS,
 
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
@@ -118,6 +127,8 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => Repairer::from(value),
                 None => default.repairer
             },
+
+            install_update_threads: value.get("install_update_threads").and_then(JsonValue::as_u64).map(|n| n as usize).unwrap_or(DEFAULT_INSTALL_THREADS),
 
             #[cfg(feature = "environment-emulation")]
             environment: match value.get("environment") {
