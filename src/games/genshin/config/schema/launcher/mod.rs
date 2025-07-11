@@ -13,12 +13,18 @@ use crate::genshin::consts::launcher_dir;
 #[cfg(feature = "environment-emulation")]
 use crate::genshin::env_emulation::Environment;
 
+pub mod sophon;
+
+use sophon::SophonConfig;
+
 pub mod prelude {
     pub use super::{
         Launcher,
         LauncherStyle,
         LauncherBehavior
     };
+
+    pub use super::sophon::SophonConfig;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
@@ -48,21 +54,14 @@ impl Default for LauncherBehavior {
     }
 }
 
-const DEFAULT_INSTALL_THREADS: usize = 4;
-
-const fn default_install_update_threads() -> usize {
-    DEFAULT_INSTALL_THREADS
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
     pub edition: GameEdition,
     pub style: LauncherStyle,
     pub temp: Option<PathBuf>,
+    pub sophon: SophonConfig,
     pub repairer: Repairer,
-    #[serde(default = "default_install_update_threads")]
-    pub install_update_threads: usize,
 
     #[cfg(feature = "environment-emulation")]
     pub environment: Environment,
@@ -78,8 +77,8 @@ impl Default for Launcher {
             edition: GameEdition::from_system_lang(),
             style: LauncherStyle::default(),
             temp: launcher_dir().ok(),
+            sophon: SophonConfig::default(),
             repairer: Repairer::default(),
-            install_update_threads: DEFAULT_INSTALL_THREADS,
 
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
@@ -123,12 +122,15 @@ impl From<&JsonValue> for Launcher {
                 None => default.temp
             },
 
+            sophon: match value.get("sophon") {
+                Some(value) => SophonConfig::from(value),
+                None => default.sophon
+            },
+
             repairer: match value.get("repairer") {
                 Some(value) => Repairer::from(value),
                 None => default.repairer
             },
-
-            install_update_threads: value.get("install_update_threads").and_then(JsonValue::as_u64).map(|n| n as usize).unwrap_or(DEFAULT_INSTALL_THREADS),
 
             #[cfg(feature = "environment-emulation")]
             environment: match value.get("environment") {

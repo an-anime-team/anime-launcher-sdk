@@ -97,7 +97,7 @@ impl Schema {
 
     #[cfg(feature = "components")]
     /// Resolve real wine prefix path using wincompatlib
-    /// 
+    ///
     /// - For general wine build returns `game.wine.prefix`
     /// - For proton-like builds return `game.wine.prefix`/`pfx`
     pub fn get_wine_prefix_path(&self) -> PathBuf {
