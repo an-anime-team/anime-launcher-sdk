@@ -10,25 +10,14 @@ use anime_game_core::genshin::telemetry;
 use anime_game_core::genshin::game::Game;
 
 use crate::components::wine::Bundle as WineBundle;
-
 use crate::config::ConfigExt;
 use crate::genshin::config::Config;
-
-use crate::config::schema_blanks::prelude::{
-    WineDrives,
-    AllowedDrives
-};
-
+use crate::config::schema_blanks::prelude::{AllowedDrives, WineDrives};
 use crate::genshin::consts;
-
 #[cfg(feature = "fps-unlocker")]
 use super::fps_unlocker::FpsUnlocker;
-
 #[cfg(feature = "sessions")]
-use crate::{
-    sessions::SessionsExt,
-    genshin::sessions::Sessions
-};
+use crate::{genshin::sessions::Sessions, sessions::SessionsExt};
 
 #[derive(Debug, Clone)]
 struct Folders {
@@ -39,17 +28,22 @@ struct Folders {
 }
 
 fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
-    command.to_string()
+    command
+        .to_string()
         .replace("%build%", folders.wine.to_str().unwrap())
         .replace("%prefix%", folders.prefix.to_str().unwrap())
         .replace("%temp%", folders.game.to_str().unwrap())
-        .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
+        .replace(
+            "%launcher%",
+            &consts::launcher_dir().unwrap().to_string_lossy()
+        )
         .replace("%game%", folders.temp.to_str().unwrap())
 }
 
 /// Try to run the game
 ///
-/// This function will freeze thread it was called from while the game is running
+/// This function will freeze thread it was called from while the game is
+/// running
 #[tracing::instrument(level = "info", ret)]
 pub fn run() -> anyhow::Result<()> {
     tracing::info!("Preparing to run the game");
@@ -58,7 +52,7 @@ pub fn run() -> anyhow::Result<()> {
 
     let game_executable = match config.launcher.edition {
         genshin::GameEdition::Global => "GenshinImpact.exe",
-        genshin::GameEdition::China  => "YuanShen.exe"
+        genshin::GameEdition::China => "YuanShen.exe"
     };
 
     let game_path = config.game.path.for_edition(config.launcher.edition);
@@ -67,7 +61,8 @@ pub fn run() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
-    let Some(wine) = config.get_selected_wine()? else {
+    let Some(wine) = config.get_selected_wine()?
+    else {
         anyhow::bail!("Couldn't find wine executable");
     };
 
@@ -76,7 +71,11 @@ pub fn run() -> anyhow::Result<()> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+        game: config
+            .game
+            .path
+            .for_edition(config.launcher.edition)
+            .to_path_buf(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -85,7 +84,9 @@ pub fn run() -> anyhow::Result<()> {
     tracing::info!("Checking telemetry");
 
     if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
-        return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
+        return Err(anyhow::anyhow!(
+            "Telemetry server is not disabled: {server}"
+        ));
     }
 
     // Prepare fps unlocker
@@ -100,42 +101,63 @@ pub fn run() -> anyhow::Result<()> {
             Ok(Some(unlocker)) => unlocker,
 
             other => {
-                // Ok(None) means unknown version, so we should delete it before downloading newer one
-                // because otherwise downloader will try to continue downloading "partially downloaded" file
+                // Ok(None) means unknown version, so we should delete it before downloading
+                // newer one because otherwise downloader will try to continue
+                // downloading "partially downloaded" file
                 if let Ok(None) = other {
-                    std::fs::remove_file(FpsUnlocker::get_binary_in(&config.game.enhancements.fps_unlocker.path))?;
+                    std::fs::remove_file(FpsUnlocker::get_binary_in(
+                        &config.game.enhancements.fps_unlocker.path
+                    ))?;
                 }
 
                 tracing::info!("Unlocker is not downloaded. Downloading");
 
                 match FpsUnlocker::download(&config.game.enhancements.fps_unlocker.path) {
                     Ok(unlocker) => unlocker,
-                    Err(err) => return Err(anyhow::anyhow!("Failed to download FPS unlocker: {err}"))
+                    Err(err) => {
+                        return Err(anyhow::anyhow!("Failed to download FPS unlocker: {err}"));
+                    }
                 }
             }
         };
 
-        // If patch applying is disabled, then game_executable is either GenshinImpact.exe or YuanShen.exe
-        // so we don't need to check it here
+        // If patch applying is disabled, then game_executable is either
+        // GenshinImpact.exe or YuanShen.exe so we don't need to check it here
         let unlocker_config = &config.game.enhancements.fps_unlocker.config;
-        std::fs::write(game_path.join("fps_unlocker.bat"), format!("start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {}", unlocker.dir().to_string_lossy(), unlocker_config.fps, unlocker_config.interval))?;
+        std::fs::write(
+            game_path.join("fps_unlocker.bat"),
+            format!(
+                "start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {}",
+                unlocker.dir().to_string_lossy(),
+                unlocker_config.fps,
+                unlocker_config.interval
+            )
+        )?;
     }
 
     // Generate `config.ini` if environment emulation feature is presented
 
-    #[cfg(feature = "environment-emulation")] {
+    #[cfg(feature = "environment-emulation")]
+    {
         let game = Game::new(game_path, config.launcher.edition);
 
         std::fs::write(
             game_path.join("config.ini"),
-            config.launcher.environment.generate_config(game.get_version()?.to_string())
+            config
+                .launcher
+                .environment
+                .generate_config(game.get_version()?.to_string())
         )?;
     }
 
     // Prepare wine prefix drives
     let prefix_folder = config.get_wine_prefix_path();
 
-    config.game.wine.drives.map_folders(&folders.game, &prefix_folder)?;
+    config
+        .game
+        .wine
+        .drives
+        .map_folders(&folders.game, &prefix_folder)?;
 
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
@@ -154,23 +176,37 @@ pub fn run() -> anyhow::Result<()> {
         bash_command += "gamemoderun ";
     }
 
-    let run_command = features.command
+    let run_command = features
+        .command
         .map(|command| replace_keywords(command, &folders))
-        .unwrap_or(format!("'{}'", folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
+        .unwrap_or(format!(
+            "'{}'",
+            folders
+                .wine
+                .join(wine.files.wine64.unwrap_or(wine.files.wine))
+                .to_string_lossy()
+        ));
 
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("an_anime_game") {
+    if let Some(virtual_desktop) = config
+        .game
+        .wine
+        .virtual_desktop
+        .get_command("an_anime_game")
+    {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
 
-    windows_command += if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
-        "fps_unlocker.bat"
-    } else {
-        game_executable
-    };
+    windows_command +=
+        if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
+            "fps_unlocker.bat"
+        }
+        else {
+            game_executable
+        };
 
     windows_command += " ";
 
@@ -190,7 +226,10 @@ pub fn run() -> anyhow::Result<()> {
 
     // Bundle all windows arguments used to run the game into a single file
     if features.compact_launch {
-        std::fs::write(folders.game.join("compact_launch.bat"), format!("start {windows_command} {launch_args}\nexit"))?;
+        std::fs::write(
+            folders.game.join("compact_launch.bat"),
+            format!("start {windows_command} {launch_args}\nexit")
+        )?;
 
         windows_command = String::from("compact_launch.bat");
         launch_args = String::new();
@@ -213,10 +252,22 @@ pub fn run() -> anyhow::Result<()> {
         };
 
         bash_command = bash_command
-            .replace(folders.wine.to_str().unwrap(), sandboxed_folders.wine.to_str().unwrap())
-            .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
-            .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
-            .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
+            .replace(
+                folders.wine.to_str().unwrap(),
+                sandboxed_folders.wine.to_str().unwrap()
+            )
+            .replace(
+                folders.prefix.to_str().unwrap(),
+                sandboxed_folders.prefix.to_str().unwrap()
+            )
+            .replace(
+                folders.game.to_str().unwrap(),
+                sandboxed_folders.game.to_str().unwrap()
+            )
+            .replace(
+                folders.temp.to_str().unwrap(),
+                sandboxed_folders.temp.to_str().unwrap()
+            );
 
         bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
         folders = sandboxed_folders;
@@ -226,7 +277,10 @@ pub fn run() -> anyhow::Result<()> {
     bash_command = match &config.game.command {
         // Use user-given launch command
         Some(command) => replace_keywords(command, &folders)
-            .replace("%command%", &format!("{bash_command} {windows_command} {launch_args}"))
+            .replace(
+                "%command%",
+                &format!("{bash_command} {windows_command} {launch_args}")
+            )
             .replace("%bash_command%", &bash_command)
             .replace("%windows_command%", &windows_command)
             .replace("%launch_args%", &launch_args),
@@ -265,7 +319,13 @@ pub fn run() -> anyhow::Result<()> {
         wine_folder.push("files");
     }
 
-    command.envs(config.game.enhancements.hud.get_env_vars(config.game.enhancements.gamescope.enabled));
+    command.envs(
+        config
+            .game
+            .enhancements
+            .hud
+            .get_env_vars(config.game.enhancements.gamescope.enabled)
+    );
     command.envs(config.game.enhancements.fsr.get_env_vars());
 
     command.envs(config.game.wine.sync.get_env_vars());
@@ -283,22 +343,29 @@ pub fn run() -> anyhow::Result<()> {
 
     let variables = command
         .get_envs()
-        .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
+        .map(|(key, value)| {
+            format!(
+                "{}=\"{}\"",
+                key.to_string_lossy(),
+                value.unwrap_or_default().to_string_lossy()
+            )
+        })
         .fold(String::new(), |acc, env| acc + " " + &env);
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    let mut child = command.current_dir(config.game.path.for_edition(config.launcher.edition))
+    let mut child = command
+        .current_dir(config.game.path.for_edition(config.launcher.edition))
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
 
     // Create new game.log file to log all the game output
-    let game_output = Arc::new(Mutex::new(
-        File::create(consts::launcher_dir()?.join("game.log"))?
-    ));
+    let game_output = Arc::new(Mutex::new(File::create(
+        consts::launcher_dir()?.join("game.log")
+    )?));
 
     let written = Arc::new(AtomicUsize::new(0));
 
@@ -318,7 +385,8 @@ pub fn run() -> anyhow::Result<()> {
                     break;
                 }
 
-                let Ok(mut game_output) = game_output.lock() else {
+                let Ok(mut game_output) = game_output.lock()
+                else {
                     break;
                 };
 
@@ -352,7 +420,8 @@ pub fn run() -> anyhow::Result<()> {
                     break;
                 }
 
-                let Ok(mut game_output) = game_output.lock() else {
+                let Ok(mut game_output) = game_output.lock()
+                else {
                     break;
                 };
 
@@ -383,21 +452,29 @@ pub fn run() -> anyhow::Result<()> {
     drop(game_output);
 
     if let Some(join) = stdout_join {
-        join.join().map_err(|err| anyhow::anyhow!("Failed to join stdout reader thread: {err:?}"))??;
+        join.join()
+            .map_err(|err| anyhow::anyhow!("Failed to join stdout reader thread: {err:?}"))??;
     }
 
     if let Some(join) = stderr_join {
-        join.join().map_err(|err| anyhow::anyhow!("Failed to join stderr reader thread: {err:?}"))??;
+        join.join()
+            .map_err(|err| anyhow::anyhow!("Failed to join stderr reader thread: {err:?}"))??;
     }
 
     // Workaround for fast process closing (is it still a thing?)
     loop {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
-        let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
+        let output = Command::new("ps")
+            .arg("-A")
+            .stdout(Stdio::piped())
+            .output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
-        if !output.contains("GenshinImpact.e") && !output.contains("YuanShen.exe") && !output.contains("fpsunlock.exe") {
+        if !output.contains("GenshinImpact.e")
+            && !output.contains("YuanShen.exe")
+            && !output.contains("fpsunlock.exe")
+        {
             break;
         }
     }
