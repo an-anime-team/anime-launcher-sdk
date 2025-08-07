@@ -1,12 +1,11 @@
 use std::path::PathBuf;
 
-use md5::{Md5, Digest};
-
+use md5::{Digest, Md5};
 use anime_game_core::installer::downloader::Downloader;
 
 const LATEST_INFO: (&str, &str) = (
-    "c7c35331dd6d33f04847b7aabd1c0196",
-    "https://codeberg.org/mkrsym1/fpsunlock/releases/download/v1.2.0/fpsunlock.exe"
+    "d6f5922eaa438758ed928503265f9799",
+    "https://codeberg.org/mkrsym1/fpsunlock/releases/download/v1.2.1/fpsunlock.exe"
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,7 +15,7 @@ pub struct FpsUnlocker {
 
 impl FpsUnlocker {
     /// Get FpsUnlocker from its containment directory
-    /// 
+    ///
     /// Returns
     /// - `Err(..)` if failed to read `fpsunlock.exe` file
     /// - `Ok(None)` if version is not latest
@@ -24,11 +23,17 @@ impl FpsUnlocker {
     pub fn from_dir<T: Into<PathBuf> + std::fmt::Debug>(dir: T) -> anyhow::Result<Option<Self>> {
         let dir = dir.into();
 
-        let hash = format!("{:x}", Md5::digest(std::fs::read(dir.join("fpsunlock.exe"))?));
+        let hash = format!(
+            "{:x}",
+            Md5::digest(std::fs::read(dir.join("fpsunlock.exe"))?)
+        );
 
         Ok(if hash == LATEST_INFO.0 {
-            Some(Self { dir })
-        } else {
+            Some(Self {
+                dir
+            })
+        }
+        else {
             None
         })
     }
@@ -48,23 +53,21 @@ impl FpsUnlocker {
         }
 
         match downloader.download(dir.join("fpsunlock.exe"), |_, _| {}) {
-            Ok(_) => {
-                match Self::from_dir(dir) {
-                    Ok(Some(me)) => Ok(me),
+            Ok(_) => match Self::from_dir(dir) {
+                Ok(Some(me)) => Ok(me),
 
-                    Ok(None) => {
-                        tracing::error!("Invalid hash");
+                Ok(None) => {
+                    tracing::error!("Invalid hash");
 
-                        anyhow::bail!("Downloading failed: invalid fps unlocker hash");
-                    }
-
-                    Err(err) => {
-                        tracing::error!("Downloading failed: {err}");
-
-                        Err(err.into())
-                    }
+                    anyhow::bail!("Downloading failed: invalid fps unlocker hash");
                 }
-            }
+
+                Err(err) => {
+                    tracing::error!("Downloading failed: {err}");
+
+                    Err(err.into())
+                }
+            },
 
             Err(err) => {
                 tracing::error!("Downloading failed: {err}");

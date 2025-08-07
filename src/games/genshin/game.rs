@@ -127,7 +127,7 @@ pub fn run() -> anyhow::Result<()> {
         std::fs::write(
             game_path.join("fps_unlocker.bat"),
             format!(
-                "start {game_executable} %*\n\nZ:\ncd \"{}\"\nstart fpsunlock.exe {} {}",
+                "set gamedir=%cd%\ncd /d \"{}\"\nstart fpsunlock.exe {} {}\ncd /d %gamedir%\n{game_executable} %*",
                 unlocker.dir().to_string_lossy(),
                 unlocker_config.fps,
                 unlocker_config.interval
