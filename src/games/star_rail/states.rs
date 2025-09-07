@@ -209,7 +209,7 @@ impl LauncherState {
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
 
-            wine_prefix: config.get_wine_prefix_path(),
+            wine_prefix: config.game.wine.prefix,
             patch_folder: config.patch.path,
 
             selected_voices: voices,
