@@ -97,8 +97,10 @@ impl WineDrives {
             .join("dosdevices")
             .join(drive.to_drive());
 
-        if drive_folder.exists() {
-            std::fs::remove_file(&drive_folder)?;
+        match std::fs::remove_file(&drive_folder) {
+            Ok(_) => {},
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {},
+            Err(e) => return Err(e.into()),
         }
 
         std::os::unix::fs::symlink(symlink_folder.as_ref(), drive_folder)?;
