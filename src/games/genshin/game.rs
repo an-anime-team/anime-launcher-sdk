@@ -149,7 +149,6 @@ pub fn run() -> anyhow::Result<()> {
         )?;
     }
 
-
     config
         .game
         .wine
