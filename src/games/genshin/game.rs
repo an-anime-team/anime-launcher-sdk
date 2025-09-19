@@ -90,7 +90,7 @@ pub fn run() -> anyhow::Result<()> {
 
     // Prepare fps unlocker
     // 1) Download if needed
-    // 2) Generate fps_unlocker.bat
+    // 2) Construct the fps unlock invocation and set some vars for use later
 
     let mut fps_unlocker_exe_command = None::<String>;
     let mut fps_unlocker_dir = None::<String>;
