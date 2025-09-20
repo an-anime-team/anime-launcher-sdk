@@ -29,6 +29,8 @@ pub enum LauncherState {
 
     PrefixNotExists,
 
+    DxvkNotInstalled,
+
     // Always contains `VersionDiff::Diff`
     VoiceUpdateAvailable(VersionDiff),
 
@@ -72,6 +74,28 @@ impl LauncherState {
         // Check prefix existence
         if !params.wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
+        }
+
+        // Check dxvk installation
+ 
+        let reg_path = params.wine_prefix.join("user.reg");
+
+        let reg_content = std::fs::read_to_string(&reg_path)?;
+
+        let mut found_dxgi = false;
+
+        for line in reg_content.lines() {
+            if line.trim_start().starts_with("\"dxgi\"") {
+                found_dxgi = true;
+                
+                if !line.contains("\"native\"") {
+                    return Ok(Self::DxvkNotInstalled);
+                }
+            }
+        }
+
+        if !found_dxgi {
+            return Ok(Self::DxvkNotInstalled);
         }
 
         // Check game installation status
