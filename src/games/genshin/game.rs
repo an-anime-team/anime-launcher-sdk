@@ -90,7 +90,10 @@ pub fn run() -> anyhow::Result<()> {
 
     // Prepare fps unlocker
     // 1) Download if needed
-    // 2) Generate fps_unlocker.bat
+    // 2) Construct the fps unlock invocation and set some vars for use later
+
+    let mut fps_unlocker_exe_command = None::<String>;
+    let mut fps_unlocker_dir = None::<String>;
 
     #[cfg(feature = "fps-unlocker")]
     if config.game.enhancements.fps_unlocker.enabled {
@@ -120,18 +123,14 @@ pub fn run() -> anyhow::Result<()> {
             }
         };
 
-        // If patch applying is disabled, then game_executable is either
-        // GenshinImpact.exe or YuanShen.exe so we don't need to check it here
         let unlocker_config = &config.game.enhancements.fps_unlocker.config;
-        std::fs::write(
-            game_path.join("fps_unlocker.bat"),
-            format!(
-                "set gamedir=%cd%\ncd /d \"{}\"\nstart fpsunlock.exe {} {}\ncd /d %gamedir%\n{game_executable} %*",
-                unlocker.dir().to_string_lossy(),
-                unlocker_config.fps,
-                unlocker_config.interval
-            )
-        )?;
+        fps_unlocker_exe_command = Some(format!(
+            "{}/fpsunlock.exe {} {}",
+            unlocker.dir().to_string_lossy(),
+            unlocker_config.fps,
+            unlocker_config.interval
+        ));
+        fps_unlocker_dir = Some(unlocker.dir().to_string_lossy().into_owned());
     }
 
     // Generate `config.ini` if environment emulation feature is presented
@@ -148,7 +147,6 @@ pub fn run() -> anyhow::Result<()> {
                 .generate_config(game.get_version()?.to_string())
         )?;
     }
-
 
     config
         .game
@@ -197,14 +195,7 @@ pub fn run() -> anyhow::Result<()> {
         windows_command += " ";
     }
 
-    windows_command +=
-        if config.game.enhancements.fps_unlocker.enabled && cfg!(feature = "fps-unlocker") {
-            "fps_unlocker.bat"
-        }
-        else {
-            game_executable
-        };
-
+    windows_command += game_executable;
     windows_command += " ";
 
     if config.game.wine.borderless {
@@ -221,10 +212,33 @@ pub fn run() -> anyhow::Result<()> {
         bash_command = format!("{gamescope} -- {bash_command}");
     }
 
+    #[cfg(feature = "fps-unlocker")]
+    if config.game.enhancements.fps_unlocker.enabled {
+        if let Some(fps_unlocker_exe_command) = fps_unlocker_exe_command {
+            bash_command = format!("{run_command} {fps_unlocker_exe_command} & {bash_command}");
+        }
+    }
+
+    // Finalize launching command
+    bash_command = match &config.game.command {
+        // Use user-given launch command
+        Some(command) => replace_keywords(command, &folders)
+            .replace(
+                "%command%",
+                &format!("{bash_command} {windows_command} {launch_args}")
+            )
+            .replace("%bash_command%", &bash_command)
+            .replace("%windows_command%", &windows_command)
+            .replace("%launch_args%", &launch_args),
+
+        // Combine bash and windows parts of the command
+        None => format!("{bash_command} {windows_command} {launch_args}")
+    };
+
     // bwrap <params> -- <command to run>
     #[cfg(feature = "sandbox")]
     if config.sandbox.enabled {
-        let bwrap = config.sandbox.get_command(
+        let mut bwrap = config.sandbox.get_command(
             folders.wine.to_str().unwrap(),
             folders.prefix.to_str().unwrap(),
             folders.game.to_str().unwrap()
@@ -236,6 +250,14 @@ pub fn run() -> anyhow::Result<()> {
             game: PathBuf::from("/tmp/sandbox/game"),
             temp: PathBuf::from("/tmp")
         };
+
+        #[cfg(feature = "fps-unlocker")]
+        if config.game.enhancements.fps_unlocker.enabled {
+            if let Some(fps_unlocker_dir) = fps_unlocker_dir {
+                bwrap += &format!(" --bind {fps_unlocker_dir} /tmp/sandbox/fps-unlocker");
+                bash_command = bash_command.replace(&fps_unlocker_dir, "/tmp/sandbox/fps-unlocker");
+            }
+        }
 
         bash_command = bash_command
             .replace(
@@ -255,25 +277,9 @@ pub fn run() -> anyhow::Result<()> {
                 sandboxed_folders.temp.to_str().unwrap()
             );
 
-        bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
+        bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- bash -c \"{bash_command}\"");
         folders = sandboxed_folders;
     }
-
-    // Finalize launching command
-    bash_command = match &config.game.command {
-        // Use user-given launch command
-        Some(command) => replace_keywords(command, &folders)
-            .replace(
-                "%command%",
-                &format!("{bash_command} {windows_command} {launch_args}")
-            )
-            .replace("%bash_command%", &bash_command)
-            .replace("%windows_command%", &windows_command)
-            .replace("%launch_args%", &launch_args),
-
-        // Combine bash and windows parts of the command
-        None => format!("{bash_command} {windows_command} {launch_args}")
-    };
 
     let mut command = Command::new("bash");
 
