@@ -30,6 +30,9 @@ pub enum LauncherState {
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
 
+    /// Always contains `VersionDiff::Outdated`
+    GameOutdated(VersionDiff),
+
     /// Always contains `VersionDiff::NotInstalled`
     GameNotInstalled(VersionDiff)
 }
@@ -137,6 +140,9 @@ impl LauncherState {
             VersionDiff::Diff {
                 ..
             } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::Outdated {
+                ..
+            } => Ok(Self::GameOutdated(diff)),
             VersionDiff::NotInstalled {
                 ..
             } => Ok(Self::GameNotInstalled(diff))
