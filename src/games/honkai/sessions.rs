@@ -1,16 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::sessions::{
-    SessionsExt,
-    Sessions as SessionsDescriptor
-};
-
+use crate::sessions::{Sessions as SessionsDescriptor, SessionsExt};
 use super::consts::launcher_dir;
 
 /// Get default sessions file path
-/// 
+///
 /// `$HOME/.local/share/honkers-launcher/sessions.json`
 #[inline]
 pub fn sessions_file() -> anyhow::Result<PathBuf> {
@@ -44,13 +40,19 @@ impl SessionsExt for Sessions {
     }
 
     fn set_sessions(sessions: SessionsDescriptor<Self::SessionData>) -> anyhow::Result<()> {
-        Ok(std::fs::write(sessions_file()?, serde_json::to_string_pretty(&sessions)?)?)
+        Ok(std::fs::write(
+            sessions_file()?,
+            serde_json::to_string_pretty(&sessions)?
+        )?)
     }
 
     fn update(name: String, prefix: impl AsRef<Path>) -> anyhow::Result<()> {
         let mut sessions = Self::get_sessions()?;
 
-        tracing::info!("Updating session '{name}' from prefix: {:?}", prefix.as_ref());
+        tracing::info!(
+            "Updating session '{name}' from prefix: {:?}",
+            prefix.as_ref()
+        );
 
         let mut new_session = Self::SessionData {
             game_reg: String::new(),
@@ -61,7 +63,6 @@ impl SessionsExt for Sessions {
             if entry.starts_with("[Software\\\\miHoYo\\\\Honkai Impact 3rd]") {
                 new_session.game_reg = entry.to_owned();
             }
-
             else if entry.starts_with("[Software\\\\miHoYoSDK]") {
                 new_session.sdk_reg = entry.to_owned();
             }
@@ -75,7 +76,8 @@ impl SessionsExt for Sessions {
     fn apply(name: String, prefix: impl AsRef<Path>) -> anyhow::Result<()> {
         let sessions = Self::get_sessions()?;
 
-        let Some(session) = sessions.sessions.get(&name) else {
+        let Some(session) = sessions.sessions.get(&name)
+        else {
             anyhow::bail!("Session with given name doesn't exist");
         };
 
@@ -87,11 +89,9 @@ impl SessionsExt for Sessions {
                 let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\Honkai Impact 3rd]") {
                     session.game_reg.clone()
                 }
-    
                 else if entry.starts_with("[Software\\\\miHoYoSDK]") {
                     session.sdk_reg.clone()
                 }
-
                 else {
                     entry.to_owned()
                 };
@@ -100,6 +100,9 @@ impl SessionsExt for Sessions {
             })
             .collect();
 
-        Ok(std::fs::write(prefix.as_ref().join("user.reg"), format!("{}\n", entries.trim_end()))?)
+        Ok(std::fs::write(
+            prefix.as_ref().join("user.reg"),
+            format!("{}\n", entries.trim_end())
+        )?)
     }
 }

@@ -62,7 +62,7 @@ impl LauncherState {
         }
 
         // Check dxvk installation
- 
+
         let reg_path = params.wine_prefix.join("user.reg");
 
         let reg_content = std::fs::read_to_string(&reg_path)?;
@@ -72,7 +72,7 @@ impl LauncherState {
         for line in reg_content.lines() {
             if line.trim_start().starts_with("\"dxgi\"") {
                 found_dxgi = true;
-                
+
                 if !line.contains("\"native\"") {
                     return Ok(Self::DxvkNotInstalled);
                 }
@@ -109,14 +109,14 @@ impl LauncherState {
 
                 // Check telemetry servers
                 let disabled = telemetry::is_disabled(params.game_edition)
-
                     // Return true if there's no domain name resolved, or false otherwise
                     .map(|result| result.is_none())
-
                     // And return true if there's an error happened during domain name resolving
                     // FIXME: might not be a good idea? Idk
                     .unwrap_or_else(|err| {
-                        tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
+                        tracing::warn!(
+                            "Failed to check telemetry servers: {err}. Assuming they're disabled"
+                        );
 
                         true
                     });
@@ -126,16 +126,20 @@ impl LauncherState {
                 }
 
                 match metadata.games.hi3rd.global.get_status(version) {
-                    JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
+                    JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
                     JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
-                    JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
-                    JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe),
+                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
+                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe),
                     JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
                 }
             }
 
-            VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
-            VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
+            VersionDiff::Diff {
+                ..
+            } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::NotInstalled {
+                ..
+            } => Ok(Self::GameNotInstalled(diff))
         }
     }
 
@@ -148,7 +152,9 @@ impl LauncherState {
 
         match &config.game.wine.selected {
             #[cfg(feature = "components")]
-            Some(selected) if !config.game.wine.builds.join(selected).exists() => return Ok(Self::WineNotInstalled),
+            Some(selected) if !config.game.wine.builds.join(selected).exists() => {
+                return Ok(Self::WineNotInstalled);
+            }
 
             None => return Ok(Self::WineNotInstalled),
 
@@ -158,7 +164,11 @@ impl LauncherState {
         Self::get(LauncherStateParams {
             wine_prefix: config.game.wine.prefix,
 
-            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_path: config
+                .game
+                .path
+                .for_edition(config.launcher.edition)
+                .to_path_buf(),
             game_edition: config.launcher.edition,
 
             patch_folder: config.patch.path,
