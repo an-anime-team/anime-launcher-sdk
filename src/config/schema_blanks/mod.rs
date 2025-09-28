@@ -5,6 +5,7 @@ pub mod hud;
 pub mod fps;
 pub mod window_mode;
 pub mod dxvk;
+pub mod sophon;
 
 pub mod wine;
 pub mod gamescope;
@@ -19,6 +20,7 @@ pub mod prelude {
     pub use super::hud::HUD;
     pub use super::fps::Fps;
     pub use super::window_mode::WindowMode;
+    pub use super::sophon::SophonConfig;
 
     pub use super::wine::prelude::*;
     pub use super::gamescope::prelude::*;
