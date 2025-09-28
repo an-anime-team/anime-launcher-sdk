@@ -1,21 +1,15 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-
 use enum_ordinalize::Ordinalize;
-
 use anime_game_core::honkai::consts::GameEdition;
 
 use crate::config::schema_blanks::prelude::*;
 use crate::honkai::consts::launcher_dir;
 
 pub mod prelude {
-    pub use super::{
-        Launcher,
-        LauncherStyle,
-        LauncherBehavior
-    };
+    pub use super::{Launcher, LauncherBehavior, LauncherStyle};
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
@@ -51,6 +45,7 @@ pub struct Launcher {
     pub edition: GameEdition,
     pub style: LauncherStyle,
     pub temp: Option<PathBuf>,
+    pub sophon: SophonConfig,
     pub repairer: Repairer,
     pub behavior: LauncherBehavior
 }
@@ -63,6 +58,7 @@ impl Default for Launcher {
             edition: GameEdition::from_system_lang(),
             style: LauncherStyle::default(),
             temp: launcher_dir().ok(),
+            sophon: SophonConfig::default(),
             repairer: Repairer::default(),
             behavior: LauncherBehavior::default()
         }
@@ -93,14 +89,20 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => {
                     if value.is_null() {
                         None
-                    } else {
+                    }
+                    else {
                         match value.as_str() {
                             Some(value) => Some(PathBuf::from(value)),
                             None => default.temp
                         }
                     }
-                },
+                }
                 None => default.temp
+            },
+
+            sophon: match value.get("sophon") {
+                Some(value) => SophonConfig::from(value),
+                None => default.sophon
             },
 
             repairer: match value.get("repairer") {
