@@ -53,6 +53,7 @@ pub struct Launcher {
     pub language: String,
     pub edition: GameEdition,
     pub style: LauncherStyle,
+    pub video_background: bool,
     pub temp: Option<PathBuf>,
     pub repairer: Repairer,
 
@@ -69,6 +70,7 @@ impl Default for Launcher {
             language: String::from("en-us"),
             edition: GameEdition::from_system_lang(),
             style: LauncherStyle::default(),
+            video_background: true,
             temp: launcher_dir().ok(),
             repairer: Repairer::default(),
 
@@ -101,6 +103,11 @@ impl From<&JsonValue> for Launcher {
             style: match value.get("style") {
                 Some(value) => serde_json::from_value(value.to_owned()).unwrap_or_default(),
                 None => default.style
+            },
+
+            video_background: match value.get("video_background") {
+                Some(value) => serde_json::from_value(value.to_owned()).unwrap_or(true),
+                None => default.video_background
             },
 
             temp: match value.get("temp") {
