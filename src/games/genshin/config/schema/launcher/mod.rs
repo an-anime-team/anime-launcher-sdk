@@ -13,8 +13,6 @@ use crate::genshin::consts::launcher_dir;
 #[cfg(feature = "environment-emulation")]
 use crate::genshin::env_emulation::Environment;
 
-pub mod sophon;
-
 use sophon::SophonConfig;
 
 pub mod prelude {
