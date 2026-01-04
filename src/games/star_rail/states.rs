@@ -148,11 +148,21 @@ impl LauncherState {
                 }
 
                 // Fetch patch metadata
-                let metadata = jadeite::get_metadata()?;
+                let patch_status = match jadeite::get_metadata() {
+                    Ok(metadata) => {
+                        if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
+                            return Ok(Self::PatchUpdateAvailable);
+                        }
 
-                if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
-                    return Ok(Self::PatchUpdateAvailable);
-                }
+                        metadata.games.hsr
+                            .for_edition(params.game_edition)
+                            .get_status(version)
+                    },
+                    Err(err) => {
+                        tracing::warn!("Failed to fetch jadeite metadata: {err}. Proceeding with local version check only");
+                        JadeitePatchStatusVariant::Unverified
+                    }
+                };
 
                 // Check telemetry servers
                 let disabled = telemetry::is_disabled(params.game_edition)
@@ -171,24 +181,19 @@ impl LauncherState {
                 if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
                 }
-                
-                // Request current patch status from the metadata file
-                let patch = metadata.games.hsr
-                    .for_edition(params.game_edition)
-                    .get_status(version);
 
                 // Check if update predownload available
                 if let VersionDiff::Predownload { .. } = diff {
                     Ok(Self::PredownloadAvailable {
                         game: diff,
                         voices: predownload_voice,
-                        patch
+                        patch: patch_status
                     })
                 }
 
                 // Otherwise we can launch the game or say that the patch is unstable
                 else {
-                    match patch {
+                    match patch_status {
                         JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
                         JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
                         JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
