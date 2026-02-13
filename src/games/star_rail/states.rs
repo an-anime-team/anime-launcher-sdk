@@ -25,6 +25,8 @@ pub enum LauncherState {
 
     PrefixNotExists,
 
+    Mfc140NotInstalled,
+
     DxvkNotInstalled,
 
     /// Always contains `VersionDiff::Predownload`
@@ -79,6 +81,17 @@ impl LauncherState {
         // Check prefix existence
         if !params.wine_prefix.join("drive_c").exists() {
             return Ok(Self::PrefixNotExists);
+        }
+
+        // Check MFC140 installation
+        let mfc140_dll = params.wine_prefix
+            .join("drive_c")
+            .join("windows")
+            .join("system32")
+            .join("mfc140.dll");
+
+        if !mfc140_dll.exists() {
+            return Ok(Self::Mfc140NotInstalled);
         }
 
         // Check dxvk installation
