@@ -1,27 +1,18 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-
 use enum_ordinalize::Ordinalize;
-
 use anime_game_core::genshin::consts::GameEdition;
+use sophon::SophonConfig;
 
 use crate::config::schema_blanks::prelude::*;
 use crate::genshin::consts::launcher_dir;
-
 #[cfg(feature = "environment-emulation")]
 use crate::genshin::env_emulation::Environment;
 
-use sophon::SophonConfig;
-
 pub mod prelude {
-    pub use super::{
-        Launcher,
-        LauncherStyle,
-        LauncherBehavior
-    };
-
+    pub use super::{Launcher, LauncherBehavior, LauncherStyle};
     pub use super::sophon::SophonConfig;
 }
 
@@ -110,13 +101,14 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => {
                     if value.is_null() {
                         None
-                    } else {
+                    }
+                    else {
                         match value.as_str() {
                             Some(value) => Some(PathBuf::from(value)),
                             None => default.temp
                         }
                     }
-                },
+                }
                 None => default.temp
             },
 
