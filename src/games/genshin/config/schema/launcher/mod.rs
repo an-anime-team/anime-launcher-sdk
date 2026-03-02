@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use enum_ordinalize::Ordinalize;
 use anime_game_core::genshin::consts::GameEdition;
-use sophon::SophonConfig;
 
 use crate::config::schema_blanks::prelude::*;
 use crate::genshin::consts::launcher_dir;
@@ -12,8 +11,8 @@ use crate::genshin::consts::launcher_dir;
 use crate::genshin::env_emulation::Environment;
 
 pub mod prelude {
+    pub use crate::config::schema_blanks::prelude::SophonConfig;
     pub use super::{Launcher, LauncherBehavior, LauncherStyle};
-    pub use super::sophon::SophonConfig;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
