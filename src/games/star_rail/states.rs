@@ -84,7 +84,8 @@ impl LauncherState {
         }
 
         // Check MFC140 installation
-        let mfc140_dll = params.wine_prefix
+        let mfc140_dll = params
+            .wine_prefix
             .join("drive_c")
             .join("windows")
             .join("system32")
@@ -95,7 +96,7 @@ impl LauncherState {
         }
 
         // Check dxvk installation
- 
+
         let reg_path = params.wine_prefix.join("user.reg");
 
         let reg_content = std::fs::read_to_string(&reg_path)?;
@@ -105,7 +106,7 @@ impl LauncherState {
         for line in reg_content.lines() {
             if line.trim_start().starts_with("\"dxgi\"") {
                 found_dxgi = true;
-                
+
                 if !line.contains("\"native\"") {
                     return Ok(Self::DxvkNotInstalled);
                 }
@@ -123,7 +124,12 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest { version, .. } | VersionDiff::Predownload { current: version, .. } => {
+            VersionDiff::Latest {
+                version, ..
+            }
+            | VersionDiff::Predownload {
+                current: version, ..
+            } => {
                 let mut predownload_voice = Vec::new();
 
                 for locale in params.selected_voices {
@@ -134,21 +140,43 @@ impl LauncherState {
                     // Replace voice package struct with the one constructed in the game's folder
                     // so it'll properly calculate its difference instead of saying "not installed"
                     if voice_package.is_installed_in(&params.game_path) {
-                        voice_package = match VoicePackage::new(get_voice_package_path(&params.game_path, params.game_edition, voice_package.locale()), params.game_edition) {
+                        voice_package = match VoicePackage::new(
+                            get_voice_package_path(
+                                &params.game_path,
+                                params.game_edition,
+                                voice_package.locale()
+                            ),
+                            params.game_edition
+                        ) {
                             Some(locale) => locale,
-                            None => return Err(anyhow::anyhow!("Failed to load {} voice package", voice_package.locale().to_name()))
+                            None => {
+                                return Err(anyhow::anyhow!(
+                                    "Failed to load {} voice package",
+                                    voice_package.locale().to_name()
+                                ));
+                            }
                         };
                     }
 
                     let diff = voice_package.try_get_diff()?;
 
                     match diff {
-                        VersionDiff::Latest { .. } => (),
-                        VersionDiff::Predownload { .. } => predownload_voice.push(diff),
+                        VersionDiff::Latest {
+                            ..
+                        } => (),
+                        VersionDiff::Predownload {
+                            ..
+                        } => predownload_voice.push(diff),
 
-                        VersionDiff::Diff { .. } => return Ok(Self::VoiceUpdateAvailable(diff)),
-                        VersionDiff::Outdated { .. } => return Ok(Self::VoiceOutdated(diff)),
-                        VersionDiff::NotInstalled { .. } => return Ok(Self::VoiceNotInstalled(diff))
+                        VersionDiff::Diff {
+                            ..
+                        } => return Ok(Self::VoiceUpdateAvailable(diff)),
+                        VersionDiff::Outdated {
+                            ..
+                        } => return Ok(Self::VoiceOutdated(diff)),
+                        VersionDiff::NotInstalled {
+                            ..
+                        } => return Ok(Self::VoiceNotInstalled(diff))
                     }
                 }
 
@@ -167,26 +195,30 @@ impl LauncherState {
                             return Ok(Self::PatchUpdateAvailable);
                         }
 
-                        metadata.games.hsr
+                        metadata
+                            .games
+                            .hsr
                             .for_edition(params.game_edition)
                             .get_status(version)
-                    },
+                    }
                     Err(err) => {
-                        tracing::warn!("Failed to fetch jadeite metadata: {err}. Proceeding with local version check only");
+                        tracing::warn!(
+                            "Failed to fetch jadeite metadata: {err}. Proceeding with local version check only"
+                        );
                         JadeitePatchStatusVariant::Unverified
                     }
                 };
 
                 // Check telemetry servers
                 let disabled = telemetry::is_disabled(params.game_edition)
-
                     // Return true if there's no domain name resolved, or false otherwise
                     .map(|result| result.is_none())
-
                     // And return true if there's an error happened during domain name resolving
                     // FIXME: might not be a good idea? Idk
                     .unwrap_or_else(|err| {
-                        tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
+                        tracing::warn!(
+                            "Failed to check telemetry servers: {err}. Assuming they're disabled"
+                        );
 
                         true
                     });
@@ -196,29 +228,37 @@ impl LauncherState {
                 }
 
                 // Check if update predownload available
-                if let VersionDiff::Predownload { .. } = diff {
+                if let VersionDiff::Predownload {
+                    ..
+                } = diff
+                {
                     Ok(Self::PredownloadAvailable {
                         game: diff,
                         voices: predownload_voice,
                         patch: patch_status
                     })
                 }
-
                 // Otherwise we can launch the game or say that the patch is unstable
                 else {
                     match patch_status {
-                        JadeitePatchStatusVariant::Verified   => Ok(Self::Launch),
+                        JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
                         JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
-                        JadeitePatchStatusVariant::Broken     => Ok(Self::PatchBroken),
-                        JadeitePatchStatusVariant::Unsafe     => Ok(Self::PatchUnsafe),
+                        JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
+                        JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe),
                         JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
                     }
                 }
             }
 
-            VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
-            VersionDiff::Outdated { .. } => Ok(Self::GameOutdated(diff)),
-            VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
+            VersionDiff::Diff {
+                ..
+            } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::Outdated {
+                ..
+            } => Ok(Self::GameOutdated(diff)),
+            VersionDiff::NotInstalled {
+                ..
+            } => Ok(Self::GameNotInstalled(diff))
         }
     }
 
@@ -231,7 +271,9 @@ impl LauncherState {
 
         match &config.game.wine.selected {
             #[cfg(feature = "components")]
-            Some(selected) if !config.game.wine.builds.join(selected).exists() => return Ok(Self::WineNotInstalled),
+            Some(selected) if !config.game.wine.builds.join(selected).exists() => {
+                return Ok(Self::WineNotInstalled);
+            }
 
             None => return Ok(Self::WineNotInstalled),
 
@@ -243,12 +285,21 @@ impl LauncherState {
         for voice in &config.game.voices {
             voices.push(match VoiceLocale::from_str(voice) {
                 Some(locale) => locale,
-                None => return Err(anyhow::anyhow!("Incorrect voice locale \"{}\" specified in the config", voice))
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "Incorrect voice locale \"{}\" specified in the config",
+                        voice
+                    ));
+                }
             });
         }
 
         Self::get(LauncherStateParams {
-            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_path: config
+                .game
+                .path
+                .for_edition(config.launcher.edition)
+                .to_path_buf(),
             game_edition: config.launcher.edition,
 
             wine_prefix: config.game.wine.prefix,
