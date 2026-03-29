@@ -84,14 +84,7 @@ impl LauncherState {
         }
 
         // Check MFC140 installation
-        let mfc140_dll = params
-            .wine_prefix
-            .join("drive_c")
-            .join("windows")
-            .join("system32")
-            .join("mfc140.dll");
-
-        if !mfc140_dll.exists() {
+        if !anime_game_core::patches::mfc140::is_installed(&params.wine_prefix) {
             return Ok(Self::Mfc140NotInstalled);
         }
 
