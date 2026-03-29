@@ -47,6 +47,8 @@ pub struct Launcher {
     pub language: String,
     pub edition: GameEdition,
     pub style: LauncherStyle,
+    pub video_background: bool,
+    pub background_index: u8,
     pub temp: Option<PathBuf>,
     pub sophon: SophonConfig,
     pub repairer: Repairer,
@@ -64,6 +66,8 @@ impl Default for Launcher {
             language: String::from("en-us"),
             edition: GameEdition::from_system_lang(),
             style: LauncherStyle::default(),
+            video_background: true,
+            background_index: 0,
             temp: launcher_dir().ok(),
             sophon: SophonConfig::default(),
             repairer: Repairer::default(),
@@ -95,6 +99,16 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => serde_json::from_value(value.to_owned()).unwrap_or_default(),
                 None => default.style
             },
+
+            video_background: value
+                .get("video_background")
+                .and_then(|value| serde_json::from_value(value.to_owned()).ok())
+                .unwrap_or(default.video_background),
+
+            background_index: value
+                .get("background_index")
+                .and_then(|value| serde_json::from_value(value.to_owned()).ok())
+                .unwrap_or(default.background_index),
 
             temp: match value.get("temp") {
                 Some(value) => {
