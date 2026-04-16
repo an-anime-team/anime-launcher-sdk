@@ -27,7 +27,8 @@ macro_rules! config_impl_wine_schema {
             pub drives: WineDrives,
             pub virtual_desktop: VirtualDesktop,
             pub shared_libraries: SharedLibraries,
-            pub timeout_fix: bool
+            pub timeout_fix: bool,
+            pub winewayland: bool
         }
 
         impl Default for Wine {
@@ -45,7 +46,8 @@ macro_rules! config_impl_wine_schema {
                     drives: WineDrives::default(),
                     virtual_desktop: VirtualDesktop::default(),
                     shared_libraries: SharedLibraries::default(),
-                    timeout_fix: false
+                    timeout_fix: false,
+                    winewayland: false
                 }
             }
         }
@@ -106,6 +108,10 @@ macro_rules! config_impl_wine_schema {
                     timeout_fix: value.get("timeout_fix")
                         .and_then(|value| value.as_bool())
                         .unwrap_or(default.timeout_fix),
+
+                    winewayland: value.get("winewayland")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(default.winewayland),
                 }
             }
         }

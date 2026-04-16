@@ -332,6 +332,10 @@ pub fn run() -> anyhow::Result<bool> {
         command.env("WINE_ENABLE_TIMEOUT_FIX", "1");
     }
 
+    if config.game.wine.winewayland {
+        command.env("DISPLAY", "");
+    }
+
     command.envs(&config.game.environment);
 
     #[cfg(feature = "sessions")]
