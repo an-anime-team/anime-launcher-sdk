@@ -43,8 +43,10 @@ fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
 ///
 /// This function will freeze thread it was called from while the game is
 /// running
+///
+/// Returns `true` if driverError.log was created during a short-lived session.
 #[tracing::instrument(level = "info", ret)]
-pub fn run() -> anyhow::Result<()> {
+pub fn run() -> anyhow::Result<bool> {
     tracing::info!("Preparing to run the game");
 
     let config = Config::get()?;
@@ -281,6 +283,12 @@ pub fn run() -> anyhow::Result<()> {
         folders = sandboxed_folders;
     }
 
+    // delete driverError.log so we can detect if timeout fix is needed
+    let driver_error_log = game_path.join("driverError.log");
+    let _ = std::fs::remove_file(&driver_error_log);
+
+    let launch_time = std::time::Instant::now();
+
     let mut command = Command::new("bash");
 
     command.arg("-c");
@@ -319,6 +327,14 @@ pub fn run() -> anyhow::Result<()> {
     command.envs(config.game.wine.sync.get_env_vars());
     command.envs(config.game.wine.language.get_env_vars());
     command.envs(config.game.wine.shared_libraries.get_env_vars(wine_folder));
+
+    if config.game.wine.timeout_fix {
+        command.env("WINE_ENABLE_TIMEOUT_FIX", "1");
+    }
+
+    if config.game.wine.winewayland {
+        command.env("DISPLAY", "");
+    }
 
     command.envs(&config.game.environment);
 
@@ -472,5 +488,11 @@ pub fn run() -> anyhow::Result<()> {
         Sessions::update(current, &config.game.wine.prefix)?;
     }
 
-    Ok(())
+    // suggest enabling the timeout fix if:
+    // - not already enabled
+    // - game exited within 20 seconds
+    // - driverError.log was recreated during the session
+    Ok(!config.game.wine.timeout_fix
+        && launch_time.elapsed().as_secs() < 20
+        && driver_error_log.exists())
 }
