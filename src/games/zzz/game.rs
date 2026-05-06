@@ -358,9 +358,9 @@ pub fn run() -> anyhow::Result<bool> {
 
     // suggest enabling the timeout fix if:
     // - not already enabled
-    // - game exited within 20 seconds
+    // - game exited within 30 seconds
     // - driverError.log was recreated during the session
     Ok(!config.game.wine.timeout_fix
-        && launch_time.elapsed().as_secs() < 20
+        && launch_time.elapsed().as_secs() < 30
         && driver_error_log.exists())
 }
