@@ -211,6 +211,10 @@ pub fn run() -> anyhow::Result<()> {
     command.envs(config.game.wine.language.get_env_vars());
     command.envs(config.game.wine.shared_libraries.get_env_vars(wine_folder));
 
+    if config.game.wine.winewayland {
+        command.env("DISPLAY", "");
+    }
+
     command.envs(&config.game.environment);
 
     #[cfg(feature = "sessions")]
