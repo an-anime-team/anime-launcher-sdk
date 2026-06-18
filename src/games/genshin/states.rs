@@ -64,6 +64,10 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub wine_prefix: PathBuf,
     pub selected_voices: Vec<VoiceLocale>,
 
+    /// When `false`, the launcher will not check nor automatically disable
+    /// game telemetry servers (treats telemetry as already disabled).
+    pub disable_telemetry: bool,
+
     pub status_updater: F
 }
 
@@ -135,8 +139,14 @@ impl LauncherState {
                     }
                 }
 
-                // Check telemetry servers
-                let disabled = telemetry::is_disabled(params.game_edition)
+                // Check telemetry servers (skipped when the user opted out of
+                // automatic telemetry disabling)
+                let disabled = if !params.disable_telemetry {
+                    true
+                }
+
+                else {
+                    telemetry::is_disabled(params.game_edition)
 
                     // Return true if there's no domain name resolved, or false otherwise
                     .map(|result| result.is_none())
@@ -147,7 +157,8 @@ impl LauncherState {
                         tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
 
                         true
-                    });
+                    })
+                };
 
                 if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
@@ -204,6 +215,8 @@ impl LauncherState {
 
             wine_prefix: config.game.wine.prefix,
             selected_voices: voices,
+
+            disable_telemetry: config.launcher.disable_telemetry,
 
             status_updater
         })

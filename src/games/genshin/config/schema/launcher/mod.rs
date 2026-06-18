@@ -56,6 +56,11 @@ pub struct Launcher {
     #[cfg(feature = "environment-emulation")]
     pub environment: Environment,
 
+    /// Whether the launcher should automatically disable game telemetry servers.
+    ///
+    /// Defaults to `true` to keep the original behavior of always disabling telemetry.
+    pub disable_telemetry: bool,
+
     pub behavior: LauncherBehavior
 }
 
@@ -74,6 +79,8 @@ impl Default for Launcher {
 
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
+
+            disable_telemetry: true,
 
             behavior: LauncherBehavior::default()
         }
@@ -140,6 +147,11 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.environment),
                 None => default.environment
             },
+
+            disable_telemetry: value
+                .get("disable_telemetry")
+                .and_then(|value| serde_json::from_value(value.to_owned()).ok())
+                .unwrap_or(default.disable_telemetry),
 
             behavior: match value.get("behavior") {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.behavior),
