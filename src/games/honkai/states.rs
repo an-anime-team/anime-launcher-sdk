@@ -27,8 +27,17 @@ pub enum LauncherState {
 
     DxvkNotInstalled,
 
+    /// Always contains `VersionDiff::Predownload`
+    PredownloadAvailable {
+        game: VersionDiff,
+        patch: JadeitePatchStatusVariant
+    },
+
     // Always contains `VersionDiff::Diff`
     GameUpdateAvailable(VersionDiff),
+
+    /// Always contains `VersionDiff::Outdated`
+    GameOutdated(VersionDiff),
 
     /// Always contains `VersionDiff::NotInstalled`
     GameNotInstalled(VersionDiff)
@@ -92,7 +101,12 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest(version) => {
+            VersionDiff::Latest {
+                version, ..
+            }
+            | VersionDiff::Predownload {
+                current: version, ..
+            } => {
                 // Check game patch status
                 (params.status_updater)(StateUpdating::Patch);
 
@@ -102,11 +116,25 @@ impl LauncherState {
                 }
 
                 // Fetch patch metadata
-                let metadata = jadeite::get_metadata()?;
+                let patch_status = match jadeite::get_metadata() {
+                    Ok(metadata) => {
+                        if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
+                            return Ok(Self::PatchUpdateAvailable);
+                        }
 
-                if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
-                    return Ok(Self::PatchUpdateAvailable);
-                }
+                        metadata
+                            .games
+                            .hi3rd
+                            .for_edition(params.game_edition)
+                            .get_status(version)
+                    }
+                    Err(err) => {
+                        tracing::warn!(
+                            "Failed to fetch jadeite metadata: {err}. Proceeding with local version check only"
+                        );
+                        JadeitePatchStatusVariant::Unverified
+                    }
+                };
 
                 // Check telemetry servers (skipped when the user opted out of
                 // automatic telemetry disabling)
@@ -132,7 +160,19 @@ impl LauncherState {
                     return Ok(Self::TelemetryNotDisabled);
                 }
 
-                match metadata.games.hi3rd.global.get_status(version) {
+                // Check if update predownload available
+                if let VersionDiff::Predownload {
+                    ..
+                } = diff
+                {
+                    return Ok(Self::PredownloadAvailable {
+                        game: diff,
+                        patch: patch_status
+                    });
+                }
+
+                // Otherwise we can launch the game or say that the patch is unstable
+                match patch_status {
                     JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
                     JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
                     JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
@@ -144,6 +184,9 @@ impl LauncherState {
             VersionDiff::Diff {
                 ..
             } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::Outdated {
+                ..
+            } => Ok(Self::GameOutdated(diff)),
             VersionDiff::NotInstalled {
                 ..
             } => Ok(Self::GameNotInstalled(diff))
