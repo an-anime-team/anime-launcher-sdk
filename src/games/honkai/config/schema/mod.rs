@@ -1,14 +1,10 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 #[cfg(feature = "sandbox")]
 use crate::config::schema_blanks::sandbox::Sandbox;
-
 #[cfg(feature = "components")]
-use crate::components::{
-    wine::Version as WineVersion,
-    dxvk::Version as DxvkVersion
-};
+use crate::components::{dxvk::Version as DxvkVersion, wine::Version as WineVersion};
 
 pub mod launcher;
 pub mod game;
@@ -22,7 +18,6 @@ pub mod prelude {
     pub use super::game::prelude::*;
     pub use super::game::*;
     pub use super::patch::*;
-
     #[cfg(feature = "components")]
     pub use super::components::*;
 }
@@ -73,7 +68,7 @@ impl From<&JsonValue> for Schema {
             patch: match value.get("patch") {
                 Some(value) => Patch::from(value),
                 None => default.patch
-            },
+            }
         }
     }
 }

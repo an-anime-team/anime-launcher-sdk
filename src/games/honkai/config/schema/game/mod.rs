@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 use crate::config::schema_blanks::prelude::*;
@@ -14,8 +14,7 @@ pub mod paths;
 pub mod enhancements;
 
 pub mod prelude {
-    pub use super::Wine;
-    pub use super::Dxvk;
+    pub use super::{Dxvk, Wine};
     pub use super::paths::Paths;
     pub use super::enhancements::Enhancements;
 }
@@ -51,19 +50,14 @@ impl From<&JsonValue> for Game {
         let default = Self::default();
 
         Self {
-            path: value.get("path")
-                .map(Paths::from)
-                .unwrap_or(default.path),
+            path: value.get("path").map(Paths::from).unwrap_or(default.path),
 
-            wine: value.get("wine")
-                .map(Wine::from)
-                .unwrap_or(default.wine),
+            wine: value.get("wine").map(Wine::from).unwrap_or(default.wine),
 
-            dxvk: value.get("dxvk")
-                .map(Dxvk::from)
-                .unwrap_or(default.dxvk),
+            dxvk: value.get("dxvk").map(Dxvk::from).unwrap_or(default.dxvk),
 
-            enhancements: value.get("enhancements")
+            enhancements: value
+                .get("enhancements")
                 .map(Enhancements::from)
                 .unwrap_or(default.enhancements),
 
@@ -79,7 +73,7 @@ impl From<&JsonValue> for Game {
                         }
 
                         vars
-                    },
+                    }
                     None => default.environment
                 },
                 None => default.environment
@@ -89,13 +83,14 @@ impl From<&JsonValue> for Game {
                 Some(value) => {
                     if value.is_null() {
                         None
-                    } else {
+                    }
+                    else {
                         match value.as_str() {
                             Some(value) => Some(value.to_string()),
                             None => default.command
                         }
                     }
-                },
+                }
                 None => default.command
             }
         }

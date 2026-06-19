@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 use crate::honkai::consts::launcher_dir;
@@ -26,7 +26,11 @@ impl From<&JsonValue> for Patch {
         let default = Self::default();
 
         Self {
-            path: match value.get("path").and_then(|path| path.as_str()).map(PathBuf::from) {
+            path: match value
+                .get("path")
+                .and_then(|path| path.as_str())
+                .map(PathBuf::from)
+            {
                 Some(path) => path,
                 None => default.path
             }

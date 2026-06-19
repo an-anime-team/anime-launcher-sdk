@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 use crate::honkai::consts::launcher_dir;
@@ -18,9 +18,7 @@ impl Default for Components {
 
         Self {
             path: launcher_dir.join("components"),
-            servers: vec![
-                String::from("https://github.com/an-anime-team/components")
-            ]
+            servers: vec![String::from("https://github.com/an-anime-team/components")]
         }
     }
 }
@@ -50,7 +48,7 @@ impl From<&JsonValue> for Components {
                         }
 
                         servers
-                    },
+                    }
                     None => default.servers
                 },
                 None => default.servers
