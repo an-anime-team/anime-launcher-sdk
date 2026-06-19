@@ -45,6 +45,7 @@ pub struct Launcher {
     pub edition: GameEdition,
     pub style: LauncherStyle,
     pub temp: Option<PathBuf>,
+    pub sophon: SophonConfig,
     pub repairer: Repairer,
     pub disable_telemetry: bool,
     pub behavior: LauncherBehavior
@@ -58,6 +59,7 @@ impl Default for Launcher {
             edition: GameEdition::from_system_lang(),
             style: LauncherStyle::default(),
             temp: launcher_dir().ok(),
+            sophon: SophonConfig::default(),
             repairer: Repairer::default(),
             disable_telemetry: true,
             behavior: LauncherBehavior::default()
@@ -98,6 +100,11 @@ impl From<&JsonValue> for Launcher {
                     }
                 }
                 None => default.temp
+            },
+
+            sophon: match value.get("sophon") {
+                Some(value) => SophonConfig::from(value),
+                None => default.sophon
             },
 
             repairer: match value.get("repairer") {
