@@ -49,6 +49,7 @@ pub struct Launcher {
     pub temp: Option<PathBuf>,
     pub sophon: SophonConfig,
     pub repairer: Repairer,
+    pub disable_telemetry: bool,
     pub behavior: LauncherBehavior
 }
 
@@ -64,6 +65,7 @@ impl Default for Launcher {
             temp: launcher_dir().ok(),
             sophon: SophonConfig::default(),
             repairer: Repairer::default(),
+            disable_telemetry: true,
             behavior: LauncherBehavior::default()
         }
     }
@@ -122,6 +124,11 @@ impl From<&JsonValue> for Launcher {
             repairer: match value.get("repairer") {
                 Some(value) => Repairer::from(value),
                 None => default.repairer
+            },
+
+            disable_telemetry: match value.get("disable_telemetry") {
+                Some(value) => serde_json::from_value(value.to_owned()).ok().unwrap_or(default.disable_telemetry),
+                None => default.disable_telemetry
             },
 
             behavior: match value.get("behavior") {

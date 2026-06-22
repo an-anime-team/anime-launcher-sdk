@@ -71,6 +71,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub patch_folder: PathBuf,
 
     pub selected_voices: Vec<VoiceLocale>,
+    pub disable_telemetry: bool,
     pub status_updater: F
 }
 
@@ -202,19 +203,26 @@ impl LauncherState {
                     }
                 };
 
-                // Check telemetry servers
-                let disabled = telemetry::is_disabled(params.game_edition)
-                    // Return true if there's no domain name resolved, or false otherwise
-                    .map(|result| result.is_none())
-                    // And return true if there's an error happened during domain name resolving
-                    // FIXME: might not be a good idea? Idk
-                    .unwrap_or_else(|err| {
-                        tracing::warn!(
-                            "Failed to check telemetry servers: {err}. Assuming they're disabled"
-                        );
+                // Check telemetry servers (skipped when the user opted out of
+                // automatic telemetry disabling)
+                let disabled = if !params.disable_telemetry {
+                    true
+                }
 
-                        true
-                    });
+                else {
+                    telemetry::is_disabled(params.game_edition)
+                        // Return true if there's no domain name resolved, or false otherwise
+                        .map(|result| result.is_none())
+                        // And return true if there's an error happened during domain name resolving
+                        // FIXME: might not be a good idea? Idk
+                        .unwrap_or_else(|err| {
+                            tracing::warn!(
+                                "Failed to check telemetry servers: {err}. Assuming they're disabled"
+                            );
+
+                            true
+                        })
+                };
 
                 if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
@@ -299,6 +307,7 @@ impl LauncherState {
             patch_folder: config.patch.path,
 
             selected_voices: voices,
+            disable_telemetry: config.launcher.disable_telemetry,
             status_updater
         })
     }

@@ -80,14 +80,21 @@ pub fn run() -> anyhow::Result<bool> {
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
-    // Check telemetry servers
+    // Check telemetry servers (skipped when the user opted out of
+    // automatic telemetry disabling)
 
-    tracing::info!("Checking telemetry");
+    if config.launcher.disable_telemetry {
+        tracing::info!("Checking telemetry");
 
-    if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
-        return Err(anyhow::anyhow!(
-            "Telemetry server is not disabled: {server}"
-        ));
+        if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
+            return Err(anyhow::anyhow!(
+                "Telemetry server is not disabled: {server}"
+            ));
+        }
+    }
+
+    else {
+        tracing::info!("Telemetry check is disabled in the launcher settings");
     }
 
     // Prepare fps unlocker
