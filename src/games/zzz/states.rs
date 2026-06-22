@@ -59,6 +59,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_path: PathBuf,
     pub game_edition: GameEdition,
     pub wine_prefix: PathBuf,
+    pub disable_telemetry: bool,
 
     pub status_updater: F
 }
@@ -103,19 +104,26 @@ impl LauncherState {
 
         match diff {
             VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
-                // Check telemetry servers
-                let disabled = telemetry::is_disabled(params.game_edition)
+                // Check telemetry servers (skipped when the user opted out of
+                // automatic telemetry disabling)
+                let disabled = if !params.disable_telemetry {
+                    true
+                }
 
-                    // Return true if there's no domain name resolved, or false otherwise
-                    .map(|result| result.is_none())
+                else {
+                    telemetry::is_disabled(params.game_edition)
 
-                    // And return true if there's an error happened during domain name resolving
-                    // FIXME: might not be a good idea? Idk
-                    .unwrap_or_else(|err| {
-                        tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
+                        // Return true if there's no domain name resolved, or false otherwise
+                        .map(|result| result.is_none())
 
-                        true
-                    });
+                        // And return true if there's an error happened during domain name resolving
+                        // FIXME: might not be a good idea? Idk
+                        .unwrap_or_else(|err| {
+                            tracing::warn!("Failed to check telemetry servers: {err}. Assuming they're disabled");
+
+                            true
+                        })
+                };
 
                 if !disabled {
                     return Ok(Self::TelemetryNotDisabled);
@@ -160,6 +168,8 @@ impl LauncherState {
             game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
             game_edition: config.launcher.edition,
             wine_prefix: config.game.wine.prefix,
+
+            disable_telemetry: config.launcher.disable_telemetry,
 
             status_updater
         })
