@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 use crate::config::schema_blanks::prelude::*;
@@ -16,19 +16,17 @@ impl From<&JsonValue> for Enhancements {
         let default = Self::default();
 
         Self {
-            fsr: value.get("fsr")
-                .map(Fsr::from)
-                .unwrap_or(default.fsr),
+            fsr: value.get("fsr").map(Fsr::from).unwrap_or(default.fsr),
 
-            gamemode: value.get("gamemode")
+            gamemode: value
+                .get("gamemode")
                 .and_then(JsonValue::as_bool)
                 .unwrap_or(default.gamemode),
 
-            hud: value.get("hud")
-                .map(HUD::from)
-                .unwrap_or(default.hud),
+            hud: value.get("hud").map(HUD::from).unwrap_or(default.hud),
 
-            gamescope: value.get("gamescope")
+            gamescope: value
+                .get("gamescope")
                 .map(Gamescope::from)
                 .unwrap_or(default.gamescope)
         }
