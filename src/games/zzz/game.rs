@@ -101,10 +101,12 @@ pub fn run() -> anyhow::Result<bool> {
     // Prepare wine prefix drives
     config.game.wine.drives.map_folders(&folders.game, &config.game.wine.prefix)?;
 
+    // Use an absolute Wine path when launching the game
+    WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::Z, "/")?;
+
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
         WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::C, "../drive_c")?;
-        WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::Z, "/")?;
     }
 
     // Prepare bash -c '<command>'
@@ -130,7 +132,10 @@ pub fn run() -> anyhow::Result<bool> {
         windows_command += " ";
     }
 
-    windows_command += "ZenlessZoneZero.exe ";
+    windows_command += &format!(
+        "'Z:\\{}/ZenlessZoneZero.exe' ",
+        folders.game.to_string_lossy()
+    );
 
     if config.game.wine.borderless {
         launch_args += "-screen-fullscreen 0 -popupwindow ";
@@ -167,6 +172,11 @@ pub fn run() -> anyhow::Result<bool> {
             .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
             .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
             .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
+
+        windows_command = windows_command.replace(
+            folders.game.to_str().unwrap(),
+            sandboxed_folders.game.to_str().unwrap()
+        );
 
         bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
         folders = sandboxed_folders;
