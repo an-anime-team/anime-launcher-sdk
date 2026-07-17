@@ -163,10 +163,12 @@ pub fn run() -> anyhow::Result<bool> {
         .drives
         .map_folders(&folders.game, &config.game.wine.prefix)?;
 
+    // Use an absolute Wine path when launching the game
+    WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::Z, "/")?;
+
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
         WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::C, "../drive_c")?;
-        WineDrives::map_folder(&config.game.wine.prefix, AllowedDrives::Z, "/")?;
     }
 
     // Prepare bash -c '<command>'
@@ -204,8 +206,11 @@ pub fn run() -> anyhow::Result<bool> {
         windows_command += " ";
     }
 
-    windows_command += game_executable;
-    windows_command += " ";
+    windows_command += &format!(
+        "'Z:\\{}/{}' ",
+        folders.game.to_string_lossy(),
+        game_executable
+    );
 
     if config.game.wine.borderless {
         launch_args += "-screen-fullscreen 0 -popupwindow ";
