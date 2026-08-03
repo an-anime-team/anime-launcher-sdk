@@ -30,6 +30,8 @@ pub enum LauncherState {
 
     DxvkNotInstalled,
 
+    Dx12NotInstalled,
+
     // Always contains `VersionDiff::Diff`
     VoiceUpdateAvailable(VersionDiff),
 
@@ -93,6 +95,25 @@ impl LauncherState {
 
         if !found_dxgi {
             return Ok(Self::DxvkNotInstalled);
+        }
+
+        // check vkd3d-proton installation
+        // we only look for the d3d12 override since install_dx12 
+        // always installs vkd3d-proton and dxvk-nvapi together
+        let mut found_d3d12 = false;
+
+        for line in reg_content.lines() {
+            if line.trim_start().starts_with("\"d3d12\"") {
+                found_d3d12 = true;
+
+                if !line.contains("\"native\"") {
+                    return Ok(Self::Dx12NotInstalled);
+                }
+            }
+        }
+
+        if !found_d3d12 {
+            return Ok(Self::Dx12NotInstalled);
         }
 
         // Check game installation status
