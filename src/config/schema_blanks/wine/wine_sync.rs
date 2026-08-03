@@ -9,7 +9,8 @@ use enum_ordinalize::Ordinalize;
 pub enum WineSync {
     None,
     ESync,
-    FSync
+    FSync,
+    NTSync
 }
 
 impl Default for WineSync {
@@ -31,6 +32,9 @@ impl WineSync {
     pub fn get_env_vars(&self) -> HashMap<&str, &str> {
         let key = match self {
             Self::None => return HashMap::new(),
+
+            // NTsync is used by default by every build that supports it
+            Self::NTSync => return HashMap::new(),
 
             Self::ESync => "WINEESYNC",
             Self::FSync => "WINEFSYNC"
