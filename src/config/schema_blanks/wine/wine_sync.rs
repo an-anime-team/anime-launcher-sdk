@@ -15,7 +15,7 @@ pub enum WineSync {
 impl Default for WineSync {
     #[inline]
     fn default() -> Self {
-        Self::FSync
+        Self::NTSync
     }
 }
 
