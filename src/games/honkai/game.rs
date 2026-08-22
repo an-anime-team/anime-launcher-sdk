@@ -19,7 +19,6 @@ struct Folders {
     pub wine: PathBuf,
     pub prefix: PathBuf,
     pub game: PathBuf,
-    pub patch: PathBuf,
     pub temp: PathBuf
 }
 
@@ -34,7 +33,6 @@ fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
             &consts::launcher_dir().unwrap().to_string_lossy()
         )
         .replace("%game%", folders.temp.to_str().unwrap())
-        .replace("%patch%", folders.patch.to_str().unwrap())
 }
 
 /// Try to run the game
@@ -67,7 +65,6 @@ pub fn run() -> anyhow::Result<()> {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
         game: game_path.clone(),
-        patch: config.patch.path.clone(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -130,11 +127,7 @@ pub fn run() -> anyhow::Result<()> {
         windows_command += " ";
     }
 
-    windows_command += &format!(
-        "'{}/jadeite.exe' 'Z:\\{}/BH3.exe' -- ",
-        folders.patch.to_string_lossy(),
-        folders.game.to_string_lossy()
-    );
+    windows_command += "BH3.exe ";
 
     if config.game.wine.borderless {
         launch_args += "-screen-fullscreen 0 -popupwindow ";
@@ -159,16 +152,10 @@ pub fn run() -> anyhow::Result<()> {
             folders.game.to_str().unwrap()
         );
 
-        let bwrap = format!(
-            "{bwrap} --bind '{}' /tmp/sandbox/patch",
-            folders.patch.to_string_lossy()
-        );
-
         let sandboxed_folders = Folders {
             wine: PathBuf::from("/tmp/sandbox/wine"),
             prefix: PathBuf::from("/tmp/sandbox/prefix"),
             game: PathBuf::from("/tmp/sandbox/game"),
-            patch: PathBuf::from("/tmp/sandbox/patch"),
             temp: PathBuf::from("/tmp")
         };
 
@@ -184,10 +171,6 @@ pub fn run() -> anyhow::Result<()> {
             .replace(
                 folders.game.to_str().unwrap(),
                 sandboxed_folders.game.to_str().unwrap()
-            )
-            .replace(
-                folders.patch.to_str().unwrap(),
-                sandboxed_folders.patch.to_str().unwrap()
             )
             .replace(
                 folders.temp.to_str().unwrap(),
@@ -206,10 +189,6 @@ pub fn run() -> anyhow::Result<()> {
             .replace(
                 folders.game.to_str().unwrap(),
                 sandboxed_folders.game.to_str().unwrap()
-            )
-            .replace(
-                folders.patch.to_str().unwrap(),
-                sandboxed_folders.patch.to_str().unwrap()
             )
             .replace(
                 folders.temp.to_str().unwrap(),
