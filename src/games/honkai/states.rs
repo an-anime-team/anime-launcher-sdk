@@ -181,7 +181,7 @@ impl LauncherState {
                 }
             }
 
-            VersionDiff::Diff {
+            VersionDiff::Update {
                 ..
             } => Ok(Self::GameUpdateAvailable(diff)),
             VersionDiff::Outdated {
