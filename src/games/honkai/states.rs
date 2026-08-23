@@ -10,14 +10,6 @@ use crate::honkai::config::Config;
 pub enum LauncherState {
     Launch,
 
-    PatchNotVerified,
-    PatchBroken,
-    PatchUnsafe,
-    PatchConcerning,
-
-    PatchNotInstalled,
-    PatchUpdateAvailable,
-
     TelemetryNotDisabled,
 
     #[cfg(feature = "components")]
@@ -29,8 +21,7 @@ pub enum LauncherState {
 
     /// Always contains `VersionDiff::Predownload`
     PredownloadAvailable {
-        game: VersionDiff,
-        patch: JadeitePatchStatusVariant
+        game: VersionDiff
     },
 
     // Always contains `VersionDiff::Diff`
@@ -45,8 +36,7 @@ pub enum LauncherState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateUpdating {
-    Game,
-    Patch
+    Game
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,7 +46,6 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_path: PathBuf,
     pub game_edition: GameEdition,
 
-    pub patch_folder: PathBuf,
     pub disable_telemetry: bool,
 
     pub status_updater: F
@@ -102,40 +91,11 @@ impl LauncherState {
 
         match diff {
             VersionDiff::Latest {
-                version, ..
+                ..
             }
             | VersionDiff::Predownload {
-                current: version, ..
+                ..
             } => {
-                // Check game patch status
-                (params.status_updater)(StateUpdating::Patch);
-
-                // Check jadeite patch status
-                if !jadeite::is_installed(&params.patch_folder) {
-                    return Ok(Self::PatchNotInstalled);
-                }
-
-                // Fetch patch metadata
-                let patch_status = match jadeite::get_metadata() {
-                    Ok(metadata) => {
-                        if metadata.jadeite.version > jadeite::get_version(params.patch_folder)? {
-                            return Ok(Self::PatchUpdateAvailable);
-                        }
-
-                        metadata
-                            .games
-                            .hi3rd
-                            .for_edition(params.game_edition)
-                            .get_status(version)
-                    }
-                    Err(err) => {
-                        tracing::warn!(
-                            "Failed to fetch jadeite metadata: {err}. Proceeding with local version check only"
-                        );
-                        JadeitePatchStatusVariant::Unverified
-                    }
-                };
-
                 // Check telemetry servers (skipped when the user opted out of
                 // automatic telemetry disabling)
                 let disabled = if !params.disable_telemetry {
@@ -165,19 +125,13 @@ impl LauncherState {
                     ..
                 } = diff
                 {
-                    return Ok(Self::PredownloadAvailable {
-                        game: diff,
-                        patch: patch_status
-                    });
+                    Ok(Self::PredownloadAvailable {
+                        game: diff
+                    })
                 }
-
-                // Otherwise we can launch the game or say that the patch is unstable
-                match patch_status {
-                    JadeitePatchStatusVariant::Verified => Ok(Self::Launch),
-                    JadeitePatchStatusVariant::Unverified => Ok(Self::PatchNotVerified),
-                    JadeitePatchStatusVariant::Broken => Ok(Self::PatchBroken),
-                    JadeitePatchStatusVariant::Unsafe => Ok(Self::PatchUnsafe),
-                    JadeitePatchStatusVariant::Concerning => Ok(Self::PatchConcerning)
+                // Otherwise we can launch the game
+                else {
+                    Ok(Self::Launch)
                 }
             }
 
@@ -220,8 +174,6 @@ impl LauncherState {
                 .for_edition(config.launcher.edition)
                 .to_path_buf(),
             game_edition: config.launcher.edition,
-
-            patch_folder: config.patch.path,
 
             disable_telemetry: config.launcher.disable_telemetry,
 

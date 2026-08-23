@@ -36,7 +36,6 @@ zzz = ["anime-game-core/zzz"]
 honkai = ["anime-game-core/honkai"]
 
 star-rail-patch = ["anime-game-core/patch-jadeite", "anime-game-core/patch-mfc140"]
-honkai-patch = ["anime-game-core/patch-jadeite"]
 
 # Common features
 states = []
