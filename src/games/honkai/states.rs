@@ -24,7 +24,7 @@ pub enum LauncherState {
         game: VersionDiff
     },
 
-    // Always contains `VersionDiff::Diff`
+    // Always contains `VersionDiff::Update`
     GameUpdateAvailable(VersionDiff),
 
     /// Always contains `VersionDiff::Outdated`
