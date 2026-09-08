@@ -61,6 +61,7 @@ pub struct LauncherStateParams<F: Fn(StateUpdating)> {
     pub game_path: PathBuf,
     pub game_edition: GameEdition,
     pub wine_prefix: PathBuf,
+    pub enable_dx12: bool,
     pub disable_telemetry: bool,
 
     pub status_updater: F
@@ -97,23 +98,25 @@ impl LauncherState {
             return Ok(Self::DxvkNotInstalled);
         }
 
-        // check vkd3d-proton installation
-        // we only look for the d3d12 override since install_dx12
-        // always installs vkd3d-proton and dxvk-nvapi together
-        let mut found_d3d12 = false;
+        if params.enable_dx12 {
+            // check vkd3d-proton installation
+            // we only look for the d3d12 override since install_dx12
+            // always installs vkd3d-proton and dxvk-nvapi together
+            let mut found_d3d12 = false;
 
-        for line in reg_content.lines() {
-            if line.trim_start().starts_with("\"d3d12\"") {
-                found_d3d12 = true;
+            for line in reg_content.lines() {
+                if line.trim_start().starts_with("\"d3d12\"") {
+                    found_d3d12 = true;
 
-                if !line.contains("\"native\"") {
-                    return Ok(Self::Dx12NotInstalled);
+                    if !line.contains("\"native\"") {
+                        return Ok(Self::Dx12NotInstalled);
+                    }
                 }
             }
-        }
 
-        if !found_d3d12 {
-            return Ok(Self::Dx12NotInstalled);
+            if !found_d3d12 {
+                return Ok(Self::Dx12NotInstalled);
+            }
         }
 
         // Check game installation status
@@ -209,6 +212,7 @@ impl LauncherState {
             wine_prefix: config.game.wine.prefix,
 
             disable_telemetry: config.launcher.disable_telemetry,
+            enable_dx12: config.game.enhancements.dx12,
 
             status_updater
         })
