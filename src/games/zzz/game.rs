@@ -11,19 +11,10 @@ use anime_game_core::zzz::game::Game;
 
 use crate::config::ConfigExt;
 use crate::zzz::config::Config;
-
-use crate::config::schema_blanks::prelude::{
-    WineDrives,
-    AllowedDrives
-};
-
+use crate::config::schema_blanks::prelude::{AllowedDrives, WineDrives};
 use crate::zzz::consts;
-
 #[cfg(feature = "sessions")]
-use crate::{
-    sessions::SessionsExt,
-    zzz::sessions::Sessions
-};
+use crate::{sessions::SessionsExt, zzz::sessions::Sessions};
 
 #[derive(Debug, Clone)]
 struct Folders {
@@ -34,17 +25,22 @@ struct Folders {
 }
 
 fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
-    command.to_string()
+    command
+        .to_string()
         .replace("%build%", folders.wine.to_str().unwrap())
         .replace("%prefix%", folders.prefix.to_str().unwrap())
         .replace("%temp%", folders.game.to_str().unwrap())
-        .replace("%launcher%", &consts::launcher_dir().unwrap().to_string_lossy())
+        .replace(
+            "%launcher%",
+            &consts::launcher_dir().unwrap().to_string_lossy()
+        )
         .replace("%game%", folders.temp.to_str().unwrap())
 }
 
 /// Try to run the game
 ///
-/// This function will freeze thread it was called from while the game is running
+/// This function will freeze thread it was called from while the game is
+/// running
 ///
 /// Returns `true` if driverError.log was created during a short-lived session.
 #[tracing::instrument(level = "info", ret)]
@@ -59,7 +55,8 @@ pub fn run() -> anyhow::Result<bool> {
         return Err(anyhow::anyhow!("Game is not installed"));
     }
 
-    let Some(wine) = config.get_selected_wine()? else {
+    let Some(wine) = config.get_selected_wine()?
+    else {
         anyhow::bail!("Couldn't find wine executable");
     };
 
@@ -68,7 +65,11 @@ pub fn run() -> anyhow::Result<bool> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+        game: config
+            .game
+            .path
+            .for_edition(config.launcher.edition)
+            .to_path_buf(),
         temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
     };
 
@@ -79,27 +80,36 @@ pub fn run() -> anyhow::Result<bool> {
         tracing::info!("Checking telemetry");
 
         if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
-            return Err(anyhow::anyhow!("Telemetry server is not disabled: {server}"));
+            return Err(anyhow::anyhow!(
+                "Telemetry server is not disabled: {server}"
+            ));
         }
     }
-
     else {
         tracing::info!("Telemetry check is disabled in the launcher settings");
     }
 
     // Generate `config.ini` if environment emulation feature is presented
 
-    #[cfg(feature = "environment-emulation")] {
+    #[cfg(feature = "environment-emulation")]
+    {
         let game = Game::new(game_path, config.launcher.edition);
 
         std::fs::write(
             game_path.join("config.ini"),
-            config.launcher.environment.generate_config(game.get_version()?.to_string())
+            config
+                .launcher
+                .environment
+                .generate_config(game.get_version()?.to_string())
         )?;
     }
 
     // Prepare wine prefix drives
-    config.game.wine.drives.map_folders(&folders.game, &config.game.wine.prefix)?;
+    config
+        .game
+        .wine
+        .drives
+        .map_folders(&folders.game, &config.game.wine.prefix)?;
 
     // Workaround for sandboxing feature
     if config.sandbox.enabled {
@@ -118,14 +128,26 @@ pub fn run() -> anyhow::Result<bool> {
         bash_command += "gamemoderun ";
     }
 
-    let run_command = features.command
+    let run_command = features
+        .command
         .map(|command| replace_keywords(command, &folders))
-        .unwrap_or(format!("'{}'", folders.wine.join(wine.files.wine64.unwrap_or(wine.files.wine)).to_string_lossy()));
+        .unwrap_or(format!(
+            "'{}'",
+            folders
+                .wine
+                .join(wine.files.wine64.unwrap_or(wine.files.wine))
+                .to_string_lossy()
+        ));
 
     bash_command += &run_command;
     bash_command += " ";
 
-    if let Some(virtual_desktop) = config.game.wine.virtual_desktop.get_command("an_anime_game") {
+    if let Some(virtual_desktop) = config
+        .game
+        .wine
+        .virtual_desktop
+        .get_command("an_anime_game")
+    {
         windows_command += &virtual_desktop;
         windows_command += " ";
     }
@@ -167,10 +189,22 @@ pub fn run() -> anyhow::Result<bool> {
         };
 
         bash_command = bash_command
-            .replace(folders.wine.to_str().unwrap(), sandboxed_folders.wine.to_str().unwrap())
-            .replace(folders.prefix.to_str().unwrap(), sandboxed_folders.prefix.to_str().unwrap())
-            .replace(folders.game.to_str().unwrap(), sandboxed_folders.game.to_str().unwrap())
-            .replace(folders.temp.to_str().unwrap(), sandboxed_folders.temp.to_str().unwrap());
+            .replace(
+                folders.wine.to_str().unwrap(),
+                sandboxed_folders.wine.to_str().unwrap()
+            )
+            .replace(
+                folders.prefix.to_str().unwrap(),
+                sandboxed_folders.prefix.to_str().unwrap()
+            )
+            .replace(
+                folders.game.to_str().unwrap(),
+                sandboxed_folders.game.to_str().unwrap()
+            )
+            .replace(
+                folders.temp.to_str().unwrap(),
+                sandboxed_folders.temp.to_str().unwrap()
+            );
 
         bash_command = format!("{bwrap} --chdir /tmp/sandbox/game -- {bash_command}");
         folders = sandboxed_folders;
@@ -186,7 +220,10 @@ pub fn run() -> anyhow::Result<bool> {
     bash_command = match &config.game.command {
         // Use user-given launch command
         Some(command) => replace_keywords(command, &folders)
-            .replace("%command%", &format!("{bash_command} {windows_command} {launch_args}"))
+            .replace(
+                "%command%",
+                &format!("{bash_command} {windows_command} {launch_args}")
+            )
             .replace("%bash_command%", &bash_command)
             .replace("%windows_command%", &windows_command)
             .replace("%launch_args%", &launch_args),
@@ -221,7 +258,13 @@ pub fn run() -> anyhow::Result<bool> {
 
     let wine_folder = folders.wine.clone();
 
-    command.envs(config.game.enhancements.hud.get_env_vars(config.game.enhancements.gamescope.enabled));
+    command.envs(
+        config
+            .game
+            .enhancements
+            .hud
+            .get_env_vars(config.game.enhancements.gamescope.enabled)
+    );
     command.envs(config.game.enhancements.fsr.get_env_vars());
 
     command.envs(config.game.wine.sync.get_env_vars());
@@ -253,22 +296,29 @@ pub fn run() -> anyhow::Result<bool> {
 
     let variables = command
         .get_envs()
-        .map(|(key, value)| format!("{}=\"{}\"", key.to_string_lossy(), value.unwrap_or_default().to_string_lossy()))
+        .map(|(key, value)| {
+            format!(
+                "{}=\"{}\"",
+                key.to_string_lossy(),
+                value.unwrap_or_default().to_string_lossy()
+            )
+        })
         .fold(String::new(), |acc, env| acc + " " + &env);
 
     tracing::info!("Running the game with command: {variables} bash -c \"{bash_command}\"");
 
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
-    let mut child = command.current_dir(config.game.path.for_edition(config.launcher.edition))
+    let mut child = command
+        .current_dir(config.game.path.for_edition(config.launcher.edition))
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
 
     // Create new game.log file to log all the game output
-    let game_output = Arc::new(Mutex::new(
-        File::create(consts::launcher_dir()?.join("game.log"))?
-    ));
+    let game_output = Arc::new(Mutex::new(File::create(
+        consts::launcher_dir()?.join("game.log")
+    )?));
 
     let written = Arc::new(AtomicUsize::new(0));
 
@@ -288,7 +338,8 @@ pub fn run() -> anyhow::Result<bool> {
                     break;
                 }
 
-                let Ok(mut game_output) = game_output.lock() else {
+                let Ok(mut game_output) = game_output.lock()
+                else {
                     break;
                 };
 
@@ -322,7 +373,8 @@ pub fn run() -> anyhow::Result<bool> {
                     break;
                 }
 
-                let Ok(mut game_output) = game_output.lock() else {
+                let Ok(mut game_output) = game_output.lock()
+                else {
                     break;
                 };
 
@@ -353,18 +405,23 @@ pub fn run() -> anyhow::Result<bool> {
     drop(game_output);
 
     if let Some(join) = stdout_join {
-        join.join().map_err(|err| anyhow::anyhow!("Failed to join stdout reader thread: {err:?}"))??;
+        join.join()
+            .map_err(|err| anyhow::anyhow!("Failed to join stdout reader thread: {err:?}"))??;
     }
 
     if let Some(join) = stderr_join {
-        join.join().map_err(|err| anyhow::anyhow!("Failed to join stderr reader thread: {err:?}"))??;
+        join.join()
+            .map_err(|err| anyhow::anyhow!("Failed to join stderr reader thread: {err:?}"))??;
     }
 
     // Workaround for fast process closing (is it still a thing?)
     loop {
         std::thread::sleep(std::time::Duration::from_secs(3));
 
-        let output = Command::new("ps").arg("-A").stdout(Stdio::piped()).output()?;
+        let output = Command::new("ps")
+            .arg("-A")
+            .stdout(Stdio::piped())
+            .output()?;
         let output = String::from_utf8_lossy(&output.stdout);
 
         if !output.contains("ZenlessZoneZero") {

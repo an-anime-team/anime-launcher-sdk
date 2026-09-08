@@ -92,7 +92,6 @@ pub fn run() -> anyhow::Result<bool> {
             ));
         }
     }
-
     else {
         tracing::info!("Telemetry check is disabled in the launcher settings");
     }
@@ -112,9 +111,10 @@ pub fn run() -> anyhow::Result<bool> {
             Ok(Some(unlocker)) => unlocker,
 
             other => {
-                // Ok(None) means unknown version, so we should delete it before downloading
-                // newer one because otherwise downloader will try to continue
-                // downloading "partially downloaded" file
+                // Ok(None) means unknown version, so we should delete it before
+                // downloading newer one because otherwise
+                // downloader will try to continue downloading
+                // "partially downloaded" file
                 if let Ok(None) = other {
                     std::fs::remove_file(FpsUnlocker::get_binary_in(
                         &config.game.enhancements.fps_unlocker.path
