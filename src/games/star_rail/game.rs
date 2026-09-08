@@ -28,12 +28,12 @@ fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
         .to_string()
         .replace("%build%", folders.wine.to_str().unwrap())
         .replace("%prefix%", folders.prefix.to_str().unwrap())
-        .replace("%temp%", folders.game.to_str().unwrap())
+        .replace("%game%", folders.game.to_str().unwrap())
         .replace(
             "%launcher%",
             &consts::launcher_dir().unwrap().to_string_lossy()
         )
-        .replace("%game%", folders.temp.to_str().unwrap())
+        .replace("%temp%", folders.temp.to_str().unwrap())
         .replace("%patch%", folders.patch.to_str().unwrap())
 }
 
