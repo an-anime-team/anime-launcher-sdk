@@ -31,12 +31,12 @@ fn replace_keywords(command: impl ToString, folders: &Folders) -> String {
         .to_string()
         .replace("%build%", folders.wine.to_str().unwrap())
         .replace("%prefix%", folders.prefix.to_str().unwrap())
-        .replace("%temp%", folders.game.to_str().unwrap())
+        .replace("%game%", folders.game.to_str().unwrap())
         .replace(
             "%launcher%",
             &consts::launcher_dir().unwrap().to_string_lossy()
         )
-        .replace("%game%", folders.temp.to_str().unwrap())
+        .replace("%temp%", folders.temp.to_str().unwrap())
 }
 
 /// Try to run the game
@@ -92,7 +92,6 @@ pub fn run() -> anyhow::Result<bool> {
             ));
         }
     }
-
     else {
         tracing::info!("Telemetry check is disabled in the launcher settings");
     }
@@ -112,9 +111,10 @@ pub fn run() -> anyhow::Result<bool> {
             Ok(Some(unlocker)) => unlocker,
 
             other => {
-                // Ok(None) means unknown version, so we should delete it before downloading
-                // newer one because otherwise downloader will try to continue
-                // downloading "partially downloaded" file
+                // Ok(None) means unknown version, so we should delete it before
+                // downloading newer one because otherwise
+                // downloader will try to continue downloading
+                // "partially downloaded" file
                 if let Ok(None) = other {
                     std::fs::remove_file(FpsUnlocker::get_binary_in(
                         &config.game.enhancements.fps_unlocker.path
