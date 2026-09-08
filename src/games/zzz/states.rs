@@ -76,7 +76,7 @@ impl LauncherState {
         }
 
         // Check dxvk installation
- 
+
         let reg_path = params.wine_prefix.join("user.reg");
 
         let reg_content = std::fs::read_to_string(&reg_path)?;
@@ -86,7 +86,7 @@ impl LauncherState {
         for line in reg_content.lines() {
             if line.trim_start().starts_with("\"dxgi\"") {
                 found_dxgi = true;
-                
+
                 if !line.contains("\"native\"") {
                     return Ok(Self::DxvkNotInstalled);
                 }
@@ -98,7 +98,7 @@ impl LauncherState {
         }
 
         // check vkd3d-proton installation
-        // we only look for the d3d12 override since install_dx12 
+        // we only look for the d3d12 override since install_dx12
         // always installs vkd3d-proton and dxvk-nvapi together
         let mut found_d3d12 = false;
 
@@ -124,13 +124,17 @@ impl LauncherState {
         let diff = game.try_get_diff()?;
 
         match diff {
-            VersionDiff::Latest { .. } | VersionDiff::Predownload { .. } => {
+            VersionDiff::Latest {
+                ..
+            }
+            | VersionDiff::Predownload {
+                ..
+            } => {
                 // Check telemetry servers (skipped when the user opted out of
                 // automatic telemetry disabling)
                 let disabled = if !params.disable_telemetry {
                     true
                 }
-
                 else {
                     telemetry::is_disabled(params.game_edition)
 
@@ -151,21 +155,29 @@ impl LauncherState {
                 }
 
                 // Check if update predownload available
-                if let VersionDiff::Predownload { .. } = diff {
+                if let VersionDiff::Predownload {
+                    ..
+                } = diff
+                {
                     Ok(Self::PredownloadAvailable {
                         game: diff
                     })
                 }
-
                 // Otherwise we can launch the game
                 else {
                     Ok(Self::Launch)
                 }
             }
 
-            VersionDiff::Diff { .. } => Ok(Self::GameUpdateAvailable(diff)),
-            VersionDiff::Outdated { .. } => Ok(Self::GameOutdated(diff)),
-            VersionDiff::NotInstalled { .. } => Ok(Self::GameNotInstalled(diff))
+            VersionDiff::Diff {
+                ..
+            } => Ok(Self::GameUpdateAvailable(diff)),
+            VersionDiff::Outdated {
+                ..
+            } => Ok(Self::GameOutdated(diff)),
+            VersionDiff::NotInstalled {
+                ..
+            } => Ok(Self::GameNotInstalled(diff))
         }
     }
 
@@ -178,7 +190,9 @@ impl LauncherState {
 
         match &config.game.wine.selected {
             #[cfg(feature = "components")]
-            Some(selected) if !config.game.wine.builds.join(selected).exists() => return Ok(Self::WineNotInstalled),
+            Some(selected) if !config.game.wine.builds.join(selected).exists() => {
+                return Ok(Self::WineNotInstalled);
+            }
 
             None => return Ok(Self::WineNotInstalled),
 
@@ -186,7 +200,11 @@ impl LauncherState {
         }
 
         Self::get(LauncherStateParams {
-            game_path: config.game.path.for_edition(config.launcher.edition).to_path_buf(),
+            game_path: config
+                .game
+                .path
+                .for_edition(config.launcher.edition)
+                .to_path_buf(),
             game_edition: config.launcher.edition,
             wine_prefix: config.game.wine.prefix,
 
