@@ -7,6 +7,7 @@ use enum_ordinalize::Ordinalize;
 
 use anime_game_core::reqwest::blocking::Client;
 use anime_game_core::reqwest::header::{USER_AGENT, REFERER, RANGE};
+use anime_game_core::reqwest::StatusCode;
 
 use crate::genshin::consts::cache_dir;
 
@@ -191,17 +192,14 @@ fn download_bilibili_plugin_archive<F: Fn(u64, u64)>(progress: F) -> anyhow::Res
 
     // Server has to confirm it continues the file instead of sending it from
     // the very beginning
-    let resumed = existing > 0 && response.status().as_u16() == 206;
+    let resumed = existing > 0 && matches!(response.status(), StatusCode::PARTIAL_CONTENT);
 
     let downloaded = if resumed { existing } else { 0 };
     let total = downloaded + response.content_length().unwrap_or(0);
 
-    let mut file = if resumed {
-        OpenOptions::new().append(true).open(&part)?
-    }
-
-    else {
-        File::create(&part)?
+    let mut file = match resumed {
+        true => OpenOptions::new().append(true).open(&part)?,
+        false => File::create(&part)?
     };
 
     progress(downloaded, total);
@@ -257,8 +255,9 @@ pub fn install_bilibili_plugin(
 
     let destination = bilibili_plugin_path(game_path);
 
-    let parent = destination.parent()
-        .ok_or_else(|| anyhow::anyhow!("Failed to get Bilibili plugin folder"))?
+    let parent = destination
+        .parent()
+        .expect("Bilibili plugin destination always has a parent folder")
         .to_path_buf();
 
     std::fs::create_dir_all(&parent)?;
