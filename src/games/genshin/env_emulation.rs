@@ -1,13 +1,11 @@
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 
 use serde::{Serialize, Deserialize};
 use enum_ordinalize::Ordinalize;
 
-use anime_game_core::reqwest::blocking::Client;
-use anime_game_core::reqwest::header::{USER_AGENT, REFERER, RANGE};
-use anime_game_core::reqwest::StatusCode;
+use anime_game_core::installer::downloader::Downloader;
 
 use crate::genshin::consts::cache_dir;
 
@@ -35,9 +33,6 @@ const BILIBILI_REFERER: &str = "https://open.biligame.com/";
 const BILIBILI_PLUGIN_ENTRY_SUFFIX: &str = "/PCGameSDK.dll";
 
 const BILIBILI_PLUGIN_ENTRY_ARCH_PREFIX: &str = "64";
-
-/// Minimal amount of downloaded bytes between progress updates
-const PROGRESS_UPDATE_STEP: u64 = 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Ordinalize)]
 pub enum Environment {
@@ -154,7 +149,9 @@ pub fn is_bilibili_plugin_installed(game_path: impl AsRef<Path>) -> bool {
 
 /// Download the Bilibili plugin package (if it's not cached yet) and return
 /// path to it
-fn download_bilibili_plugin_archive<F: Fn(u64, u64)>(progress: F) -> anyhow::Result<PathBuf> {
+fn download_bilibili_plugin_archive<F: Fn(u64, u64) + Send + 'static>(
+    progress: F
+) -> anyhow::Result<PathBuf> {
     let folder = cache_dir()?.join("bilibili");
     let archive = folder.join(BILIBILI_PLUGIN_ARCHIVE);
 
@@ -170,69 +167,18 @@ fn download_bilibili_plugin_archive<F: Fn(u64, u64)>(progress: F) -> anyhow::Res
 
     let part = folder.join(format!("{BILIBILI_PLUGIN_ARCHIVE}.part"));
 
-    // Continue downloading from the previous attempt if possible
-    let existing = std::fs::metadata(&part)
-        .map(|metadata| metadata.len())
-        .unwrap_or(0);
+    // The SDK package CDN returns 403 without these headers, so they have to
+    // be set for the initial HEAD request as well, hence this constructor
+    let mut downloader = Downloader::new_with_user_agent(
+        BILIBILI_PLUGIN_URI,
+        BILIBILI_USER_AGENT.to_owned(),
+        Some(BILIBILI_REFERER.to_owned())
+    )?;
 
-    let client = Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()?;
-
-    let mut request = client
-        .get(BILIBILI_PLUGIN_URI)
-        .header(USER_AGENT, BILIBILI_USER_AGENT)
-        .header(REFERER, BILIBILI_REFERER);
-
-    if existing > 0 {
-        request = request.header(RANGE, format!("bytes={existing}-"));
-    }
-
-    let mut response = request.send()?.error_for_status()?;
-
-    // Server has to confirm it continues the file instead of sending it from
-    // the very beginning
-    let resumed = existing > 0 && matches!(response.status(), StatusCode::PARTIAL_CONTENT);
-
-    let downloaded = if resumed { existing } else { 0 };
-    let total = downloaded + response.content_length().unwrap_or(0);
-
-    let mut file = match resumed {
-        true => OpenOptions::new().append(true).open(&part)?,
-        false => File::create(&part)?
-    };
-
-    progress(downloaded, total);
-
-    let mut buffer = [0; 1024 * 64];
-    let mut downloaded = downloaded;
-    let mut last_reported = downloaded;
-
-    loop {
-        let read = response.read(&mut buffer)?;
-
-        if read == 0 {
-            break;
-        }
-
-        file.write_all(&buffer[..read])?;
-
-        downloaded += read as u64;
-
-        // Don't spam progress updates: on a fast connection the file is
-        // downloaded in thousands of chunks
-        if downloaded - last_reported >= PROGRESS_UPDATE_STEP {
-            last_reported = downloaded;
-
-            progress(downloaded, total);
-        }
-    }
-
-    progress(downloaded, total);
-
-    file.flush()?;
-
-    drop(file);
+    // Download into a separate file and move it to its final path only after
+    // the download succeeded, so the cached archive is always complete.
+    // `Downloader` continues previous download attempts on its own
+    downloader.download(&part, progress)?;
 
     std::fs::rename(&part, &archive)?;
 
@@ -249,7 +195,7 @@ pub fn install_bilibili_plugin(
     game_path: impl AsRef<Path> + std::fmt::Debug,
     progress: impl Fn(u64, u64) + Send + 'static
 ) -> anyhow::Result<()> {
-    let archive = download_bilibili_plugin_archive(&progress)?;
+    let archive = download_bilibili_plugin_archive(progress)?;
 
     tracing::info!("Installing Bilibili plugin");
 
