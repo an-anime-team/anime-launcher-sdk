@@ -146,6 +146,21 @@ pub fn run() -> anyhow::Result<bool> {
 
     #[cfg(feature = "environment-emulation")]
     {
+        // Bilibili channel server is a China-only distribution and requires
+        // the corresponding plugin, without which the game silently falls back
+        // to the official server
+        if config.launcher.environment == super::env_emulation::Environment::Bilibili {
+            if config.launcher.edition != genshin::GameEdition::China {
+                anyhow::bail!("Bilibili channel server is only available for the China edition");
+            }
+
+            if !super::env_emulation::is_bilibili_plugin_installed(game_path) {
+                anyhow::bail!(
+                    "Bilibili plugin is not installed. You can install it in the launcher's general settings"
+                );
+            }
+        }
+
         let game = Game::new(game_path, config.launcher.edition);
 
         std::fs::write(

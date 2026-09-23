@@ -10,7 +10,7 @@ publish = false
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.39.5"
+tag = "1.39.6"
 features = ["all"]
 
 #path = "../anime-game-core" # ! for dev purposes only
@@ -28,6 +28,7 @@ enum-ordinalize = { version = "4.3", optional = true }
 wincompatlib = { version = "0.7.7", features = ["dxvk"], optional = true }
 lazy_static = { version = "1.5.0", optional = true }
 md-5 = { version = "0.10", features = ["asm"], optional = true }
+zip = { version = "3.0", optional = true }
 
 [features]
 genshin = ["anime-game-core/genshin"]
@@ -46,7 +47,7 @@ sandbox = []
 sessions = []
 
 # Genshin-specific features
-environment-emulation = []
+environment-emulation = ["dep:zip"]
 fps-unlocker = ["dep:md-5"]
 
 all = [
