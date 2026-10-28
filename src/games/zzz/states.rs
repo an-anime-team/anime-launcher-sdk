@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use anime_game_core::game::{Game, GameDiff};
+use anime_game_core::zzz::prelude::*;
 
 use crate::config::ConfigExt;
 use crate::zzz::config::Config;
 
-#[derive(Clone)]
-pub enum LauncherState<'game> {
+#[derive(Debug, Clone)]
+pub enum LauncherState {
     Launch,
 
     #[cfg(feature = "components")]
@@ -22,7 +22,7 @@ pub enum LauncherState<'game> {
         cleanup_folder: Option<PathBuf>
     },
 
-    GameDiff(GameDiff<'game>)
+    GameDiff(VersionDiff)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,12 +31,9 @@ pub struct LauncherStateParams {
     pub enable_dx12: bool
 }
 
-impl<'game> LauncherState<'game> {
+impl LauncherState {
     /// Detect the current launcher state.
-    pub async fn get(
-        game: &'game Game,
-        params: LauncherStateParams
-    ) -> anyhow::Result<Self> {
+    pub fn get(game: &Game, params: LauncherStateParams) -> anyhow::Result<Self> {
         tracing::debug!("obtaining launcher state");
 
         // Check prefix existence.
@@ -86,15 +83,20 @@ impl<'game> LauncherState<'game> {
             }
         }
 
-        // Check game installation status
-        match game.diff().await? {
-            Some(diff) => Ok(Self::GameDiff(diff)),
-            None => Ok(Self::Launch)
+        let diff = game.try_get_diff()?;
+
+        match diff {
+            VersionDiff::Latest {
+                ..
+            } => Ok(Self::Launch),
+            _ => Ok(Self::GameDiff(diff))
         }
     }
 
     #[cfg(feature = "config")]
-    pub async fn get_from_config(game: &'game Game) -> anyhow::Result<Self> {
+    pub fn get_from_config() -> anyhow::Result<Self> {
+        use anime_game_core::traits::game::GameExt;
+
         tracing::debug!("Trying to get launcher state");
 
         let config = Config::get()?;
@@ -110,9 +112,18 @@ impl<'game> LauncherState<'game> {
             _ => ()
         }
 
-        Self::get(game, LauncherStateParams {
+        let game = Game::new(
+            config
+                .game
+                .path
+                .for_edition(&config.launcher.edition)
+                .to_owned(),
+            config.launcher.edition
+        );
+
+        Self::get(&game, LauncherStateParams {
             wine_prefix: config.game.wine.prefix,
             enable_dx12: config.game.enhancements.dx12
-        }).await
+        })
     }
 }

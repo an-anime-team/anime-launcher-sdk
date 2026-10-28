@@ -2,7 +2,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Write;
 
-use anime_game_core::sophon_tools::export::reqwest;
+use anime_game_core::sophon::reqwest;
 
 #[derive(Debug)]
 pub struct Downloader {
@@ -29,12 +29,7 @@ impl Downloader {
             .split('/')
             .next_back()
             .filter(|name| !name.is_empty())
-            .map(|name| {
-                name.split('?')
-                    .next()
-                    .unwrap_or(name)
-                    .to_string()
-            })
+            .map(|name| name.split('?').next().unwrap_or(name).to_string())
             .unwrap_or_else(|| String::from("index.html"))
     }
 
@@ -46,7 +41,8 @@ impl Downloader {
     ) -> anyhow::Result<()> {
         let path = path.as_ref();
 
-        let mut response = self.client
+        let mut response = self
+            .client
             .get(&self.uri)
             .send()
             .await?

@@ -1,27 +1,18 @@
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-
 use enum_ordinalize::Ordinalize;
-
-use anime_game_core::sophon_tools::region::SophonRegion;
+use anime_game_core::zzz::consts::GameEdition;
 
 use crate::config::schema_blanks::prelude::*;
 use crate::zzz::consts::launcher_dir;
-
 use super::downloader::Downloader;
-
 #[cfg(feature = "environment-emulation")]
 use crate::zzz::env_emulation::Environment;
 
 pub mod prelude {
-    pub use super::{
-        Launcher,
-        LauncherStyle,
-        LauncherBehavior
-    };
-
+    pub use super::{Launcher, LauncherBehavior, LauncherStyle};
     pub use super::super::downloader::Downloader;
 }
 
@@ -55,7 +46,7 @@ impl Default for LauncherBehavior {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
-    pub edition: SophonRegion,
+    pub edition: GameEdition,
     pub style: LauncherStyle,
     pub video_background: bool,
     pub background_index: u8,
@@ -73,7 +64,7 @@ impl Default for Launcher {
     fn default() -> Self {
         Self {
             language: String::from("en-us"),
-            edition: SophonRegion::Global,
+            edition: GameEdition::Global,
             style: LauncherStyle::default(),
             video_background: true,
             temp: launcher_dir().ok(),
@@ -83,7 +74,6 @@ impl Default for Launcher {
 
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
-
 
             behavior: LauncherBehavior::default()
         }
@@ -124,13 +114,14 @@ impl From<&JsonValue> for Launcher {
                 Some(value) => {
                     if value.is_null() {
                         None
-                    } else {
+                    }
+                    else {
                         match value.as_str() {
                             Some(value) => Some(PathBuf::from(value)),
                             None => default.temp
                         }
                     }
-                },
+                }
                 None => default.temp
             },
 

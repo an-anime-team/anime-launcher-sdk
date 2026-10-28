@@ -10,7 +10,8 @@ publish = false
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.40.0"
+tag = "1.41.0"
+features = ["all"]
 
 # path = "../anime-game-core" # ! for dev purposes only
 
@@ -28,15 +29,15 @@ md-5 = { version = "0.10", features = ["asm"], optional = true }
 zip = { version = "3.0", optional = true }
 
 [features]
-genshin = []
-zzz = []
-star-rail = []
-honkai = []
+genshin = ["anime-game-core/genshin"]
+zzz = ["anime-game-core/zzz"]
+star-rail = ["anime-game-core/star-rail"]
+honkai = ["anime-game-core/honkai"]
 
-# star-rail-patch = [
-#     "anime-game-core/patch-jadeite",
-#     "anime-game-core/patch-mfc140"
-# ]
+star-rail-patch = [
+    "anime-game-core/patch-jadeite",
+    "anime-game-core/patch-mfc140"
+]
 
 # Common features
 states = []

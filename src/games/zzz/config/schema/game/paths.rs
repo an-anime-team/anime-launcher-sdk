@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-
-use anime_game_core::sophon_tools::region::SophonRegion;
+use anime_game_core::zzz::consts::GameEdition;
 
 use crate::zzz::consts::launcher_dir;
 
@@ -16,10 +15,10 @@ pub struct Paths {
 impl Paths {
     #[inline]
     /// Get game path for given sophon region.
-    pub fn for_edition(&self, region: &SophonRegion) -> &Path {
+    pub fn for_edition(&self, region: &GameEdition) -> &Path {
         match region {
-            SophonRegion::Global => self.global.as_path(),
-            SophonRegion::China => self.china.as_path()
+            GameEdition::Global => self.global.as_path(),
+            GameEdition::China => self.china.as_path()
         }
     }
 }
@@ -40,15 +39,17 @@ impl From<&JsonValue> for Paths {
         let default = Self::default();
 
         Self {
-            global: value.get("global")
+            global: value
+                .get("global")
                 .and_then(JsonValue::as_str)
                 .map(PathBuf::from)
                 .unwrap_or(default.global),
 
-            china: value.get("china")
+            china: value
+                .get("china")
                 .and_then(JsonValue::as_str)
                 .map(PathBuf::from)
-                .unwrap_or(default.china),
+                .unwrap_or(default.china)
         }
     }
 }
