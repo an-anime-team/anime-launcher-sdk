@@ -10,7 +10,7 @@ publish = false
 
 [dependencies.anime-game-core]
 git = "https://github.com/an-anime-team/anime-game-core"
-tag = "1.40.0"
+tag = "1.40.0-sophon-tools-gh-mirror"
 
 # path = "../anime-game-core" # ! for dev purposes only
 
