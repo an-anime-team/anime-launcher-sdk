@@ -12,6 +12,7 @@ use crate::components::{
 
 pub mod launcher;
 pub mod game;
+pub mod downloader;
 
 #[cfg(feature = "components")]
 pub mod components;

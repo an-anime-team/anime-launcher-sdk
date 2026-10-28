@@ -1,13 +1,11 @@
 use std::path::{Path, PathBuf};
-
-use crate::anime_game_core::traits::git_sync::RemoteGitSyncExt;
+use std::process::{Command, Stdio};
 
 use super::wine;
 use super::dxvk;
 
 /// Try to get wine versions from components index
 #[tracing::instrument(level = "debug")]
-#[cached::proc_macro::cached(key = "PathBuf", convert = r##"{ index.to_path_buf() }"##, result)]
 pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
     tracing::debug!("Getting wine versions");
 
@@ -78,7 +76,6 @@ pub fn get_wine_versions(index: &Path) -> anyhow::Result<Vec<wine::Group>> {
 
 /// Try to get dxvk versions from components index
 #[tracing::instrument(level = "debug")]
-#[cached::proc_macro::cached(key = "PathBuf", convert = r##"{ index.to_path_buf() }"##, result)]
 pub fn get_dxvk_versions(index: &Path) -> anyhow::Result<Vec<dxvk::Group>> {
     tracing::debug!("Getting dxvk versions");
 
@@ -152,18 +149,127 @@ pub struct ComponentsLoader {
     folder: PathBuf
 }
 
-impl RemoteGitSyncExt for ComponentsLoader {
-    #[inline]
-    fn folder(&self) -> &Path {
-        self.folder.as_path()
-    }
-}
-
 impl ComponentsLoader {
     #[inline]
     pub fn new<T: Into<PathBuf>>(folder: T) -> Self {
         Self {
             folder: folder.into()
+        }
+    }
+
+    /// Verify that the local components index is synced with any of the given
+    /// remotes.
+    ///
+    /// Returns the remote the local repository is synced with, or `None` if
+    /// it's not synced with any of them.
+    pub fn is_sync<T, F>(&self, remotes: T) -> anyhow::Result<Option<String>>
+    where
+        T: IntoIterator<Item = F>,
+        F: AsRef<str>
+    {
+        tracing::trace!("Checking local repository sync state: {:?}", self.folder);
+
+        if !self.folder.exists() {
+            tracing::warn!("Given local repository folder doesn't exist");
+
+            return Ok(None);
+        }
+
+        for remote in remotes {
+            match self.is_sync_with(remote.as_ref()) {
+                Ok(true) => return Ok(Some(remote.as_ref().to_string())),
+
+                Ok(false) => (),
+
+                Err(err) => {
+                    tracing::warn!(
+                        "Failed to check sync state with {}: {err}",
+                        remote.as_ref()
+                    );
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Verify that the local components index is synced with the given remote.
+    pub fn is_sync_with(&self, remote: impl AsRef<str>) -> anyhow::Result<bool> {
+        tracing::trace!(
+            "Checking local repository sync state. Folder: {:?}. Remote: {}",
+            self.folder,
+            remote.as_ref()
+        );
+
+        if !self.folder.join(".git").exists() {
+            tracing::warn!("Given local repository folder is not a git repository");
+
+            return Ok(false);
+        }
+
+        let head = git(&self.folder, &["rev-parse", "HEAD"])?;
+
+        git(&self.folder, &["remote", "set-url", "origin", remote.as_ref()])?;
+        git(&self.folder, &["fetch", "origin"])?;
+
+        let remote_head = git(&self.folder, &["rev-parse", "origin/HEAD"])?;
+
+        Ok(head == remote_head)
+    }
+
+    /// Fetch the components index from the given remote.
+    ///
+    /// Returns the list of changes (commit messages) applied during the sync.
+    pub fn sync(&self, remote: impl AsRef<str>) -> anyhow::Result<Vec<String>> {
+        tracing::debug!("Syncing local components index with remote");
+
+        if self.folder.join(".git").exists() {
+            let head_commit = String::from_utf8(
+                git(&self.folder, &["rev-parse", "HEAD"])?
+            )?
+                .trim_end()
+                .to_string();
+
+            git(&self.folder, &["remote", "set-url", "origin", remote.as_ref()])?;
+            git(&self.folder, &["fetch", "origin"])?;
+            git(&self.folder, &["reset", "--hard", "origin/HEAD"])?;
+
+            let range = format!("{head_commit}..HEAD");
+
+            let changes = String::from_utf8(
+                git(&self.folder, &["--no-pager", "log", "--oneline", range.as_str()])?
+            )?;
+
+            Ok(parse_changes(&changes))
+        }
+
+        else {
+            if let Some(parent) = self.folder.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+
+            let output = Command::new("git")
+                .arg("clone")
+                .arg(remote.as_ref())
+                .arg(&self.folder)
+                .env("GIT_TERMINAL_PROMPT", "0")
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped())
+                .output()?;
+
+            if !output.status.success() {
+                anyhow::bail!(
+                    "git clone failed: {}",
+                    String::from_utf8_lossy(&output.stderr).trim()
+                );
+            }
+
+            let changes = String::from_utf8(
+                git(&self.folder, &["--no-pager", "log", "--oneline"])?
+            )?;
+
+            Ok(parse_changes(&changes))
         }
     }
 
@@ -180,4 +286,36 @@ impl ComponentsLoader {
     pub fn get_dxvk_versions(&self) -> anyhow::Result<Vec<dxvk::Group>> {
         get_dxvk_versions(&self.folder)
     }
+}
+
+fn git(folder: &Path, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(folder)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "git {} failed: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+
+    Ok(output.stdout)
+}
+
+fn parse_changes(changes: &str) -> Vec<String> {
+    changes
+        .trim_end()
+        .lines()
+        .filter_map(|line| {
+            line.split_once(' ')
+                .map(|(_, message)| message.to_string())
+        })
+        .collect()
 }

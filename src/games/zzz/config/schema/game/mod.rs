@@ -26,6 +26,7 @@ use prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Game {
     pub path: Paths,
+    pub voices: Vec<String>,
     pub wine: Wine,
     pub dxvk: Dxvk,
     pub enhancements: Enhancements,
@@ -38,6 +39,9 @@ impl Default for Game {
     fn default() -> Self {
         Self {
             path: Paths::default(),
+            voices: vec![
+                String::from("en-us")
+            ],
             wine: Wine::default(),
             dxvk: Dxvk::default(),
             enhancements: Enhancements::default(),
@@ -55,6 +59,24 @@ impl From<&JsonValue> for Game {
             path: value.get("path")
                 .map(Paths::from)
                 .unwrap_or(default.path),
+
+            voices: match value.get("voices") {
+                Some(value) => match value.as_array() {
+                    Some(values) => {
+                        let mut voices = Vec::new();
+
+                        for value in values {
+                            if let Some(voice) = value.as_str() {
+                                voices.push(voice.to_string());
+                            }
+                        }
+
+                        voices
+                    },
+                    None => default.voices
+                },
+                None => default.voices
+            },
 
             wine: value.get("wine")
                 .map(Wine::from)

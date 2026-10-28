@@ -5,10 +5,6 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use anime_game_core::prelude::*;
-use anime_game_core::zzz::telemetry;
-use anime_game_core::zzz::game::Game;
-
 use crate::config::ConfigExt;
 use crate::zzz::config::Config;
 use crate::config::schema_blanks::prelude::{AllowedDrives, WineDrives};
@@ -49,7 +45,7 @@ pub fn run() -> anyhow::Result<bool> {
 
     let config = Config::get()?;
 
-    let game_path = config.game.path.for_edition(config.launcher.edition);
+    let game_path = config.game.path.for_edition(&config.launcher.edition);
 
     if !game_path.exists() {
         return Err(anyhow::anyhow!("Game is not installed"));
@@ -65,44 +61,26 @@ pub fn run() -> anyhow::Result<bool> {
     let mut folders = Folders {
         wine: config.game.wine.builds.join(&wine.name),
         prefix: config.game.wine.prefix.clone(),
-        game: config
-            .game
-            .path
-            .for_edition(config.launcher.edition)
+        game: config.game.path.for_edition(&config.launcher.edition)
             .to_path_buf(),
-        temp: config.launcher.temp.clone().unwrap_or(std::env::temp_dir())
+        temp: config.launcher.temp.clone()
+            .unwrap_or(std::env::temp_dir())
     };
-
-    // Check telemetry servers (skipped when the user opted out of
-    // automatic telemetry disabling)
-
-    if config.launcher.disable_telemetry {
-        tracing::info!("Checking telemetry");
-
-        if let Ok(Some(server)) = telemetry::is_disabled(config.launcher.edition) {
-            return Err(anyhow::anyhow!(
-                "Telemetry server is not disabled: {server}"
-            ));
-        }
-    }
-    else {
-        tracing::info!("Telemetry check is disabled in the launcher settings");
-    }
 
     // Generate `config.ini` if environment emulation feature is presented
 
-    #[cfg(feature = "environment-emulation")]
-    {
-        let game = Game::new(game_path, config.launcher.edition);
-
-        std::fs::write(
-            game_path.join("config.ini"),
-            config
-                .launcher
-                .environment
-                .generate_config(game.get_version()?.to_string())
-        )?;
-    }
+//     #[cfg(feature = "environment-emulation")]
+//     {
+//         let game = Game::new(game_path, config.launcher.edition);
+//
+//         std::fs::write(
+//             game_path.join("config.ini"),
+//             config
+//                 .launcher
+//                 .environment
+//                 .generate_config(game.get_version()?.to_string())
+//         )?;
+//     }
 
     // Prepare wine prefix drives
     config
@@ -310,7 +288,7 @@ pub fn run() -> anyhow::Result<bool> {
     // We use real current dir here because sandboxed one
     // obviously doesn't exist
     let mut child = command
-        .current_dir(config.game.path.for_edition(config.launcher.edition))
+        .current_dir(config.game.path.for_edition(&config.launcher.edition))
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;

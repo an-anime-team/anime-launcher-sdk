@@ -128,7 +128,11 @@ impl Version {
     #[inline]
     /// Get latest recommended wine version
     pub fn latest<T: Into<PathBuf>>(components: T) -> anyhow::Result<Self> {
-        Ok(get_groups(components)?[0].versions[0].clone())
+        get_groups(components)?
+            .into_iter()
+            .next()
+            .and_then(|group| group.versions.into_iter().next())
+            .ok_or_else(|| anyhow::anyhow!("components index is empty"))
     }
 
     /// Find wine version with given name in components index

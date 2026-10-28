@@ -1,6 +1,8 @@
 use std::process::{Command, Stdio};
 
 pub use anime_game_core;
+
+#[cfg(feature = "components")]
 pub use wincompatlib;
 
 mod games;
@@ -23,6 +25,8 @@ pub mod config;
 #[cfg(feature = "components")]
 pub mod components;
 
+pub mod download;
+
 #[cfg(feature = "sessions")]
 pub mod sessions;
 
@@ -31,7 +35,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 // TODO: rewrite it to find this binary in PATH instead
 
 /// Check if specified binary is available
-/// 
+///
 /// ```
 /// assert!(anime_launcher_sdk::is_available("bash"));
 /// ```
@@ -40,7 +44,11 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn is_available(binary: &str) -> bool {
     tracing::trace!("Checking package availability");
 
-    let Ok(mut child) = Command::new(binary).stdout(Stdio::null()).stderr(Stdio::null()).spawn() else {
+    let Ok(mut child) = Command::new(binary)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    else {
         return false;
     };
 

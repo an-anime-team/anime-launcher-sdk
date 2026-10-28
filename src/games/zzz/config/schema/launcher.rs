@@ -5,10 +5,12 @@ use serde_json::Value as JsonValue;
 
 use enum_ordinalize::Ordinalize;
 
-use anime_game_core::zzz::consts::GameEdition;
+use anime_game_core::sophon_tools::region::SophonRegion;
 
 use crate::config::schema_blanks::prelude::*;
 use crate::zzz::consts::launcher_dir;
+
+use super::downloader::Downloader;
 
 #[cfg(feature = "environment-emulation")]
 use crate::zzz::env_emulation::Environment;
@@ -19,6 +21,8 @@ pub mod prelude {
         LauncherStyle,
         LauncherBehavior
     };
+
+    pub use super::super::downloader::Downloader;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ordinalize, Serialize, Deserialize)]
@@ -51,16 +55,16 @@ impl Default for LauncherBehavior {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Launcher {
     pub language: String,
-    pub edition: GameEdition,
+    pub edition: SophonRegion,
     pub style: LauncherStyle,
     pub video_background: bool,
     pub background_index: u8,
     pub temp: Option<PathBuf>,
     pub repairer: Repairer,
+    pub downloader: Downloader,
 
     #[cfg(feature = "environment-emulation")]
     pub environment: Environment,
-    pub disable_telemetry: bool,    
     pub behavior: LauncherBehavior
 }
 
@@ -69,20 +73,17 @@ impl Default for Launcher {
     fn default() -> Self {
         Self {
             language: String::from("en-us"),
-            edition: GameEdition::from_system_lang(),
+            edition: SophonRegion::Global,
             style: LauncherStyle::default(),
             video_background: true,
             temp: launcher_dir().ok(),
             repairer: Repairer::default(),
+            downloader: Downloader::default(),
             background_index: 0,
-
-            #[cfg(feature = "discord-rpc")]
-            discord_rpc: DiscordRpc::default(),
 
             #[cfg(feature = "environment-emulation")]
             environment: Environment::default(),
 
-            disable_telemetry: true,
 
             behavior: LauncherBehavior::default()
         }
@@ -138,15 +139,15 @@ impl From<&JsonValue> for Launcher {
                 None => default.repairer
             },
 
+            downloader: match value.get("downloader") {
+                Some(value) => Downloader::from(value),
+                None => default.downloader
+            },
+
             #[cfg(feature = "environment-emulation")]
             environment: match value.get("environment") {
                 Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.environment),
                 None => default.environment
-            },
-
-            disable_telemetry: match value.get("disable_telemetry") {
-                Some(value) => serde_json::from_value(value.clone()).unwrap_or(default.disable_telemetry),
-                None => default.disable_telemetry
             },
 
             behavior: match value.get("behavior") {
