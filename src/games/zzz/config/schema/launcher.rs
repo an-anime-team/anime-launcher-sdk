@@ -51,6 +51,7 @@ pub struct Launcher {
     pub video_background: bool,
     pub background_index: u8,
     pub temp: Option<PathBuf>,
+    pub sophon: SophonConfig,
     pub repairer: Repairer,
     pub downloader: Downloader,
 
@@ -68,6 +69,7 @@ impl Default for Launcher {
             style: LauncherStyle::default(),
             video_background: true,
             temp: launcher_dir().ok(),
+            sophon: SophonConfig::default(),
             repairer: Repairer::default(),
             downloader: Downloader::default(),
             background_index: 0,
@@ -123,6 +125,11 @@ impl From<&JsonValue> for Launcher {
                     }
                 }
                 None => default.temp
+            },
+
+            sophon: match value.get("sophon") {
+                Some(value) => SophonConfig::from(value),
+                None => default.sophon
             },
 
             repairer: match value.get("repairer") {
