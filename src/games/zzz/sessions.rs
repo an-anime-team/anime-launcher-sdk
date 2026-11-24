@@ -9,6 +9,9 @@ use crate::sessions::{
 
 use super::consts::launcher_dir;
 
+// Wine escapes the Chinese product name (绝区零) in user.reg.
+const CHINA_GAME_REG_KEY: &str = r"[Software\\miHoYo\\\x7edd\x533a\x96f6]";
+
 /// Get default sessions file path
 /// 
 /// `$HOME/.local/share/sleepy-launcher/sessions.json`
@@ -21,6 +24,10 @@ pub fn sessions_file() -> anyhow::Result<PathBuf> {
 pub struct SessionData {
     // [Software\\miHoYo\\ZenlessZoneZero]
     pub game_reg: String,
+
+    // [Software\\miHoYo\\绝区零]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub china_game_reg: String,
 
     // [Software\\miHoYoSDK]
     pub sdk_reg: String
@@ -54,12 +61,17 @@ impl SessionsExt for Sessions {
 
         let mut new_session = Self::SessionData {
             game_reg: String::new(),
+            china_game_reg: String::new(),
             sdk_reg: String::new()
         };
 
         for entry in std::fs::read_to_string(prefix.as_ref().join("user.reg"))?.split("\n\n") {
             if entry.starts_with("[Software\\\\miHoYo\\\\ZenlessZoneZero]") {
                 new_session.game_reg = entry.to_owned();
+            }
+
+            else if entry.starts_with(CHINA_GAME_REG_KEY) {
+                new_session.china_game_reg = entry.to_owned();
             }
 
             else if entry.starts_with("[Software\\\\miHoYoSDK]") {
@@ -84,8 +96,16 @@ impl SessionsExt for Sessions {
         let entries: String = std::fs::read_to_string(prefix.as_ref().join("user.reg"))?
             .split("\n\n")
             .map(|entry| {
-                let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\ZenlessZoneZero]") {
+                let new_entry = if entry.starts_with("[Software\\\\miHoYo\\\\ZenlessZoneZero]")
+                    && !session.game_reg.is_empty()
+                {
                     session.game_reg.clone()
+                }
+
+                else if entry.starts_with(CHINA_GAME_REG_KEY)
+                    && !session.china_game_reg.is_empty()
+                {
+                    session.china_game_reg.clone()
                 }
     
                 else if entry.starts_with("[Software\\\\miHoYoSDK]") {
